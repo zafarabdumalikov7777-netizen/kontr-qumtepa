@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Brauzerda ishlaydigan 3D taktik shooter: 4 xarita, 5x5 botlar, raundlar, iqtisod, bunnyhop va spray naqshlari.">
+<title>Kontr Qumtepa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+:root{
+  /* Layout: full-bleed 3D view; HUD pinned to the corners; menus as a left-weighted command panel over the live map */
+  color-scheme:dark;
+  --ink:#0c0f12;
+  --panel:rgba(11,14,17,.74);
+  --panel-solid:#15191d;
+  --line:rgba(227,197,142,.22);
+  --sand:#e3c58e;
+  --text:#f1ebde;
+  --muted:#a39b8a;
+  --kt:#72b4ff;
+  --te:#f2a93b;
+  --danger:#ff4d40;
+  --money:#93e86f;
+  --cross:#8dff70;
+  --f-display:"Chakra Petch","Segoe UI",system-ui,sans-serif;
+  --f-body:"Barlow","Segoe UI",system-ui,sans-serif;
+  --il:env(safe-area-inset-left,0px);
+  --ir:env(safe-area-inset-right,0px);
+  --it:env(safe-area-inset-top,0px);
+  --ib:env(safe-area-inset-bottom,0px);
+}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--ink);color:var(--text);font-family:var(--f-body);overflow:hidden;user-select:none;-webkit-user-select:none;touch-action:none}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--sand);outline-offset:2px}
+#view{position:fixed;inset:0}
+#view canvas{display:block;width:100%;height:100%}
+
+/* ---------- HUD ---------- */
+.hud{position:fixed;inset:0;pointer-events:none;font-family:var(--f-display);text-shadow:0 1px 2px rgba(0,0,0,.6)}
+#radar{position:absolute;left:calc(14px + var(--il));top:calc(14px + var(--it));width:170px;height:170px;border-radius:50%;background:rgba(10,12,14,.6);box-shadow:0 0 0 2px rgba(227,197,142,.35),0 6px 20px rgba(0,0,0,.45)}
+#money{position:absolute;left:calc(14px + var(--il));top:calc(196px + var(--it));font-size:24px;font-weight:700;color:var(--money);display:flex;gap:10px;align-items:baseline}
+#moneyPop{font-size:16px;color:var(--money);opacity:0;transition:opacity .3s}
+#moneyPop.on{opacity:1}
+#top{position:absolute;top:calc(10px + var(--it));left:50%;transform:translateX(-50%);display:flex;gap:2px}
+#top .sc{min-width:62px;padding:4px 10px 6px;background:var(--panel);display:flex;flex-direction:column;align-items:center;gap:4px;font-size:24px;font-weight:700;line-height:1}
+#top .sc.kt{color:var(--kt)}
+#top .sc.te{color:var(--te)}
+.pips{display:flex;gap:3px}
+.pips i{width:6px;height:9px;background:currentColor}
+.pips i.dead{opacity:.18}
+#timer{background:var(--panel);padding:6px 16px;font-size:26px;font-weight:600;min-width:86px;text-align:center;font-variant-numeric:tabular-nums;display:flex;align-items:center;justify-content:center}
+#timer.freeze{color:var(--sand)}
+#timer.low{color:var(--danger)}
+#feed{position:absolute;right:calc(14px + var(--ir));top:calc(14px + var(--it));display:flex;flex-direction:column;gap:4px;align-items:flex-end}
+.kf{background:var(--panel);padding:4px 10px;font-size:14px;font-weight:600;display:flex;gap:8px;align-items:center;border:1px solid transparent}
+.kf.me{border-color:rgba(255,77,64,.8)}
+.kf em{font-style:normal;color:var(--muted);font-size:12px;letter-spacing:.04em}
+.kf b{color:var(--danger);font-size:11px;letter-spacing:.08em}
+.c-kt{color:var(--kt)} .c-te{color:var(--te)}
+#cross{position:absolute;left:50%;top:50%;width:0;height:0;--g:5px}
+#cross i{position:absolute;background:var(--cross);box-shadow:0 0 0 1px rgba(0,0,0,.6)}
+#cross .u{width:2px;height:8px;left:-1px;top:calc(-1 * (var(--g) + 8px))}
+#cross .d{width:2px;height:8px;left:-1px;top:var(--g)}
+#cross .l{width:8px;height:2px;top:-1px;left:calc(-1 * (var(--g) + 8px))}
+#cross .r{width:8px;height:2px;top:-1px;left:var(--g)}
+#pick{position:absolute;left:50%;top:calc(50% + 70px);transform:translateX(-50%);font-size:15px;font-weight:600;background:var(--panel);padding:6px 14px;border:1px solid var(--line);white-space:nowrap}
+#speedo{position:absolute;left:50%;bottom:calc(14px + var(--ib));transform:translateX(-50%);display:flex;align-items:baseline;gap:6px;background:var(--panel);padding:5px 14px 7px;min-width:110px;justify-content:center}
+#speedo b{font-size:28px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;min-width:2.2ch;text-align:right}
+#speedo small{font-size:11px;letter-spacing:.12em;color:var(--muted)}
+#speedo.fast b{color:var(--sand)}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+#tPick{right:calc(196px + var(--ir));bottom:calc(120px + var(--ib));border-color:var(--sand)}
+#xhair{position:absolute;left:50%;top:50%;width:160px;height:160px;margin:-80px 0 0 -80px;text-shadow:none}
+.card.xh-card{width:min(100%,720px);gap:14px}
+#xhPrev{display:block;width:100%;height:110px;border:1px solid var(--line)}
+.xh-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px 22px}
+.seg2{grid-template-columns:repeat(2,1fr)}
+.swatches{display:flex;flex-wrap:wrap;gap:8px}
+.sw{width:30px;height:30px;border-radius:50%;border:2px solid rgba(255,255,255,.2);background:var(--c);padding:0;position:relative}
+.sw[aria-pressed="true"]{border-color:#fff;box-shadow:0 0 0 2px var(--ink),0 0 0 4px var(--sand)}
+.sw.custom{background:conic-gradient(#ff4d4d,#ffe14d,#8dff70,#4dfff0,#4da6ff,#ff6bd6,#ff4d4d);overflow:hidden;cursor:pointer}
+.sw.custom input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.checks{display:flex;flex-direction:column;gap:8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:rgba(255,255,255,.04);border:1px solid var(--line);padding:7px 14px;font-family:var(--f-display);font-weight:600;letter-spacing:.04em}
+.chip:hover{border-color:var(--sand)}
+.code-row{display:flex;gap:6px;flex-wrap:wrap}
+.code-row input{flex:1 1 220px;min-width:0;background:rgba(0,0,0,.35);border:1px solid var(--line);color:var(--text);padding:10px;font-family:ui-monospace,Consolas,monospace;font-size:12px}
+.code-row .ghost{padding:10px 14px}
+.xh-msg{color:var(--sand);min-height:1em;font-size:12px}
+input[type=range]:disabled{opacity:.35}
+#hitmark{position:absolute;left:50%;top:50%;width:0;height:0;opacity:0}
+#hitmark i{position:absolute;width:12px;height:2px;background:#fff;left:-6px;top:-1px}
+#hitmark i:nth-child(1){transform:rotate(45deg) translateX(11px)}
+#hitmark i:nth-child(2){transform:rotate(135deg) translateX(11px)}
+#hitmark i:nth-child(3){transform:rotate(225deg) translateX(11px)}
+#hitmark i:nth-child(4){transform:rotate(315deg) translateX(11px)}
+#hitmark.on{animation:hm .28s ease-out}
+#hitmark.head i{background:var(--danger)}
+@keyframes hm{from{opacity:1}to{opacity:0}}
+#scope{position:absolute;inset:0;background:radial-gradient(circle at center,transparent 0,transparent calc(min(42vh,42vw) - 1px),#000 min(42vh,42vw))}
+#scope::before,#scope::after{content:"";position:absolute;background:#000}
+#scope::before{left:0;right:0;top:50%;height:2px;margin-top:-1px}
+#scope::after{top:0;bottom:0;left:50%;width:2px;margin-left:-1px}
+#vitals{position:absolute;left:calc(14px + var(--il));bottom:calc(14px + var(--ib));display:flex;gap:6px}
+.v{background:var(--panel);padding:6px 14px 8px;display:flex;align-items:baseline;gap:8px;font-size:32px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.v b{color:var(--sand);font-size:20px}
+.v small{font-size:10px;letter-spacing:.16em;color:var(--muted);font-weight:600}
+.v.low span{color:var(--danger)}
+#ammo{position:absolute;right:calc(14px + var(--ir));bottom:calc(14px + var(--ib));background:var(--panel);padding:8px 16px 10px;text-align:right;min-width:150px}
+#wName{font-size:12px;letter-spacing:.16em;color:var(--muted);text-transform:uppercase;font-weight:600}
+#ammoNum{font-size:34px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
+#ammoNum small{font-size:18px;color:var(--muted)}
+#slots{display:flex;gap:4px;justify-content:flex-end;margin-top:6px}
+#slots span{font-size:11px;padding:1px 6px;border:1px solid var(--line);color:var(--muted)}
+#slots span.on{color:var(--ink);background:var(--sand);border-color:var(--sand)}
+#center{position:absolute;left:50%;top:24%;transform:translateX(-50%);text-align:center;width:min(92vw,720px)}
+#center h3{margin:0;font-size:clamp(24px,4vw,42px);font-weight:700;letter-spacing:.02em;text-wrap:balance}
+#center p{margin:6px 0 0;font-size:15px;color:var(--muted);font-family:var(--f-body)}
+#center.kt h3{color:var(--kt)} #center.te h3{color:var(--te)}
+#hint{position:absolute;left:50%;bottom:calc(84px + var(--ib));transform:translateX(-50%);font-size:14px;color:var(--sand);background:var(--panel);padding:4px 12px;letter-spacing:.04em}
+#spec{position:absolute;left:50%;bottom:calc(120px + var(--ib));transform:translateX(-50%);font-size:15px;background:var(--panel);padding:6px 14px;text-align:center}
+#spec small{display:block;color:var(--muted);font-size:11px;letter-spacing:.08em}
+#dmg{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 50%,rgba(220,30,20,.6));opacity:0}
+#dirs{position:absolute;left:50%;top:50%;width:0;height:0}
+.ind{position:absolute;left:0;top:0;width:0;height:0;animation:fade 1s ease-out forwards}
+.ind::before{content:"";position:absolute;left:-28px;top:-150px;width:56px;height:14px;background:linear-gradient(to bottom,rgba(255,60,40,.95),rgba(255,60,40,0));clip-path:polygon(0 0,100% 0,70% 100%,30% 100%)}
+@keyframes fade{from{opacity:1}to{opacity:0}}
+
+/* ---------- Overlays ---------- */
+.overlay{position:fixed;inset:0;z-index:20;display:flex;padding-left:max(16px,var(--il));padding-right:max(16px,var(--ir));padding-block:calc(16px + var(--it)) calc(16px + var(--ib));overflow:auto;touch-action:auto}
+.eyebrow{font-family:var(--f-display);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--sand)}
+h2{font-family:var(--f-display);font-size:28px;margin:4px 0 0;font-weight:700}
+.primary{background:var(--sand);color:#1a140b;border:0;padding:14px 22px;font-family:var(--f-display);font-weight:700;font-size:17px;letter-spacing:.12em}
+.primary:hover{background:#f0d6a4}
+.ghost{background:transparent;border:1px solid var(--line);padding:13px 20px;font-family:var(--f-display);font-weight:600;letter-spacing:.08em}
+.ghost:hover{border-color:var(--sand)}
+.menu{background:linear-gradient(90deg,rgba(12,15,18,.94) 0%,rgba(12,15,18,.78) 46%,rgba(12,15,18,.12) 100%);align-items:center}
+.menu-grid{display:grid;grid-template-columns:minmax(0,520px);gap:24px;margin-left:clamp(0px,5vw,72px);margin-block:auto}
+@media (min-width:1100px){
+  .menu-grid{grid-template-columns:minmax(0,500px) minmax(0,300px);column-gap:56px;align-items:end}
+  .brand{grid-column:1 / 3}
+  .menu-grid .keys{grid-template-columns:1fr;border-top:0;border-left:1px solid var(--line);padding:0 0 0 24px}
+}
+.brand h1{font-family:var(--f-display);font-size:clamp(60px,10vw,112px);line-height:.86;margin:10px 0 0;color:var(--sand);letter-spacing:-.01em;font-weight:700}
+.brand h1 span{display:block;font-size:.34em;letter-spacing:.32em;color:var(--text);margin-top:10px;font-weight:600}
+.lede{max-width:46ch;line-height:1.55;color:#d6cfbf;font-size:16px;margin:16px 0 0}
+.setup{display:flex;flex-direction:column;gap:18px}
+.field{display:flex;flex-direction:column;gap:8px}
+.label{font-family:var(--f-display);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between}
+.label output{color:var(--text)}
+.teams{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.team{background:var(--panel);border:1px solid var(--line);padding:12px 14px;text-align:left;display:flex;flex-direction:column;gap:2px}
+.team b{font-family:var(--f-display);font-size:22px}
+.team span{font-weight:600}
+.team small{color:var(--muted);font-size:12px}
+.team.kt b{color:var(--kt)} .team.te b{color:var(--te)}
+.team[aria-pressed="true"].kt{border-color:var(--kt);box-shadow:inset 0 0 0 1px var(--kt)}
+.team[aria-pressed="true"].te{border-color:var(--te);box-shadow:inset 0 0 0 1px var(--te)}
+.maps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.map{background:var(--panel);border:1px solid var(--line);padding:9px 12px;text-align:left;display:flex;flex-direction:column;gap:2px;min-width:0}
+.map b{font-family:var(--f-display);font-size:16px}
+.map small{color:var(--muted);font-size:11.5px;line-height:1.3}
+.map[aria-pressed="true"]{border-color:var(--sand);box-shadow:inset 0 0 0 1px var(--sand)}
+.map[aria-pressed="true"] b{color:var(--sand)}
+.check{display:flex;gap:10px;align-items:center;font-size:13px;color:#d6cfbf}
+.check input{accent-color:var(--sand);width:16px;height:16px}
+#vig{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 58%,rgba(0,0,0,.38) 100%)}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line)}
+.seg button{background:transparent;border:0;padding:10px;font-family:var(--f-display);font-weight:600;letter-spacing:.06em}
+.seg button[aria-pressed="true"]{background:var(--sand);color:#1a140b}
+input[type=range]{width:100%;accent-color:var(--sand)}
+.keys{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 18px;font-size:13px;color:#cfc8b8;border-top:1px solid var(--line);padding-top:16px}
+.keys div{display:flex;gap:10px;align-items:center}
+kbd{font-family:var(--f-display);font-size:11px;min-width:24px;text-align:center;padding:2px 6px;border:1px solid var(--line);border-bottom-width:2px;color:var(--text);background:rgba(255,255,255,.04)}
+.dim{background:rgba(8,10,12,.72);align-items:flex-start;justify-content:center}
+.dim>.card{margin-block:auto}
+.card{background:var(--panel-solid);border:1px solid var(--line);padding:24px;width:min(100%,420px);display:flex;flex-direction:column;gap:18px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row>*{flex:1}
+.buy{align-items:center;justify-content:center;background:rgba(8,10,12,.45)}
+.buy-card{background:rgba(18,21,25,.96);border:1px solid var(--line);width:min(100%,760px);padding:20px;display:flex;flex-direction:column;gap:16px}
+.buy-card header{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.wallet{font-family:var(--f-display);font-size:30px;font-weight:700;color:var(--money)}
+.buy-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.item{background:rgba(255,255,255,.03);border:1px solid var(--line);padding:12px;text-align:left;display:grid;grid-template-columns:auto 1fr auto;gap:4px 10px;align-items:baseline}
+.item:hover:not(:disabled){border-color:var(--sand);background:rgba(227,197,142,.08)}
+.item:disabled{opacity:.38;cursor:not-allowed}
+.item kbd{grid-row:span 2}
+.item .nm{font-family:var(--f-display);font-weight:700;font-size:16px}
+.item .pr{font-family:var(--f-display);color:var(--money);font-weight:600}
+.item .st{grid-column:2 / 4;font-size:12px;color:var(--muted)}
+.item.owned{border-color:rgba(147,232,111,.5)}
+.buy-card footer{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:13px}
+.board{align-items:flex-start;justify-content:center;pointer-events:none;background:rgba(8,10,12,.35)}
+.board-card{margin-top:8vh;background:rgba(18,21,25,.94);border:1px solid var(--line);padding:18px;width:min(100%,820px);display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}
+.board-card h4{font-family:var(--f-display);margin:0 0 8px;font-size:18px;display:flex;justify-content:space-between}
+table{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+th{font-family:var(--f-display);font-size:11px;letter-spacing:.12em;color:var(--muted);text-align:right;font-weight:600;padding:4px 6px}
+th:first-child,td:first-child{text-align:left}
+td{padding:5px 6px;text-align:right;border-top:1px solid rgba(255,255,255,.06)}
+tr.dead td{opacity:.45}
+tr.me td{color:var(--sand);font-weight:600}
+.over{background:rgba(8,10,12,.82);align-items:center;justify-content:center}
+.over .card{width:min(100%,460px)}
+.over h2{font-size:36px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stats div{border:1px solid var(--line);padding:10px;display:flex;flex-direction:column;gap:2px}
+.stats b{font-family:var(--f-display);font-size:26px}
+.stats small{color:var(--muted);font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+
+/* ---------- Touch ---------- */
+#touch{position:fixed;inset:0;z-index:5}
+#stickZone{position:absolute;left:0;bottom:0;width:45%;height:60%}
+#lookZone{position:absolute;right:0;top:0;width:55%;height:100%}
+#stickBase{position:absolute;width:120px;height:120px;border-radius:50%;border:2px solid rgba(227,197,142,.35);background:rgba(10,12,14,.25);left:calc(30px + var(--il));bottom:calc(40px + var(--ib))}
+#stickKnob{position:absolute;width:52px;height:52px;border-radius:50%;background:rgba(227,197,142,.5);left:34px;top:34px}
+.tb{position:absolute;border-radius:50%;border:2px solid rgba(227,197,142,.45);background:rgba(10,12,14,.45);font-family:var(--f-display);font-size:12px;font-weight:700;letter-spacing:.06em;width:58px;height:58px;display:flex;align-items:center;justify-content:center;touch-action:none}
+.tb.on{background:rgba(227,197,142,.5);color:#1a140b}
+#tFire{width:84px;height:84px;right:calc(26px + var(--ir));bottom:calc(120px + var(--ib));border-color:rgba(255,77,64,.7);font-size:14px}
+#tJump{right:calc(124px + var(--ir));bottom:calc(60px + var(--ib))}
+#tCrouch{right:calc(196px + var(--ir));bottom:calc(30px + var(--ib))}
+#tReload{right:calc(124px + var(--ir));bottom:calc(140px + var(--ib))}
+#tSwap{right:calc(26px + var(--ir));bottom:calc(220px + var(--ib))}
+#tScope{right:calc(110px + var(--ir));bottom:calc(220px + var(--ib))}
+#tBuy{right:calc(26px + var(--ir));top:calc(200px + var(--it))}
+#tPause{right:calc(96px + var(--ir));top:calc(200px + var(--it))}
+@media (max-width:640px){
+  #speedo{bottom:auto;top:calc(64px + var(--it));min-width:0;padding:3px 10px}
+  #speedo b{font-size:18px}
+  #radar{width:120px;height:120px}
+  #money{top:calc(142px + var(--it));font-size:18px}
+  #feed{display:none}
+  .v{font-size:22px;padding:5px 10px}
+  #ammoNum{font-size:24px}
+  #ammo{min-width:0;padding:6px 10px}
+  #top .sc{min-width:48px;font-size:18px}
+  #timer{font-size:18px;min-width:64px;padding:4px 10px}
+  .keys{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){.ind,#hitmark.on{animation-duration:.01s}}
+</style>
+</head>
+<body>
+
+<div id="view"></div>
+
+<div class="hud" id="hud" hidden>
+  <div id="vig"></div>
+  <canvas id="radar"></canvas>
+  <div id="money">$<span id="moneyV">800</span><span id="moneyPop"></span></div>
+  <div id="top">
+    <div class="sc kt"><span id="scKT">0</span><div class="pips" id="pipKT"></div></div>
+    <div id="timer">1:55</div>
+    <div class="sc te"><span id="scT">0</span><div class="pips" id="pipT"></div></div>
+  </div>
+  <div id="feed"></div>
+  <div id="dmg"></div>
+  <div id="dirs"></div>
+  <div id="scope" hidden></div>
+  <canvas id="xhair"></canvas>
+  <div id="hitmark"><i></i><i></i><i></i><i></i></div>
+  <div id="center" hidden><h3 id="centerH"></h3><p id="centerP"></p></div>
+  <div id="hint" hidden></div>
+  <div id="pick" hidden></div>
+  <div id="speedo" hidden><b id="spdV">0</b><small>km/soat</small></div>
+  <div id="spec" hidden></div>
+  <div id="vitals">
+    <div class="v" id="hpBox"><b>+</b><span id="hpV">100</span><small>SOG‘LIQ</small></div>
+    <div class="v"><b>◆</b><span id="arV">0</span><small>ZIRH</small></div>
+  </div>
+  <div id="ammo"><div id="wName">USP-S</div><div id="ammoNum"><span id="magV">12</span> <small>/ <span id="resV">24</span></small></div><div id="slots"></div></div>
+</div>
+
+<div id="touch" hidden>
+  <div id="stickZone"><div id="stickBase"><div id="stickKnob"></div></div></div>
+  <div id="lookZone"></div>
+  <button class="tb" id="tFire" type="button">OTISH</button>
+  <button class="tb" id="tJump" type="button">SAKRA</button>
+  <button class="tb" id="tCrouch" type="button">CHO‘K</button>
+  <button class="tb" id="tReload" type="button">O‘Q</button>
+  <button class="tb" id="tSwap" type="button">QUROL</button>
+  <button class="tb" id="tScope" type="button">OPTIKA</button>
+  <button class="tb" id="tBuy" type="button">$</button>
+  <button class="tb" id="tPause" type="button">II</button>
+  <button class="tb" id="tPick" type="button" hidden>OLISH</button>
+</div>
+
+<section id="menu" class="overlay menu">
+  <div class="menu-grid">
+    <div class="brand">
+      <div class="eyebrow">de_qumtepa · 5 × 5 · 8 g‘alabagacha</div>
+      <h1>KONTR<span>QUMTEPA</span></h1>
+      <p class="lede">Qumtepa ko‘chalarida raundma-raund jang. Har raund boshida pul bilan qurol va zirh oling. Terroristlar raqibni butunlay yo‘q qilishi kerak, kontr-terroristlar esa vaqt tugaguncha omon qolsa ham yutadi.</p>
+    </div>
+    <div class="setup">
+      <div class="field"><span class="label">Xarita</span>
+        <div class="maps" id="maps"></div>
+      </div>
+      <div class="field"><span class="label">Jamoa</span>
+        <div class="teams">
+          <button class="team kt" data-team="KT" type="button"><b>KT</b><span>Kontr-terroristlar</span><small>M4A1-S · USP-S</small></button>
+          <button class="team te" data-team="T" type="button"><b>T</b><span>Terroristlar</span><small>AK-47 · Glock-18</small></button>
+        </div>
+      </div>
+      <div class="field"><span class="label">Botlar darajasi</span>
+        <div class="seg" id="diffSeg"><button data-d="0" type="button">Oson</button><button data-d="1" type="button">O‘rta</button><button data-d="2" type="button">Qiyin</button></div>
+      </div>
+      <div class="pair">
+        <label class="field" for="allies"><span class="label">Ittifoqchi botlar <output id="alliesOut">4</output></span><input type="range" id="allies" min="0" max="9" step="1"></label>
+        <label class="field" for="enemies"><span class="label">Raqib botlar <output id="enemiesOut">5</output></span><input type="range" id="enemies" min="1" max="10" step="1"></label>
+      </div>
+      <label class="field" for="sens"><span class="label">Sichqoncha sezgirligi <output id="sensOut">1.00</output></span><input type="range" id="sens" min="0.2" max="3" step="0.05"></label>
+      <button id="xhBtn" class="ghost" type="button">Pritselni sozlash</button>
+      <label class="check" for="spdChk"><input type="checkbox" id="spdChk"> Tezlikni ko‘rsatish (km/soat)</label>
+      <label class="check" for="fsChk"><input type="checkbox" id="fsChk"> To‘liq ekranda o‘ynash (Ctrl+W tabni yopib qo‘ymasligi uchun)</label>
+      <button id="startBtn" class="primary" type="button">O‘YINGA KIRISH</button>
+    </div>
+    <div class="keys">
+      <div><kbd>W A S D</kbd>Yurish</div>
+      <div><kbd>Sichq.</kbd>Nishon va otish</div>
+      <div><kbd>O‘ng</kbd>AWP optikasi</div>
+      <div><kbd>R</kbd>Qayta o‘qlash</div>
+      <div><kbd>1–4</kbd>Qurol tanlash</div>
+      <div><kbd>Q</kbd>Oldingi qurol</div>
+      <div><kbd>B</kbd>Xarid menyusi</div>
+      <div><kbd>E</kbd>Yerdagi qurolni olish / almashtirish</div>
+      <div><kbd>G</kbd>Qo‘ldagi qurolni tashlash</div>
+      <div><kbd>Space</kbd>Bosib turing: bunnyhop, tezlik oshadi</div>
+      <div><kbd>Shift</kbd>Sekin yurish</div>
+      <div><kbd>Ctrl</kbd>Cho‘kkalash (yoki <kbd>C</kbd>)</div>
+      <div><kbd>Tab</kbd>Hisob jadvali</div>
+      <div><kbd>Esc</kbd>Pauza</div>
+    </div>
+  </div>
+</section>
+
+<section id="pause" class="overlay dim" hidden>
+  <div class="card">
+    <div><div class="eyebrow">Pauza</div><h2>O‘yin to‘xtatildi</h2></div>
+    <label class="field" for="sens2"><span class="label">Sichqoncha sezgirligi <output id="sensOut2">1.00</output></span><input type="range" id="sens2" min="0.2" max="3" step="0.05"></label>
+    <button id="xhBtn2" class="ghost" type="button">Pritselni sozlash</button>
+    <div class="row"><button id="resumeBtn" class="primary" type="button">DAVOM ETISH</button><button id="quitBtn" class="ghost" type="button">Bosh menyu</button></div>
+  </div>
+</section>
+
+<section id="xhSet" class="overlay dim" hidden>
+  <div class="card xh-card">
+    <div><div class="eyebrow">Sozlamalar</div><h2>Pritsel</h2></div>
+    <canvas id="xhPrev" aria-label="Pritsel ko‘rinishi: osmon, qum va qorong‘i fonda"></canvas>
+    <div class="xh-grid">
+      <div class="field"><span class="label">Uslub</span>
+        <div class="seg seg2" id="xhStyle"><button type="button" data-s="dynamic">Dinamik</button><button type="button" data-s="static">Statik</button></div>
+      </div>
+      <div class="field"><span class="label">Rang</span><div class="swatches" id="xhColors"></div></div>
+      <label class="field" for="xh_len"><span class="label">Uzunlik <output id="xh_lenO"></output></span><input type="range" id="xh_len" min="0" max="20" step="0.5"></label>
+      <label class="field" for="xh_thick"><span class="label">Qalinlik <output id="xh_thickO"></output></span><input type="range" id="xh_thick" min="0.5" max="6" step="0.5"></label>
+      <label class="field" for="xh_gap"><span class="label">Oraliq <output id="xh_gapO"></output></span><input type="range" id="xh_gap" min="-5" max="15" step="0.5"></label>
+      <label class="field" for="xh_alpha"><span class="label">Ko‘rinish <output id="xh_alphaO"></output></span><input type="range" id="xh_alpha" min="20" max="100" step="5"></label>
+      <label class="field" for="xh_outlineW"><span class="label">Kontur qalinligi <output id="xh_outlineWO"></output></span><input type="range" id="xh_outlineW" min="0.5" max="3" step="0.5"></label>
+      <div class="field"><span class="label">Qo‘shimcha</span>
+        <div class="checks">
+          <label class="check" for="xh_outline"><input type="checkbox" id="xh_outline"> Qora kontur</label>
+          <label class="check" for="xh_dot"><input type="checkbox" id="xh_dot"> Markaziy nuqta</label>
+          <label class="check" for="xh_tee"><input type="checkbox" id="xh_tee"> T-shakl (tepasi yo‘q)</label>
+        </div>
+      </div>
+    </div>
+    <div class="field"><span class="label">Tayyor shablonlar</span><div class="chips" id="xhPresets"></div></div>
+    <div class="field"><span class="label">Ulashish kodi</span>
+      <div class="code-row"><input type="text" id="xhCode" spellcheck="false" aria-label="Pritsel kodi"><button id="xhCopy" class="ghost" type="button">Nusxalash</button><button id="xhApply" class="ghost" type="button">Qo‘llash</button></div>
+      <small id="xhMsg" class="xh-msg" aria-live="polite"></small>
+    </div>
+    <div class="row"><button id="xhReset" class="ghost" type="button">Standartga qaytarish</button><button id="xhDone" class="primary" type="button">TAYYOR</button></div>
+  </div>
+</section>
+
+<section id="buy" class="overlay buy" hidden>
+  <div class="buy-card">
+    <header><div><div class="eyebrow">Xarid menyusi</div><h2>Qurol-aslaha</h2></div><div class="wallet">$<span id="buyMoney">0</span></div></header>
+    <div class="buy-grid" id="buyGrid"></div>
+    <footer><span>Raqam tugmasi bilan tez xarid · B yoki Esc bilan yopish</span><span id="buyTime"></span></footer>
+    <button id="buyClose" class="ghost" type="button">Yopish va o‘yinga qaytish</button>
+  </div>
+</section>
+
+<section id="board" class="overlay board" hidden>
+  <div class="board-card" id="boardCard"></div>
+</section>
+
+<section id="over" class="overlay over" hidden>
+  <div class="card">
+    <div><div class="eyebrow" id="overEyebrow">O‘yin tugadi</div><h2 id="overTitle">G‘alaba</h2><p id="overSub" style="margin:6px 0 0;color:var(--muted)"></p></div>
+    <div class="stats"><div><b id="stK">0</b><small>Qotillik</small></div><div><b id="stD">0</b><small>O‘lim</small></div><div><b id="stR">0</b><small>K/D</small></div></div>
+    <div class="row"><button id="againBtn" class="primary" type="button">QAYTA O‘YNASH</button><button id="nextMapBtn" class="ghost" type="button">Keyingi xarita</button></div>
+    <button id="menuBtn" class="ghost" type="button">Bosh menyu</button>
+  </div>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="js/core.js"></script>
+<script src="js/maps.js"></script>
+<script src="js/textures.js"></script>
+<script src="js/world.js"></script>
+<script src="js/models.js"></script>
+<script src="js/guns.js"></script>
+<script src="js/crosshair.js"></script>
+<script src="js/fx.js"></script>
+<script src="js/agents.js"></script>
+<script src="js/drops.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
