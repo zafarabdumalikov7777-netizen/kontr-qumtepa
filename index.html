@@ -67,6 +67,22 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--sand);outline-o
 #cross .d{width:2px;height:8px;left:-1px;top:var(--g)}
 #cross .l{width:8px;height:2px;top:-1px;left:calc(-1 * (var(--g) + 8px))}
 #cross .r{width:8px;height:2px;top:-1px;left:var(--g)}
+#fps{position:absolute;right:calc(14px + var(--ir));top:calc(10px + var(--it));font-size:12px;font-weight:600;letter-spacing:.04em;background:var(--panel);padding:3px 8px;font-variant-numeric:tabular-nums}
+#fps.ok{color:var(--money)} #fps.mid{color:var(--sand)} #fps.low{color:var(--danger)}
+#feed{top:calc(42px + var(--it))!important}
+#streak{position:absolute;left:50%;top:32%;transform:translateX(-50%);font-size:clamp(32px,6vw,58px);font-weight:700;color:var(--sand);letter-spacing:.06em;text-shadow:0 2px 12px rgba(0,0,0,.6)}
+#streak.small{font-size:22px;color:var(--danger);top:36%}
+#streak.on{animation:pop .35s ease-out}
+@keyframes pop{from{transform:translateX(-50%) scale(1.5);opacity:0}to{transform:translateX(-50%) scale(1);opacity:1}}
+#prog{position:absolute;left:50%;top:calc(50% + 110px);transform:translateX(-50%);width:min(80vw,300px);background:var(--panel);padding:8px 12px;text-align:center;font-size:13px}
+#prog .bar{height:6px;background:rgba(255,255,255,.12);margin-top:6px}
+#prog i{display:block;height:100%;width:0;background:var(--sand)}
+#flashO{position:absolute;inset:0;background:#fff;opacity:0}
+#timer.bomb{color:var(--danger);animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:.55}}
+.c4tag{color:var(--danger);font-size:10px;letter-spacing:.08em}
+.kittag{color:var(--kt);font-size:10px;letter-spacing:.08em}
+.note{color:var(--muted);font-size:12px}
 #pick{position:absolute;left:50%;top:calc(50% + 70px);transform:translateX(-50%);font-size:15px;font-weight:600;background:var(--panel);padding:6px 14px;border:1px solid var(--line);white-space:nowrap}
 #speedo{position:absolute;left:50%;bottom:calc(14px + var(--ib));transform:translateX(-50%);display:flex;align-items:baseline;gap:6px;background:var(--panel);padding:5px 14px 7px;min-width:110px;justify-content:center}
 #speedo b{font-size:28px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;min-width:2.2ch;text-align:right}
@@ -267,6 +283,10 @@ tr.me td{color:var(--sand);font-weight:600}
   <div id="center" hidden><h3 id="centerH"></h3><p id="centerP"></p></div>
   <div id="hint" hidden></div>
   <div id="pick" hidden></div>
+  <div id="fps" hidden></div>
+  <div id="streak" hidden></div>
+  <div id="prog" hidden><span id="progL"></span><div class="bar"><i id="progF"></i></div></div>
+  <div id="flashO"></div>
   <div id="speedo" hidden><b id="spdV">0</b><small>km/soat</small></div>
   <div id="spec" hidden></div>
   <div id="vitals">
@@ -301,6 +321,9 @@ tr.me td{color:var(--sand);font-weight:600}
       <div class="field"><span class="label">Xarita</span>
         <div class="maps" id="maps"></div>
       </div>
+      <div class="field"><span class="label">Rejim</span>
+        <div class="seg seg2" id="modeSeg"><button data-m="comp" type="button">Raqobat (C4 bomba)</button><button data-m="dm" type="button">Deathmatch</button></div>
+      </div>
       <div class="field"><span class="label">Jamoa</span>
         <div class="teams">
           <button class="team kt" data-team="KT" type="button"><b>KT</b><span>Kontr-terroristlar</span><small>M4A1-S · USP-S</small></button>
@@ -315,8 +338,7 @@ tr.me td{color:var(--sand);font-weight:600}
         <label class="field" for="enemies"><span class="label">Raqib botlar <output id="enemiesOut">5</output></span><input type="range" id="enemies" min="1" max="10" step="1"></label>
       </div>
       <label class="field" for="sens"><span class="label">Sichqoncha sezgirligi <output id="sensOut">1.00</output></span><input type="range" id="sens" min="0.2" max="3" step="0.05"></label>
-      <button id="xhBtn" class="ghost" type="button">Pritselni sozlash</button>
-      <label class="check" for="spdChk"><input type="checkbox" id="spdChk"> Tezlikni ko‘rsatish (km/soat)</label>
+      <div class="pair"><button id="xhBtn" class="ghost" type="button">Pritsel</button><button id="setBtn" class="ghost" type="button">Sozlamalar</button></div>
       <label class="check" for="fsChk"><input type="checkbox" id="fsChk"> To‘liq ekranda o‘ynash (Ctrl+W tabni yopib qo‘ymasligi uchun)</label>
       <button id="startBtn" class="primary" type="button">O‘YINGA KIRISH</button>
     </div>
@@ -328,8 +350,11 @@ tr.me td{color:var(--sand);font-weight:600}
       <div><kbd>1–4</kbd>Qurol tanlash</div>
       <div><kbd>Q</kbd>Oldingi qurol</div>
       <div><kbd>B</kbd>Xarid menyusi</div>
-      <div><kbd>E</kbd>Yerdagi qurolni olish / almashtirish</div>
-      <div><kbd>G</kbd>Qo‘ldagi qurolni tashlash</div>
+      <div><kbd>E</kbd>Qurol olish · bosib turish — bombani zararsizlantirish</div>
+      <div><kbd>G</kbd>Qo‘ldagi qurolni (yoki bombani) tashlash</div>
+      <div><kbd>4</kbd>Granatalar (qayta bosing — keyingisi)</div>
+      <div><kbd>5</kbd>C4 bomba (sichqonchani bosib turing)</div>
+      <div><kbd>F</kbd>Qurolni ko‘zdan kechirish</div>
       <div><kbd>Space</kbd>Bosib turing: bunnyhop, tezlik oshadi</div>
       <div><kbd>Shift</kbd>Sekin yurish</div>
       <div><kbd>Ctrl</kbd>Cho‘kkalash (yoki <kbd>C</kbd>)</div>
@@ -343,8 +368,28 @@ tr.me td{color:var(--sand);font-weight:600}
   <div class="card">
     <div><div class="eyebrow">Pauza</div><h2>O‘yin to‘xtatildi</h2></div>
     <label class="field" for="sens2"><span class="label">Sichqoncha sezgirligi <output id="sensOut2">1.00</output></span><input type="range" id="sens2" min="0.2" max="3" step="0.05"></label>
-    <button id="xhBtn2" class="ghost" type="button">Pritselni sozlash</button>
+    <div class="pair"><button id="xhBtn2" class="ghost" type="button">Pritsel</button><button id="setBtn2" class="ghost" type="button">Sozlamalar</button></div>
     <div class="row"><button id="resumeBtn" class="primary" type="button">DAVOM ETISH</button><button id="quitBtn" class="ghost" type="button">Bosh menyu</button></div>
+  </div>
+</section>
+
+<section id="setPanel" class="overlay dim" hidden>
+  <div class="card">
+    <div><div class="eyebrow">Sozlamalar</div><h2>O‘yin sozlamalari</h2></div>
+    <div class="field"><span class="label">Grafika sifati</span>
+      <div class="seg" id="setQuality"><button type="button" data-v="0">Past</button><button type="button" data-v="1">O‘rta</button><button type="button" data-v="2">Yuqori</button></div>
+      <small class="note">Past — soyasiz, eng tez · Yuqori — aniq soyalar, kuchli kompyuter uchun</small>
+    </div>
+    <label class="field" for="setFov"><span class="label">Ko‘rish burchagi (FOV) <output id="setFovO"></output></span><input type="range" id="setFov" min="55" max="95" step="1"></label>
+    <label class="field" for="setVol"><span class="label">Ovoz balandligi <output id="setVolO"></output></span><input type="range" id="setVol" min="0" max="1" step="0.05"></label>
+    <div class="field"><span class="label">Qurol qaysi qo‘lda</span>
+      <div class="seg seg2" id="setHand"><button type="button" data-v="right">O‘ng</button><button type="button" data-v="left">Chap</button></div>
+    </div>
+    <div class="checks">
+      <label class="check" for="setFps"><input type="checkbox" id="setFps"> FPS ko‘rsatkichi</label>
+      <label class="check" for="setSpeedo"><input type="checkbox" id="setSpeedo"> Tezlik (km/soat)</label>
+    </div>
+    <button id="setDone" class="primary" type="button">TAYYOR</button>
   </div>
 </section>
 
@@ -412,6 +457,10 @@ tr.me td{color:var(--sand);font-weight:600}
 <script src="js/fx.js"></script>
 <script src="js/agents.js"></script>
 <script src="js/drops.js"></script>
+<script src="js/utility.js"></script>
+<script src="js/bomb.js"></script>
+<script src="js/modes.js"></script>
+<script src="js/extras.js"></script>
 <script src="js/game.js"></script>
 </body>
 </html>

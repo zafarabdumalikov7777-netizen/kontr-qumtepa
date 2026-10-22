@@ -39,7 +39,12 @@ const GMAT_DEF = {
   knuckle: { color: 0x3a3631, metalness: 0, roughness: 0.7 },
   sleeve_KT: { color: 0x2f4058, metalness: 0, roughness: 0.9 },
   sleeve_T: { color: 0x6b5839, metalness: 0, roughness: 0.92 },
-  olivedrab: { color: 0x4f5a34, metalness: 0.1, roughness: 0.6 }
+  olivedrab: { color: 0x4f5a34, metalness: 0.1, roughness: 0.6 },
+  smokecan: { color: 0x59606a, metalness: 0.5, roughness: 0.45 },
+  flashcan: { color: 0x8c9196, metalness: 0.75, roughness: 0.3 },
+  clay: { color: 0xb6a479, metalness: 0, roughness: 0.85 },
+  tape: { color: 0x26292c, metalness: 0, roughness: 0.6 },
+  lcd: { color: 0x2f5f2a, metalness: 0.2, roughness: 0.2 }
 };
 const GMAT = {};
 const gmat = n => GMAT[n] || (GMAT[n] = new THREE.MeshStandardMaterial(Object.assign({}, GMAT_DEF[n], { color: lin(GMAT_DEF[n].color), envMap: gunEnv, envMapIntensity: 0.9 })));
@@ -187,8 +192,28 @@ const GUNS = {
     slab(g, st, [[0.02, 0.056], [0.04, 0.056], ['q', 0.06, 0.04, 0.062, -0.02], [0.056, -0.02], ['q', 0.054, 0.03, 0.02, 0.05]], 0.016);
     const pin = new THREE.Mesh(new THREE.TorusGeometry(0.014, 0.0022, 6, 16), st); pin.position.set(0.02, 0.058, -0.03); pin.rotation.y = 0.6; g.add(pin);
     return { mz: 0.05, he: true };
+  },
+  smoke(g) { return canister(g, 'smokecan', 0.034, 0.12); },
+  flash(g) { return canister(g, 'flashcan', 0.026, 0.11); },
+  c4(g) {
+    const clay = gmat('clay'), tape = gmat('tape'), st = gmat('steel');
+    slab(g, clay, [[-0.1, -0.05], [0.1, -0.05], ['q', 0.112, -0.05, 0.112, -0.036], [0.112, 0.02], ['q', 0.112, 0.032, 0.1, 0.032], [-0.1, 0.032], ['q', -0.112, 0.032, -0.112, 0.02], [-0.112, -0.036], ['q', -0.112, -0.05, -0.1, -0.05]], 0.11);
+    for (const x of [-0.06, 0.06]) slab(g, tape, [[x - 0.012, -0.052], [x + 0.012, -0.052], [x + 0.012, 0.034], [x - 0.012, 0.034]], 0.114);
+    slab(g, st, [[-0.045, 0.032], [0.045, 0.032], [0.045, 0.045], [-0.045, 0.045]], 0.07);
+    tiny(g, gmat('lcd'), 0.03, 0.004, 0.045, -0.02, 0.047);
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) tiny(g, gmat('poly'), 0.008, 0.005, 0.008, 0.012 + i * 0.011, 0.047, -0.016 + j * 0.011);
+    return { mz: 0.1, he: true };
   }
 };
+function canister(g, mat, r, h) {
+  const body = new THREE.Mesh(new THREE.LatheGeometry([[0, -h / 2], [r, -h / 2 + 0.004], [r, h / 2 - 0.004], [r * 0.8, h / 2], [0, h / 2]].map(([a, b]) => new THREE.Vector2(a, b)), 20), gmat(mat));
+  body.position.set(0, -0.02, -0.04); g.add(body);
+  const st = gmat('steel');
+  const fuze = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.014, 0.026, 14), st); fuze.position.set(0, h / 2 - 0.007, -0.04); g.add(fuze);
+  slab(g, st, [[0.02, h / 2 + 0.01], [0.04, h / 2 + 0.01], ['q', 0.055, h / 2 - 0.01, r + 0.03, -0.03], [r + 0.026, -0.03], ['q', 0.05, h / 2 - 0.02, 0.02, h / 2 + 0.004]], 0.014);
+  const pin = new THREE.Mesh(new THREE.TorusGeometry(0.013, 0.0022, 6, 16), st); pin.position.set(0.02, h / 2 + 0.012, -0.03); pin.rotation.y = 0.6; g.add(pin);
+  return { mz: 0.05, he: true };
+}
 function pistolBase(g, kind) {
   const sl = gmat(kind === 'usp' ? 'steel' : 'park'), pl = gmat('poly'), st = gmat('steel');
   const len = kind === 'usp' ? 0.16 : 0.15;

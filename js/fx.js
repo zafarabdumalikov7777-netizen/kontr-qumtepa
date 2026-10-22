@@ -8,7 +8,7 @@ const Snd = {
         const C = window.AudioContext || window.webkitAudioContext; if (!C) return;
         this.ctx = new C();
         const comp = this.ctx.createDynamicsCompressor(); comp.connect(this.ctx.destination);
-        this.master = this.ctx.createGain(); this.master.gain.value = 0.55; this.master.connect(comp);
+        this.master = this.ctx.createGain(); this.master.gain.value = settings.volume * 0.7; this.master.connect(comp);
         const len = this.ctx.sampleRate, buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate), d = buf.getChannelData(0);
         for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
         this.noise = buf;
@@ -167,7 +167,7 @@ function clearFx() {
 // ---------- First-person viewmodel ----------
 // [x, y, z, yaw] of the grip in front of the camera
 const VM_POS = { rifle: [0.15, -0.155, -0.47, 0], pistol: [0.135, -0.125, -0.42, 0.02], knife: [0.14, -0.13, -0.36, 0.22], he: [0.13, -0.11, -0.34, 0] };
-const VM_KIND = { ak: 'rifle', m4: 'rifle', awp: 'rifle', smg: 'rifle', pistol: 'pistol', usp: 'pistol', deagle: 'pistol', knife: 'knife', he: 'he' };
+const VM_KIND = { ak: 'rifle', m4: 'rifle', awp: 'rifle', smg: 'rifle', pistol: 'pistol', usp: 'pistol', deagle: 'pistol', knife: 'knife', he: 'he', smoke: 'he', flash: 'he', c4: 'he' };
 const flashMat = new THREE.SpriteMaterial({ map: texFlash, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true });
 const vmFlash = new THREE.Sprite(flashMat); vmFlash.scale.set(0.22, 0.22, 0.22); vmFlash.visible = false;
 const vm = {

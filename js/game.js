@@ -4,7 +4,7 @@ const game = { state: 'menu', round: 0, score: { KT: 0, T: 0 }, timer: 0, loss: 
 const ROUND_TIME = 115;
 const TEAM_NAME = { KT: 'Kontr-terroristlar', T: 'Terroristlar' };
 const els = {};
-['hud', 'moneyV', 'moneyPop', 'scKT', 'scT', 'pipKT', 'pipT', 'timer', 'feed', 'dmg', 'dirs', 'scope', 'hitmark', 'pick', 'speedo', 'spdV', 'tPick', 'center', 'centerH', 'centerP', 'hint', 'spec',
+['hud', 'moneyV', 'moneyPop', 'scKT', 'scT', 'pipKT', 'pipT', 'timer', 'feed', 'dmg', 'dirs', 'scope', 'hitmark', 'pick', 'speedo', 'spdV', 'tPick', 'prog', 'progF', 'progL', 'flashO', 'center', 'centerH', 'centerP', 'hint', 'spec',
  'hpV', 'hpBox', 'arV', 'wName', 'magV', 'resV', 'slots', 'menu', 'pause', 'buy', 'buyGrid', 'buyMoney', 'buyTime', 'board', 'boardCard', 'over', 'touch'].forEach(id => els[id] = document.getElementById(id));
 const input = { keys: {}, mouseDown: false, locked: false, fallback: false, touchMode: false, buyOpen: false, boardOpen: false };
 const touch = { mx: 0, my: 0, fire: false, jump: false, crouch: false };
@@ -23,22 +23,24 @@ function setupTeams(team) {
   bots.forEach(b => { if (b.team === 'KT') b.role = roles[r++ % roles.length]; });
 }
 function resetLoadout(a) {
-  a.armor = 0; a.helmet = false;
+  a.armor = 0; a.helmet = false; a.kit = false;
   if (a.isPlayer) {
-    a.inv = { 1: null, 2: wstate(pistolFor(a.team)), 3: { def: WEAPONS.knife }, 4: null };
+    a.inv = { 1: null, 2: wstate(pistolFor(a.team)), 3: { def: WEAPONS.knife }, 4: null, 5: null };
+    a.nades = { he: 0, flash: 0, smoke: 0 };
   } else { a.primary = null; a.pistol = wstate(pistolFor(a.team)); }
 }
 function spawnAll(first) {
   const sp = { KT: shuffle(cellsOf('S')), T: shuffle(cellsOf('T')) }, idx = { KT: 0, T: 0 };
   for (const a of agents) {
     if (first || !a.alive) resetLoadout(a);
-    a.alive = true; a.hp = 100; a.spotUntil = 0;
+    a.alive = true; a.hp = 100; a.spotUntil = 0; a.respawnT = 0; a.protectUntil = 0; a.blindUntil = 0; a.roundKills = 0;
     const c = sp[a.team][idx[a.team]++ % sp[a.team].length];
     a.pos.set(cxw(c.x) + rand(-0.6, 0.6), 0, czw(c.z) + rand(-0.6, 0.6));
     const face = a.team === 'KT' ? 0 : Math.PI; // bots: +z is forward
     if (a.isPlayer) {
       Object.assign(a, { yaw: a.team === 'KT' ? Math.PI : 0, pitch: 0, crouch: 0, reloadT: 0, switchT: 0, shots: 0, shotsF: 0, punchP: 0, punchY: 0, vpP: 0, vpY: 0, hops: 0, groundT: 0, scope: 0, scopeResume: 0, rescopeT: 0, cool: 0, deathT: 0, autoReload: false });
       for (const s of [1, 2]) if (a.inv[s]) { a.inv[s].mag = a.inv[s].def.mag; a.inv[s].res = a.inv[s].def.res; } // full ammo every round
+      a.inv[5] = null; syncNadeSlot();
       a.vel.set(0, 0, 0); a.slot = a.inv[1] ? 1 : 2; a.prevSlot = 3; vm.set(a.inv[a.slot].def, a.team);
       if (playerBody) { setGhost(playerBody, true); playerBody.fall = 1; playerBody.group.rotation.x = 0; }
     } else {
@@ -51,18 +53,29 @@ function spawnAll(first) {
 }
 function newMatch() {
   setupTeams(settings.team);
+  game.mode = settings.mode; dmCells = null;
   game.score = { KT: 0, T: 0 }; game.loss = { KT: 0, T: 0 }; game.round = 0; game.over = false; game.time = 0;
-  for (const a of agents) { a.money = 800; a.kills = 0; a.deaths = 0; }
+  for (const a of agents) { a.money = 800; a.kills = 0; a.deaths = 0; a.dmg = 0; a.hs = 0; }
+  player.dmPrimary = null; player.dmPistol = null;
   els.feed.innerHTML = '';
   startRound(true);
 }
 function startRound(first) {
   game.round++; game.state = 'freeze'; game.timer = first ? 6 : 5; game.tSite = Math.random() < 0.5 ? 'A' : 'B';
-  clearFx(); clearDrops(); nades.forEach(n => scene.remove(n.mesh)); nades.length = 0;
+  clearFx(); clearDrops(); clearUtility(); nades.forEach(n => scene.remove(n.mesh)); nades.length = 0;
   setSpectate(null);
   spawnAll(first);
-  for (const b of bots) { botBuy(b); planBot(b); }
-  showCenter(`Raund ${game.round}`, `Xarid vaqti · B tugmasi · ${game.score.KT}:${game.score.T}`, '', 2.5);
+  if (game.mode === 'dm') {
+    game.timer = 3;
+    for (const a of agents) dmLoadout(a);
+    player.slot = 1; vm.set(player.inv[1].def, player.team);
+    bombReset();
+    showCenter('Deathmatch', `${DM_TIME / 60} daqiqa · o‘lsangiz qayta tug‘ilasiz · B — bepul qurollar`, '', 3);
+  } else {
+    for (const b of bots) { botBuy(b); planBot(b); }
+    bombRoundStart();
+    showCenter(`Raund ${game.round}`, `Xarid vaqti · B tugmasi · ${game.score.KT}:${game.score.T}`, '', 2.5);
+  }
   updatePips(); Snd.chime(true);
 }
 function endRound(winner, reason) {
@@ -72,31 +85,35 @@ function endRound(winner, reason) {
   const loser = winner === 'KT' ? 'T' : 'KT';
   const bonus = 1400 + 500 * Math.min(4, game.loss[loser]);
   game.loss[loser]++; game.loss[winner] = 0;
-  for (const a of agents) a.money = Math.min(16000, a.money + (a.team === winner ? 3250 : bonus));
+  const winCash = reason === 'bomb' || reason === 'defuse' ? 3500 : 3250;
+  for (const a of agents) a.money = Math.min(16000, a.money + (a.team === winner ? winCash : bonus + (a.team === 'T' && bomb.wasPlanted ? 800 : 0)));
   if (game.score[winner] >= game.winTo) game.over = true;
-  showCenter(`${TEAM_NAME[winner]} g‘alaba qozondi`, reason === 'time' ? 'Vaqt tugadi — nuqtalar himoya qilindi' : 'Raqib jamoa butunlay yo‘q qilindi', winner === 'KT' ? 'kt' : 'te', 4.5);
+  const why = { time: 'Vaqt tugadi — nuqtalar himoya qilindi', elim: 'Raqib jamoa butunlay yo‘q qilindi', bomb: 'Bomba portladi', defuse: 'Bomba zararsizlantirildi' }[reason];
+  showCenter(`${TEAM_NAME[winner]} g‘alaba qozondi`, why, winner === 'KT' ? 'kt' : 'te', 4.5);
   Snd.chime(winner === player.team);
   closeBuy(false);
 }
 function checkRoundEnd() {
   updatePips();
-  if (game.state !== 'live') return;
+  if (game.state !== 'live' || game.mode === 'dm') return;
   const kt = agents.some(a => a.alive && a.team === 'KT'), t = agents.some(a => a.alive && a.team === 'T');
-  if (!kt) endRound('T', 'elim'); else if (!t) endRound('KT', 'elim');
+  if (!kt) endRound('T', 'elim');
+  else if (!t && bomb.state !== 'planted') endRound('KT', 'elim'); // a planted bomb must still be defused
 }
 function updateRound(dt) {
   game.timer -= dt;
-  if (game.state === 'freeze' && game.timer <= 0) { game.state = 'live'; game.timer = ROUND_TIME; showCenter('Oldinga!', '', '', 1); }
-  else if (game.state === 'live' && game.timer <= 0) { game.timer = 0; endRound('KT', 'time'); }
+  if (game.state === 'freeze' && game.timer <= 0) { game.state = 'live'; game.timer = game.mode === 'dm' ? DM_TIME : ROUND_TIME; showCenter('Oldinga!', '', '', 1); }
+  else if (game.state === 'live' && game.mode === 'dm') { dmTick(dt); if (game.timer <= 0) { game.timer = 0; showMatchEnd(); } }
+  else if (game.state === 'live' && game.timer <= 0 && bomb.state !== 'planted') { game.timer = 0; endRound('KT', 'time'); }
   else if (game.state === 'end' && game.timer <= 0) { if (game.over) showMatchEnd(); else startRound(false); }
 }
-const canBuy = () => player.alive && (game.state === 'freeze' || (game.state === 'live' && ROUND_TIME - game.timer < game.buyWindow));
+const canBuy = () => player.alive && (game.mode === 'dm' || game.state === 'freeze' || (game.state === 'live' && ROUND_TIME - game.timer < game.buyWindow));
 
 // ---------- Player ----------
 function updatePlayer(dt) {
   const p = player;
   if (!p.alive) { p.deathT += dt; return; }
-  const canMove = game.state !== 'freeze', k = input.keys;
+  const canMove = game.state !== 'freeze' && !p.defusing && !p.planting, k = input.keys;
   p.crouch = clamp(p.crouch + ((k.KeyC || k.ControlLeft || k.ControlRight || touch.crouch) ? 1 : -1) * dt * 7, 0, 1);
   const mf = clamp((k.KeyW ? 1 : 0) - (k.KeyS ? 1 : 0) - touch.my, -1, 1), mr = clamp((k.KeyD ? 1 : 0) - (k.KeyA ? 1 : 0) + touch.mx, -1, 1);
   const sy = Math.sin(p.yaw), cy = Math.cos(p.yaw);
@@ -213,7 +230,7 @@ function updateCamera(dt) {
     if (b) { camera.position.set(b.pos.x, 1.62, b.pos.z); camera.rotation.set(0, b.yaw + Math.PI, 0); }
   }
   const def = curDef();
-  const fov = p.alive && def.scope && p.scope ? (p.scope === 1 ? 30 : 12) : 68;
+  const fov = p.alive && def.scope && p.scope ? (p.scope === 1 ? 30 : 12) : settings.fov;
   if (Math.abs(camera.fov - fov) > 0.01) { camera.fov = fov; camera.updateProjectionMatrix(); }
   muzzleLight.intensity *= Math.exp(-dt * 40);
   updateSun(camera.position.x, camera.position.z);
@@ -229,7 +246,13 @@ function updateVM(dt) {
   if (p.reloadT > 0) { const s = Math.sin(clamp(1 - p.reloadT / (def.reload || 2), 0, 1) * Math.PI); rx -= s * 0.55; y -= s * 0.08; rz += s * 0.3; }
   if (p.switchT > 0) { const s = p.switchT / 0.55; y -= s * 0.25; rx -= s * 0.5; }
   if (vm.kind === 'knife') { rz -= vm.swing * 0.9; ry += vm.swing * 0.8; }
-  vm.root.position.set(x, y, z); vm.root.rotation.set(rx, ry, rz);
+  // F: inspect — turn the weapon to show its side, cancelled by any action
+  if (p.cool > 0 || p.reloadT > 0 || p.switchT > 0) vm.inspect = 0;
+  let ix = 0;
+  if (vm.inspect > 0) { vm.inspect -= dt; const s = Math.sin(clamp(1 - vm.inspect / 2.4, 0, 1) * Math.PI); ry += s * 1.15; rz += s * 0.4; rx += s * 0.15; ix = -s * 0.06; y += s * 0.04; }
+  const left = settings.hand === 'left';
+  vm.root.scale.x = left ? -1 : 1;
+  vm.root.position.set(left ? -(x + ix) : x + ix, y, z); vm.root.rotation.set(rx, left ? -ry : ry, left ? -rz : rz);
   vm.root.visible = p.alive && !p.scope;
   if (vm.flashT > 0) { vm.flashT -= dt; if (vm.flashT <= 0) vmFlash.visible = false; }
 }
@@ -269,12 +292,18 @@ function updateHUD(dt) {
   setT('hpV', String(p.hp)); setT('arV', String(p.armor)); setT('moneyV', String(p.money));
   els.hpBox.classList.toggle('low', p.hp <= 25);
   setT('scKT', String(game.score.KT)); setT('scT', String(game.score.T));
-  const t = Math.max(0, Math.ceil(game.timer)); setT('timer', `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`);
-  els.timer.className = game.state === 'freeze' ? 'freeze' : (game.state === 'live' && t <= 10 ? 'low' : '');
+  const planted = bomb.state === 'planted' && game.state === 'live';
+  const t = Math.max(0, Math.ceil(planted ? bomb.timer : game.timer));
+  setT('timer', (planted ? 'C4 ' : '') + `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`);
+  els.timer.className = planted ? 'bomb' : game.state === 'freeze' ? 'freeze' : (game.state === 'live' && t <= 10 ? 'low' : '');
+  const pr = bombHud();
+  els.prog.hidden = !pr;
+  if (pr) { setT('progL', pr.label); els.progF.style.width = `${Math.round(clamp(pr.k, 0, 1) * 100)}%`; }
+  if (game.mode === 'dm' && !p.alive && p.respawnT > 0) showCenter('Qayta tug‘ilish', `${Math.ceil(p.respawnT)} soniyadan keyin`, '', 0.2);
   const st = curState() || p.inv[3], def = st.def;
   setT('wName', def.name);
   if (def.mag) { setT('magV', String(st.mag)); setT('resV', String(st.res)); }
-  else if (def.id === 'he') { setT('magV', String(st.count)); setT('resV', '1'); }
+  else if (def.slot === 4) { setT('magV', String(st.count)); setT('resV', String(NADE_MAX[def.id])); }
   else { setT('magV', '—'); setT('resV', '—'); }
   const slotsKey = [1, 2, 3, 4].map(s => (p.inv[s] ? s : '') + (s === p.slot ? '*' : '')).join(',');
   if (cache.slots !== slotsKey) { cache.slots = slotsKey; els.slots.innerHTML = [1, 2, 3, 4].filter(s => p.inv[s]).map(s => `<span class="${s === p.slot ? 'on' : ''}">${s}</span>`).join(''); }
@@ -284,11 +313,11 @@ function updateHUD(dt) {
   if (centerT > 0) { centerT -= dt; if (centerT <= 0) els.center.hidden = true; }
   if (popT > 0) { popT -= dt; if (popT <= 0) els.moneyPop.classList.remove('on'); }
   const buyLeft = game.state === 'freeze' ? game.timer + game.buyWindow : game.buyWindow - (ROUND_TIME - game.timer);
-  const hint = canBuy() && !input.buyOpen ? `B — xarid menyusi · ${Math.ceil(buyLeft)} s` : '';
+  const hint = bombHint() || (canBuy() && !input.buyOpen ? (game.mode === 'dm' ? 'B — bepul qurollar' : `B — xarid menyusi · ${Math.ceil(buyLeft)} s`) : '');
   setT('hint', hint); els.hint.hidden = !hint;
   const pt = pickTarget && pickTarget.st.def, cur = pt && p.inv[pt.slot];
   const pk = pt ? `E — ${pt.name} olish${cur ? ` (${cur.def.name} tashlanadi)` : ''}` : '';
-  setT('pick', pk); els.pick.hidden = !pk; els.tPick.hidden = !pk || !input.touchMode;
+  setT('pick', pk); els.pick.hidden = !pk; els.tPick.hidden = !input.touchMode || !(pk || (bomb.state === 'planted' && p.team === 'KT'));
   const kmh = Math.round(Math.hypot(p.vel.x, p.vel.z) * 3.6);
   els.speedo.hidden = !settings.speedo || !p.alive;
   if (settings.speedo) { setT('spdV', String(kmh)); els.speedo.classList.toggle('fast', kmh > 24); }
@@ -327,6 +356,11 @@ function drawRadar() {
     const ally = a.team === player.team; if (!ally && a.spotUntil < game.time) continue;
     rg.fillStyle = ally ? (a.team === 'KT' ? '#72b4ff' : '#f2a93b') : '#ff4d40';
     rg.beginPath(); rg.arc((a.pos.x - OX) * RS, (a.pos.z - OZ) * RS, 3.6 / 1, 0, Math.PI * 2); rg.fill();
+    if (bomb.carrier === a && ally) { rg.strokeStyle = '#ff4d40'; rg.lineWidth = 1.5; rg.stroke(); }
+  }
+  // the bomb: dropped (seen by T) or planted (blinking, seen by everyone)
+  if ((bomb.state === 'dropped' && player.team === 'T') || (bomb.state === 'planted' && Math.floor(game.time * 3) % 2 === 0)) {
+    rg.fillStyle = '#ff2a1a'; rg.fillRect((bomb.pos.x - OX) * RS - 4, (bomb.pos.z - OZ) * RS - 3, 8, 6);
   }
   rg.restore();
   rg.setTransform(sc, 0, 0, sc, w / 2, h / 2);
@@ -338,18 +372,24 @@ const BUY = [
   { k: '1', id: 'deagle' }, { k: '2', id: 'mp5' }, { k: '3', id: 'rifle' }, { k: '4', id: 'awp' },
   { k: '5', id: 'kevlar', name: 'Kevlar zirh', price: 650, stat: '100 zirh, tanani himoya qiladi' },
   { k: '6', id: 'kevlarh', name: 'Zirh + dubulg‘a', price: 1000, stat: 'Boshga tekkan o‘qni ham yumshatadi' },
-  { k: '7', id: 'he' }
+  { k: '7', id: 'he' }, { k: '8', id: 'flash' }, { k: '9', id: 'smoke' },
+  { k: '0', id: 'kit', name: 'Defuse kit', price: 400, stat: 'Bombani 5 soniyada zararsizlantiradi', team: 'KT' }
 ];
 const buyDef = it => it.id === 'rifle' ? (player.team === 'T' ? WEAPONS.ak47 : WEAPONS.m4a1) : WEAPONS[it.id];
-function priceOf(it) { if (it.id === 'kevlarh') return player.armor >= 100 && !player.helmet ? 350 : 1000; const d = buyDef(it); return d ? d.price : it.price; }
+function priceOf(it) {
+  if (game.mode === 'dm') return 0;
+  if (it.id === 'kevlarh') return player.armor >= 100 && !player.helmet ? 350 : 1000;
+  const d = buyDef(it); return d ? d.price : it.price;
+}
 function owned(it) {
   const p = player, d = buyDef(it);
   if (it.id === 'kevlar') return p.armor >= 100; if (it.id === 'kevlarh') return p.armor >= 100 && p.helmet;
-  if (it.id === 'he') return !!p.inv[4];
+  if (it.id === 'kit') return !!p.kit;
+  if (NADE_MAX[it.id]) return (p.nades && p.nades[it.id] || 0) >= NADE_MAX[it.id];
   return !!d && Object.values(p.inv).some(s => s && s.def === d);
 }
 function renderBuy() {
-  els.buyGrid.innerHTML = BUY.map(it => {
+  els.buyGrid.innerHTML = BUY.filter(it => (!it.team || it.team === player.team) && !(game.mode === 'dm' && it.id === 'kit')).map(it => {
     const d = buyDef(it), name = d ? d.name : it.name, price = priceOf(it), own = owned(it);
     const stat = d ? (d.mag ? `${d.stat} · zarar ${d.dmg} · ${d.mag}/${d.res}` : d.stat) : it.stat;
     return `<button class="item${own ? ' owned' : ''}" data-buy="${it.id}" type="button" ${own || player.money < price || !canBuy() ? 'disabled' : ''}><kbd>${it.k}</kbd><span class="nm">${name}</span><span class="pr">${own ? 'Bor' : '$' + price}</span><span class="st">${stat}</span></button>`;
@@ -361,8 +401,12 @@ function buy(id) {
   p.money -= price;
   if (id === 'kevlar') p.armor = 100;
   else if (id === 'kevlarh') { p.armor = 100; p.helmet = true; }
-  else if (id === 'he') p.inv[4] = { def: WEAPONS.he, count: 1 };
-  else { const d = buyDef(it), prev = p.slot; p.inv[d.slot] = wstate(d); p.slot = 0; switchTo(d.slot); p.prevSlot = prev === d.slot ? 3 : prev; }
+  else if (id === 'kit') p.kit = true;
+  else if (NADE_MAX[id]) { p.nades[id]++; syncNadeSlot(p.slot === 4 ? id : undefined); }
+  else {
+    const d = buyDef(it), prev = p.slot; p.inv[d.slot] = wstate(d); p.slot = 0; switchTo(d.slot); p.prevSlot = prev === d.slot ? 3 : prev;
+    if (d.slot === 1) p.dmPrimary = d; else p.dmPistol = d; // deathmatch remembers the choice for respawns
+  }
   Snd.buy(); renderBuy();
 }
 function openBuy() {
@@ -382,8 +426,13 @@ document.getElementById('buyClose').addEventListener('click', () => closeBuy(tru
 function renderBoard() {
   const table = t => {
     const rows = agents.filter(a => a.team === t).sort((a, b) => b.kills - a.kills || a.deaths - b.deaths)
-      .map(a => `<tr class="${a.alive ? '' : 'dead'} ${a.isPlayer ? 'me' : ''}"><td>${a.name}</td><td>${a.kills}</td><td>${a.deaths}</td><td>${a.team === player.team ? '$' + a.money : '—'}</td></tr>`).join('');
-    return `<div><h4 class="${t === 'KT' ? 'c-kt' : 'c-te'}"><span>${TEAM_NAME[t]}</span><span>${game.score[t]}</span></h4><table><thead><tr><th>O‘yinchi</th><th>Q</th><th>O‘</th><th>Pul</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+      .map(a => {
+        const hsp = a.kills ? Math.round(100 * (a.hs || 0) / a.kills) + '%' : '—';
+        const adr = game.mode === 'dm' ? Math.round(a.dmg || 0) : Math.round((a.dmg || 0) / Math.max(1, game.round - (game.state === 'live' || game.state === 'freeze' ? 1 : 0)));
+        const tag = (bomb.carrier === a && a.team === player.team ? ' <b class="c4tag">C4</b>' : '') + (a.kit && a.team === player.team ? ' <b class="kittag">KIT</b>' : '');
+        return `<tr class="${a.alive ? '' : 'dead'} ${a.isPlayer ? 'me' : ''}"><td>${a.name}${tag}</td><td>${a.kills}</td><td>${a.deaths}</td><td>${hsp}</td><td>${adr}</td><td>${a.team === player.team && game.mode !== 'dm' ? '$' + a.money : '—'}</td></tr>`;
+      }).join('');
+    return `<div><h4 class="${t === 'KT' ? 'c-kt' : 'c-te'}"><span>${TEAM_NAME[t]}</span><span>${game.score[t]}</span></h4><table><thead><tr><th>O‘yinchi</th><th>Q</th><th>O‘</th><th>BOSH%</th><th>${game.mode === 'dm' ? 'ZARAR' : 'ADR'}</th><th>Pul</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   };
   els.boardCard.innerHTML = table('KT') + table('T');
 }
@@ -429,10 +478,11 @@ function toMenu() {
 }
 function showMatchEnd() {
   game.state = 'over';
-  const win = game.score.KT >= game.winTo ? 'KT' : 'T', me = win === player.team;
-  document.getElementById('overEyebrow').textContent = `Hisob ${game.score.KT} : ${game.score.T}`;
-  document.getElementById('overTitle').textContent = me ? 'G‘alaba!' : 'Mag‘lubiyat';
-  document.getElementById('overSub').textContent = `${TEAM_NAME[win]} ${game.winTo} raundda birinchi bo‘lib g‘olib chiqdi.`;
+  const dm = game.mode === 'dm', tie = dm && game.score.KT === game.score.T;
+  const win = dm ? (game.score.KT > game.score.T ? 'KT' : 'T') : game.score.KT >= game.winTo ? 'KT' : 'T', me = win === player.team;
+  document.getElementById('overEyebrow').textContent = `${dm ? 'Deathmatch · ' : ''}Hisob ${game.score.KT} : ${game.score.T}`;
+  document.getElementById('overTitle').textContent = tie ? 'Durang' : me ? 'G‘alaba!' : 'Mag‘lubiyat';
+  document.getElementById('overSub').textContent = tie ? 'Ikki jamoa teng qotillik qildi.' : dm ? `${TEAM_NAME[win]} ko‘proq raqibni yo‘q qildi.` : `${TEAM_NAME[win]} ${game.winTo} raundda birinchi bo‘lib g‘olib chiqdi.`;
   document.getElementById('stK').textContent = player.kills; document.getElementById('stD').textContent = player.deaths;
   document.getElementById('stR').textContent = (player.kills / Math.max(1, player.deaths)).toFixed(2);
   els.over.hidden = false; if (document.pointerLockElement) document.exitPointerLock();
@@ -461,8 +511,13 @@ function initMenu() {
     el.value = settings[id]; out.textContent = settings[id];
     el.addEventListener('input', () => { settings[id] = clamp(+el.value | 0, min, max); out.textContent = settings[id]; store.set(key, settings[id]); });
   }
-  const spd = document.getElementById('spdChk');
-  spd.checked = settings.speedo; spd.addEventListener('change', () => { settings.speedo = spd.checked; store.set('kq_speedo', spd.checked); });
+  const modeBtns = document.querySelectorAll('#modeSeg button');
+  const syncMode = () => modeBtns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.m === settings.mode)));
+  modeBtns.forEach(b => b.addEventListener('click', () => { settings.mode = b.dataset.m; store.set('kq_mode', settings.mode); syncMode(); }));
+  syncMode();
+  const sp = initSettingsUI();
+  document.getElementById('setBtn').addEventListener('click', () => sp.open());
+  document.getElementById('setBtn2').addEventListener('click', () => sp.open());
   const xh = initCrosshairUI();
   document.getElementById('xhBtn').addEventListener('click', () => xh.open());
   document.getElementById('xhBtn2').addEventListener('click', () => xh.open());
@@ -505,12 +560,14 @@ addEventListener('keydown', e => {
   }
   if (e.repeat) return;
   switch (e.code) {
-    case 'Digit1': switchTo(1); break; case 'Digit2': switchTo(2); break; case 'Digit3': switchTo(3); break; case 'Digit4': switchTo(4); break;
+    case 'Digit1': switchTo(1); break; case 'Digit2': switchTo(2); break; case 'Digit3': switchTo(3); break; case 'Digit4': if (player.slot === 4) cycleNade(); else switchTo(4); break;
+    case 'Digit5': switchTo(5); break;
+    case 'KeyF': if (player.alive && player.cool <= 0 && player.reloadT <= 0) vm.inspect = 2.4; break;
     case 'KeyQ': switchTo(player.prevSlot); break;
     case 'KeyR': startReload(); break;
     case 'KeyB': openBuy(); break;
-    case 'KeyE': pickupTarget(); break;
-    case 'KeyG': dropCurrent(); break;
+    case 'KeyE': if (!(bomb.state === 'planted' && player.team === 'KT' && Math.hypot(player.pos.x - bomb.pos.x, player.pos.z - bomb.pos.z) < 1.7)) pickupTarget(); break;
+    case 'KeyG': if (player.slot === 5) dropBomb(player); else dropCurrent(); break;
     case 'Escape': if (input.fallback) pauseGame(); break;
   }
 });
@@ -539,7 +596,7 @@ addEventListener('mousemove', e => {
 addEventListener('wheel', e => { if (playing() && !input.buyOpen && (input.locked || input.fallback)) cycleWeapon(e.deltaY > 0 ? 1 : -1); }, { passive: true });
 function look(dx, dy, k) {
   if (!player.alive) return;
-  const s = settings.sens * k * (camera.fov / 68);
+  const s = settings.sens * k * (camera.fov / settings.fov);
   player.yaw -= dx * s; player.pitch = clamp(player.pitch - dy * s, -1.5, 1.5);
   vm.swayX = clamp(vm.swayX + dx * 0.00012, -0.03, 0.03); vm.swayY = clamp(vm.swayY - dy * 0.00012, -0.03, 0.03);
 }
@@ -580,7 +637,9 @@ document.addEventListener('pointerlockerror', lockFailed);
   const crouchBtn = document.getElementById('tCrouch');
   crouchBtn.addEventListener('pointerdown', () => { touch.crouch = !touch.crouch; crouchBtn.classList.toggle('on', touch.crouch); });
   const tap = (id, fn) => document.getElementById(id).addEventListener('pointerdown', e => { e.preventDefault(); if (playing()) fn(); });
-  tap('tPick', pickupTarget);
+  const pb = document.getElementById('tPick'); // tap to pick up, hold to defuse
+  pb.addEventListener('pointerdown', e => { e.preventDefault(); touch.use = true; if (playing()) pickupTarget(); });
+  const pOff = () => { touch.use = false; }; pb.addEventListener('pointerup', pOff); pb.addEventListener('pointercancel', pOff);
   tap('tReload', startReload); tap('tSwap', () => cycleWeapon(1)); tap('tScope', secondaryAction);
   tap('tBuy', () => input.buyOpen ? closeBuy(false) : openBuy()); tap('tPause', pauseGame);
 })();
@@ -601,6 +660,10 @@ function update(dt) {
   separateBots();
   updateNades(dt);
   updateDrops(dt);
+  updateBomb(dt);
+  updateSmokes(dt);
+  updateFlash(dt);
+  updateStreak(dt);
   updateFx(dt);
   spotTick(dt);
   updateCamera(dt);
@@ -612,10 +675,11 @@ let last = performance.now();
 function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  fpsMeter.tick(dt);
   if (game.state === 'menu') {
     const t = now / 1000 * 0.05;
     camera.position.set(Math.sin(t) * 40, 17, Math.cos(t) * 40); camera.lookAt(0, 2, 0);
-    if (camera.fov !== 68) { camera.fov = 68; camera.updateProjectionMatrix(); }
+    if (camera.fov !== settings.fov) { camera.fov = settings.fov; camera.updateProjectionMatrix(); }
     for (const b of bots) updateBot(b, dt);
     updateSun(0, 0);
   } else if (!game.paused && game.state !== 'over') update(dt);
@@ -631,4 +695,5 @@ buildRadarMap();
 setupTeams(settings.team);
 spawnAll(true);
 initMenu();
+applyQuality();
 requestAnimationFrame(frame);

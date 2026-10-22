@@ -24,7 +24,13 @@ const settings = {
   map: String(store.get('kq_map', 'qumtepa')),
   allies: clamp(store.get('kq_allies', 4) | 0, 0, 9),
   enemies: clamp(store.get('kq_enemies', 5) | 0, 1, 10),
-  speedo: store.get('kq_speedo', true) !== false
+  speedo: store.get('kq_speedo', true) !== false,
+  mode: store.get('kq_mode', 'comp') === 'dm' ? 'dm' : 'comp',
+  quality: clamp(store.get('kq_quality', 1) | 0, 0, 2),
+  fov: clamp(+store.get('kq_fov', 68) || 68, 55, 95),
+  volume: clamp(+store.get('kq_volume', 0.8), 0, 1),
+  fps: store.get('kq_fps', true) !== false,
+  hand: store.get('kq_hand', 'right') === 'left' ? 'left' : 'right'
 };
 const SKILL = [
   { react: 0.75, err: 0.055, head: 0.12, turn: 5, burst: [2, 4], crouch: 0.15 },
@@ -43,8 +49,12 @@ const WEAPONS = {
   ak47:   { id: 'ak47', name: 'AK-47', slot: 1, dmg: 36, rate: 0.1, mag: 30, res: 90, reload: 2.5, spread: 0.006, moveInacc: 0.09, recoil: 0.022, auto: true, armorPen: 0.77, speed: 0.92, price: 2700, snd: 'ak', kill: 300, model: 'ak', stat: 'Boshga bitta o‘q yetadi' },
   m4a1:   { id: 'm4a1', name: 'M4A1-S', slot: 1, dmg: 33, rate: 0.09, mag: 25, res: 75, reload: 3.1, spread: 0.005, moveInacc: 0.08, recoil: 0.018, auto: true, armorPen: 0.7, speed: 0.94, price: 2900, snd: 'm4', kill: 300, model: 'm4', stat: 'Aniq, tepkisi kam' },
   awp:    { id: 'awp', name: 'AWP', slot: 1, dmg: 115, rate: 1.45, mag: 5, res: 30, reload: 3.6, spread: 0.0008, unscoped: 0.09, moveInacc: 0.25, recoil: 0.09, armorPen: 0.97, speed: 0.84, price: 4750, snd: 'awp', kill: 100, model: 'awp', scope: true, stat: 'Snayper, tanaga ham bir o‘q' },
-  he:     { id: 'he', name: 'HE granata', slot: 4, dmg: 98, armorPen: 0.57, price: 300, model: 'he', kill: 300, stat: '9 m radiusda portlaydi' }
+  he:     { id: 'he', name: 'HE granata', slot: 4, dmg: 98, armorPen: 0.57, price: 300, model: 'he', kill: 300, stat: '9 m radiusda portlaydi' },
+  smoke:  { id: 'smoke', name: 'Tutun granata', slot: 4, price: 300, model: 'smoke', stat: '18 soniya ko‘rinishni to‘sadi' },
+  flash:  { id: 'flash', name: 'Flesh granata', slot: 4, price: 200, model: 'flash', stat: 'Qaragan odamni ko‘r qiladi' },
+  c4:     { id: 'c4', name: 'C4 bomba', slot: 5, model: 'c4' }
 };
+const NADE_ORDER = ['he', 'flash', 'smoke'];
 const SHOT = {
   pistol: { f: 3600, d: 0.12, th: 150, tv: 0.5 },
   usp:    { f: 1700, d: 0.09, th: 120, tv: 0.35 },
@@ -136,7 +146,18 @@ function losClear(ax, ay, az, bx, by, bz) {
     if ((c === 'c' || c === 'C') && y < (c === 'C' ? CRATE_H * 2 : CRATE_H) &&
         Math.abs(x - cxw(cx)) < CRATE_S / 2 && Math.abs(z - czw(cz)) < CRATE_S / 2) return false;
   }
-  return true;
+  return !smokeBlocks(ax, ay, az, bx, by, bz);
+}
+// Active smoke clouds: {x, y, z, r} — r grows while the smoke blooms and shrinks as it fades
+const smokes = [];
+function smokeBlocks(ax, ay, az, bx, by, bz) {
+  for (const s of smokes) {
+    if (s.r < 0.5) continue;
+    const dx = bx - ax, dy = by - ay, dz = bz - az, L = dx * dx + dy * dy + dz * dz || 1;
+    const t = clamp(((s.x - ax) * dx + (s.y - ay) * dy + (s.z - az) * dz) / L, 0, 1);
+    if (Math.hypot(ax + dx * t - s.x, ay + dy * t - s.y, az + dz * t - s.z) < s.r) return true;
+  }
+  return false;
 }
 
 // ---------- Pathfinding (A* on the cell grid) ----------

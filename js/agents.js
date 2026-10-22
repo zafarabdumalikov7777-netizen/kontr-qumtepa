@@ -72,12 +72,15 @@ function shootRay(origin, dir, shooter, def, range) {
 function applyDamage(v, att, dmg, part, def, from) {
   if (!v.alive || game.state === 'freeze') return;
   if (att && att !== v && att.team === v.team) return; // do‘stona otish o‘chirilgan
+  if (v.protectUntil && game.time < v.protectUntil) return; // respawn protection (deathmatch)
   let d = dmg * (part === 'head' ? 4 : part === 'legs' ? 0.75 : 1);
   if (v.armor > 0 && (part === 'body' || (part === 'head' && v.helmet))) {
     const reduced = d * (def.armorPen || 0.5);
     v.armor = Math.max(0, v.armor - Math.round((d - reduced) * 0.5)); d = reduced;
   }
-  d = Math.max(1, Math.round(d)); v.hp -= d;
+  d = Math.max(1, Math.round(d));
+  if (att && att !== v) att.dmg = (att.dmg || 0) + Math.min(d, v.hp);
+  v.hp -= d;
   if (att && att.isPlayer && att !== v) { hitMarker(part === 'head'); Snd.hit(part === 'head'); }
   if (v.isPlayer) playerHurt(att, d, from);
   else botHurt(v, att);
@@ -86,13 +89,16 @@ function applyDamage(v, att, dmg, part, def, from) {
 function kill(v, att, def, hs) {
   v.alive = false; v.deaths++;
   if (att && att !== v) {
-    att.kills++; const reward = def.kill || 300; att.money = Math.min(16000, att.money + reward);
-    if (att.isPlayer) moneyPop(reward);
+    att.kills++; if (hs) att.hs = (att.hs || 0) + 1;
+    const reward = def.kill || 300; att.money = Math.min(16000, att.money + reward);
+    if (att.isPlayer) { if (game.mode !== 'dm') moneyPop(reward); playerKillStreak(hs); }
   }
   addFeed(att || v, v, def, hs);
   if (v.isPlayer) playerDied(att, def);
   else { v.model.fall = 0; v.model.marker.visible = false; v.target = null; v.model.flash.visible = false; }
+  if (bomb.carrier === v) dropBomb(v);
   dropOnDeath(v);
+  if (game.mode === 'dm') { dmKill(v, att); updatePips(); return; }
   checkRoundEnd();
 }
 function alertHearing(src) {
@@ -149,7 +155,7 @@ function switchTo(s) {
   p.switchT = s === 3 ? 0.35 : 0.55; p.shots = 0; p.shotsF = 0; p.punchP = p.punchY = 0; vm.set(p.inv[s].def, p.team); Snd.draw();
 }
 function cycleWeapon(dir) {
-  const order = [1, 2, 3, 4].filter(s => player.inv[s]); let i = order.indexOf(player.slot);
+  const order = [1, 2, 3, 4, 5].filter(s => player.inv[s]); let i = order.indexOf(player.slot);
   i = (i + dir + order.length) % order.length; switchTo(order[i]);
 }
 function startReload() {
@@ -174,9 +180,10 @@ function knifeAttack(heavy) {
 function tryFire() {
   const p = player, st = curState(); if (!st) return;
   const def = st.def;
-  if (p.cool > 0 || p.switchT > 0) return;
+  if (def.id === 'c4' || p.cool > 0 || p.switchT > 0) return;
+  vm.inspect = 0;
   if (def.melee) { knifeAttack(false); return; }
-  if (def.id === 'he') { if (!p.triggerReleased) return; p.triggerReleased = false; throwNade(); p.cool = 0.6; return; }
+  if (def.slot === 4) { if (!p.triggerReleased) return; p.triggerReleased = false; throwNade(); p.cool = 0.6; return; }
   if (p.reloadT > 0) return;
   if (!def.auto && !p.triggerReleased) return;
   if (st.mag <= 0) { if (p.triggerReleased) Snd.dry(); p.triggerReleased = false; startReload(); return; }
@@ -200,14 +207,31 @@ function tryFire() {
 // ---------- Grenades ----------
 const nades = [];
 const nadeGeo = new THREE.SphereGeometry(0.08, 10, 8), nadeMat = new THREE.MeshLambertMaterial({ color: 0x4c5a33 });
+const nadeMats = { he: nadeMat, flash: new THREE.MeshLambertMaterial({ color: 0x9aa0a6 }), smoke: new THREE.MeshLambertMaterial({ color: 0x5d646d }) };
+const NADE_MAX = { he: 1, flash: 2, smoke: 1 };
+// Slot 4 shows one grenade type at a time; `prefer` selects a type, otherwise keep the current one
+function syncNadeSlot(prefer) {
+  const p = player, n = p.nades || (p.nades = { he: 0, flash: 0, smoke: 0 });
+  const cur = p.inv[4] && p.inv[4].def.id;
+  const t = prefer && n[prefer] > 0 ? prefer : cur && n[cur] > 0 ? cur : NADE_ORDER.find(k => n[k] > 0);
+  p.inv[4] = t ? { def: WEAPONS[t], count: n[t] } : null;
+  if (p.slot === 4 && p.inv[4] && p.inv[4].def.id !== cur) vm.set(p.inv[4].def, p.team);
+}
+function cycleNade() {
+  const p = player, n = p.nades; if (!n || !p.inv[4]) return;
+  const i = NADE_ORDER.indexOf(p.inv[4].def.id);
+  for (let k = 1; k <= 3; k++) { const t = NADE_ORDER[(i + k) % 3]; if (n[t] > 0) { syncNadeSlot(t); Snd.draw(); return; } }
+}
 function throwNade() {
-  const p = player, st = p.inv[4]; if (!st || st.count <= 0) return;
-  st.count--;
+  const p = player, st = p.inv[4]; if (!st || !p.nades) return;
+  const kind = st.def.id; if (!(p.nades[kind] > 0)) return;
+  p.nades[kind]--;
   const dir = aimDir(0), pos = camera.position.clone().addScaledVector(dir, 0.5);
   const vel = dir.multiplyScalar(17).add(new V3(p.vel.x * 0.5, 2.5, p.vel.z * 0.5));
-  const mesh = new THREE.Mesh(nadeGeo, nadeMat); mesh.castShadow = true; mesh.position.copy(pos); scene.add(mesh);
-  nades.push({ mesh, pos, vel, t: 0, owner: p }); Snd.knife();
-  if (st.count <= 0) { p.inv[4] = null; switchTo(p.inv[1] ? 1 : 2); }
+  const mesh = new THREE.Mesh(nadeGeo, nadeMats[kind]); mesh.castShadow = true; mesh.position.copy(pos); scene.add(mesh);
+  nades.push({ mesh, pos, vel, t: 0, owner: p, kind }); Snd.knife();
+  syncNadeSlot();
+  if (!p.inv[4]) { p.slot = 0; switchTo(p.inv[1] ? 1 : 2); }
 }
 const blocked = (x, y, z) => y < 0.07 || !!hitBox(x, y - 0.07, z, 0.07, 0.14);
 function updateNades(dt) {
@@ -219,10 +243,13 @@ function updateNades(dt) {
     if (blocked(n.pos.x, ny, n.pos.z)) { n.vel.y *= -0.35; n.vel.x *= 0.75; n.vel.z *= 0.75; if (Math.abs(n.vel.y) < 0.6) n.vel.y = 0; }
     else n.pos.y = ny;
     n.mesh.position.copy(n.pos); n.mesh.rotation.x += dt * 8;
-    if (n.t > 1.7) { explode(n); scene.remove(n.mesh); nades.splice(i, 1); }
+    const done = n.kind === 'smoke' ? (n.t > 1.2 && Math.hypot(n.vel.x, n.vel.z) < 1) || n.t > 3 : n.t > (n.kind === 'flash' ? 1.5 : 1.7);
+    if (done) { explode(n); scene.remove(n.mesh); nades.splice(i, 1); }
   }
 }
 function explode(n) {
+  if (n.kind === 'smoke') return startSmoke(n.pos);
+  if (n.kind === 'flash') return flashBang(n.pos);
   const s = spatial(n.pos); Snd.boom(Math.min(1, s.vol * 1.6), s.pan);
   puff(n.pos.x, n.pos.y + 0.5, n.pos.z, 3, 0.35, true);
   for (let k = 0; k < 4; k++) puff(n.pos.x + rand(-1, 1), n.pos.y + 0.6 + k * 0.3, n.pos.z + rand(-1, 1), 2.4, 1.6, false);
@@ -267,6 +294,7 @@ function huntGoal(b) {
   const e = pick(foes); setGoalWorld(b, e.pos.x, e.pos.z); b.hunting = true; b.repathT = rand(2.5, 4); b.pendingHold = 0;
 }
 function findTarget(b) {
+  if (b.blindUntil && game.time < b.blindUntil) return null; // flashed
   let best = null, bd = 1e9; const fx = Math.sin(b.yaw), fz = Math.cos(b.yaw);
   for (const e of agents) {
     if (!e.alive || e.team === b.team) continue;
@@ -356,6 +384,7 @@ function updateBot(b, dt) {
         b.yaw = turnToward(b.yaw, b.watchYaw + Math.sin(game.time * 0.6 + b.id * 1.7) * 0.6, 2.5 * dt);
       } else if (!b.chasing) nextGoal(b);
     }
+    if (bombBotBusy(b, dt)) spd = 0;
     if (spd > 0) {
       const ox = b.pos.x, oz = b.pos.z;
       moveXZ(b.pos, mx * spd * dt, mz * spd * dt, 0.34, 1.8);
@@ -396,5 +425,6 @@ function botBuy(b) {
   }
   if (b.armor < 100 && b.money >= 1000) { b.armor = 100; b.helmet = true; b.money -= 1000; }
   else if (b.armor < 100 && b.money >= 650) { b.armor = 100; b.money -= 650; }
+  if (b.team === 'KT' && !b.kit && b.money >= 400 && Math.random() < 0.6) { b.kit = true; b.money -= 400; }
   for (const st of [b.primary, b.pistol]) if (st) { st.mag = st.def.mag; st.res = st.def.res; }
 }
