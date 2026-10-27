@@ -178,6 +178,6 @@ const vm = {
     let m = this.cache[key]; if (!m) { m = buildGun(def.model, team); this.cache[key] = m; }
     this.cur = m; this.root.add(m); m.userData.muzzle.add(vmFlash); this.kind = VM_KIND[def.model] || 'rifle';
   },
-  fire() { this.kick = 1; vmFlash.visible = this.kind !== 'knife' && this.kind !== 'he'; vmFlash.material.rotation = Math.random() * 6; this.flashT = 0.045; }
+  fire(power = 1) { this.kick = power; this.kickY = (Math.random() - 0.5) * 0.06 * power; vmFlash.visible = this.kind !== 'knife' && this.kind !== 'he'; vmFlash.material.rotation = Math.random() * 6; this.flashT = 0.045; }
 };
 vScene.add(vm.root);

@@ -9,7 +9,7 @@ const player = {
   isPlayer: true, id: 0, name: 'Siz', team: 'KT', alive: true, hp: 100, armor: 0, helmet: false, money: 800, kills: 0, deaths: 0,
   pos: new V3(), vel: new V3(), yaw: 0, pitch: 0, onGround: true, crouch: 0, jumpReady: true,
   inv: { 1: null, 2: null, 3: null, 4: null }, slot: 2, prevSlot: 3,
-  cool: 0, reloadT: 0, switchT: 0, shots: 0, shotsF: 0, punchP: 0, punchY: 0, vpP: 0, vpY: 0, hops: 0, groundT: 0, scope: 0, scopeResume: 0, rescopeT: 0, autoReload: false,
+  cool: 0, reloadT: 0, switchT: 0, shots: 0, shotsF: 0, punchP: 0, punchY: 0, vpP: 0, vpY: 0, kickP: 0, kickY: 0, hops: 0, groundT: 0, scope: 0, scopeResume: 0, rescopeT: 0, autoReload: false,
   triggerReleased: true, lastShot: -99, spotUntil: 0, deathT: 0, stepDist: 0, hitMeshes: []
 };
 const eyeH = () => 1.65 - 0.45 * player.crouch;
@@ -129,9 +129,12 @@ const SPRAY = (() => {
   const semi = k => Array.from({ length: 12 }, (_, i) => [(i % 2 ? 1 : -1) * 0.08 * i, k * Math.min(i, 6)]);
   return { ak47: ak, m4a1: m4, mp5, usp: semi(0.45), glock: semi(0.4), deagle: semi(1.5), awp: [[0, 0], [0, 2.5]] };
 })();
+// How far each pattern is stretched (AK tops out near 9° like CS2) and how hard each shot snaps the view (radians)
+const SPRAY_SCALE = { ak47: 1.75, m4a1: 1.6, mp5: 1.5, deagle: 1.3, usp: 1.3, glock: 1.3 };
+const KICK = { ak47: 0.012, m4a1: 0.008, mp5: 0.006, awp: 0.06, deagle: 0.035, usp: 0.013, glock: 0.011 };
 function sprayAt(def, i) {
   const pat = SPRAY[def.id]; if (!pat) return [0, 0];
-  const k = pat[Math.min(i, pat.length - 1)], s = 1.25 * Math.PI / 180;
+  const k = pat[Math.min(i, pat.length - 1)], s = (SPRAY_SCALE[def.id] || 1.4) * Math.PI / 180;
   return [k[0] * s, k[1] * s];
 }
 function aimDir(spread) {
@@ -192,11 +195,15 @@ function tryFire() {
   // Each shot lands on the weapon's fixed spray pattern; pulling the mouse down compensates
   const idx = Math.round(p.shotsF), sp = sprayAt(def, idx);
   p.punchY = -sp[0]; p.punchP = sp[1];
+  // view kick: a sharp snap upward with a random sideways twitch that settles in a fraction of a second
+  const kk = KICK[def.id] || 0.008;
+  p.kickP = Math.min(0.09, p.kickP + kk * rand(0.85, 1.15)); p.kickY += kk * rand(-0.45, 0.45);
+  shake = Math.max(shake, kk * 0.2);
   const dir = aimDir(currentSpread());
   const res = shootRay(camera.position.clone(), dir, p, def);
   const from = p.scope ? camera.localToWorld(new V3(0, -0.3, -0.5)) : camera.localToWorld(new V3(0.15, -0.13, -0.7));
   tracer(from, res.point);
-  vm.fire(); muzzleLight.position.copy(from); muzzleLight.intensity = 2.2;
+  vm.fire(clamp((KICK[def.id] || 0.008) / 0.012, 0.6, 2.2)); muzzleLight.position.copy(from); muzzleLight.intensity = 2.2;
   Snd.shot(def.snd, 0.9, 0.05);
   p.shotsF = idx + 1; p.shots = idx + 1;
   if (def.scope && p.scope) { p.scopeResume = p.scope; p.scope = 0; p.rescopeT = def.rate * 0.9; }

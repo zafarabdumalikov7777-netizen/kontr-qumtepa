@@ -167,6 +167,7 @@ function updatePlayer(dt) {
   }
   p.shots = Math.round(p.shotsF);
   const vk = 1 - Math.exp(-dt * 25); p.vpP += (p.punchP - p.vpP) * vk; p.vpY += (p.punchY - p.vpY) * vk;
+  const kd = Math.exp(-dt * 13); p.kickP *= kd; p.kickY *= kd;
 }
 const BHOP_MAX = 12.5; // ≈45 km/h
 function groundFriction(p, dt) {
@@ -218,7 +219,8 @@ function updateCamera(dt) {
   const sx = (Math.random() - 0.5) * shake, sy = (Math.random() - 0.5) * shake;
   if (p.alive) {
     camera.position.set(p.pos.x, p.pos.y + eyeH(), p.pos.z);
-    camera.rotation.set(p.pitch + p.vpP * 0.5 + sy, p.yaw + p.vpY * 0.5 + sx, 0);
+    // the view follows ~55% of the spray (bullets land the full amount above the crosshair, as in CS2) plus the shot kick
+    camera.rotation.set(p.pitch + p.vpP * 0.55 + p.kickP + sy, p.yaw + p.vpY * 0.55 + p.kickY + sx, -p.kickY * 0.5);
   } else if (p.deathT < 2.5 || !agents.some(a => a.alive && a.team === p.team)) {
     setSpectate(null);
     const k = Math.min(1, p.deathT / 0.6);
@@ -241,8 +243,9 @@ function updateVM(dt) {
   if (p.onGround && hs > 0.5) vm.bob += dt * hs * 1.5;
   const amp = Math.min(1, hs / 6) * (p.onGround ? 1 : 0.3);
   vm.kick *= Math.exp(-dt * 14); vm.swing *= Math.exp(-dt * 8); vm.swayX *= Math.exp(-dt * 8); vm.swayY *= Math.exp(-dt * 8);
-  let y = base[1] - Math.abs(Math.cos(vm.bob)) * 0.01 * amp - vm.swayY, rx = vm.kick * 0.12, ry = base[3] || 0, rz = 0;
-  const x = base[0] + Math.sin(vm.bob) * 0.012 * amp - vm.swayX, z = base[2] + vm.kick * 0.05;
+  vm.kickY = (vm.kickY || 0) * Math.exp(-dt * 12);
+  let y = base[1] - Math.abs(Math.cos(vm.bob)) * 0.01 * amp - vm.swayY + vm.kick * 0.012, rx = vm.kick * 0.22, ry = (base[3] || 0) + vm.kickY, rz = vm.kickY * 0.6;
+  const x = base[0] + Math.sin(vm.bob) * 0.012 * amp - vm.swayX, z = base[2] + vm.kick * 0.075;
   if (p.reloadT > 0) { const s = Math.sin(clamp(1 - p.reloadT / (def.reload || 2), 0, 1) * Math.PI); rx -= s * 0.55; y -= s * 0.08; rz += s * 0.3; }
   if (p.switchT > 0) { const s = p.switchT / 0.55; y -= s * 0.25; rx -= s * 0.5; }
   if (vm.kind === 'knife') { rz -= vm.swing * 0.9; ry += vm.swing * 0.8; }
@@ -448,14 +451,18 @@ function lockPointer() {
 // A frame that never grants pointer lock switches to free-mouse look; a one-off refusal just pauses.
 function lockFailed() {
   if (input.locked) return;
-  if (!input.everLocked) input.fallback = true;
-  else if (playing() && !input.buyOpen) pauseGame();
+  // give up on locking only when the browser keeps refusing (e.g. inside an embedded frame); otherwise
+  // pause, so the "Davom etish" click retries the lock with a fresh user gesture
+  input.lockFails = (input.lockFails || 0) + 1;
+  if (!input.everLocked && input.lockFails >= 3) { input.fallback = true; return; }
+  if (playing() && !input.buyOpen) pauseGame();
 }
 function pauseGame() {
   if (game.state === 'menu' || game.paused || !els.over.hidden) return;
   game.paused = true; input.mouseDown = false; els.pause.hidden = false; syncSens(); TouchUI.reset();
 }
-function resumeGame() { game.paused = false; els.pause.hidden = true; tryFullscreen(); lockPointer(); Snd.init(); }
+// Lock the mouse before asking for fullscreen: fullscreen uses up the click's permission, and a lock requested after it is refused
+function resumeGame() { game.paused = false; els.pause.hidden = true; lockPointer(); tryFullscreen(); Snd.init(); }
 // Fullscreen + keyboard lock lets Ctrl+W be used for crouch-walking without closing the tab (where the browser allows it).
 function tryFullscreen() {
   if (!settings.fullscreen || input.touchMode) return;
@@ -507,7 +514,7 @@ function startGame(e) {
       if (r && r.then) r.then(lockLand).catch(() => {}); else lockLand();
     } catch (err) {}
   }
-  else { tryFullscreen(); lockPointer(); }
+  else { lockPointer(); tryFullscreen(); }
 }
 function syncSens() {
   for (const [id, out] of [['sens', 'sensOut'], ['sens2', 'sensOut2']]) { document.getElementById(id).value = settings.sens; document.getElementById(out).textContent = settings.sens.toFixed(2); }
@@ -604,6 +611,7 @@ cvs.addEventListener('mousedown', e => {
 addEventListener('mouseup', e => { if (e.button === 0) input.mouseDown = false; });
 cvs.addEventListener('contextmenu', e => e.preventDefault());
 addEventListener('mousemove', e => {
+  input.mouseX = e.clientX;
   if (!playing() || input.buyOpen || input.touchMode) return;
   if (!input.locked && !input.fallback) return;
   look(e.movementX || 0, e.movementY || 0, 0.0022);
@@ -633,6 +641,11 @@ function update(dt) {
   game.time += dt;
   updateRound(dt);
   updatePlayer(dt);
+  // Without a mouse lock the cursor stops at the screen edge: keep turning while it rests there
+  if (input.fallback && !input.touchMode && !input.buyOpen && input.mouseX != null && player.alive) {
+    const e = input.mouseX / innerWidth, turn = e < 0.04 ? 1 : e > 0.96 ? -1 : 0;
+    if (turn) player.yaw += turn * 1.7 * settings.sens * dt;
+  }
   updatePlayerBody(dt);
   for (const b of bots) updateBot(b, dt);
   separateBots();
