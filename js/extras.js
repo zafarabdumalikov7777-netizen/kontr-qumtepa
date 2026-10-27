@@ -37,7 +37,8 @@ function updateStreak(dt) { if (streakTimer > 0) { streakTimer -= dt; if (streak
 // ---------- Settings: graphics, FOV, volume, FPS, weapon hand ----------
 function applyQuality() {
   const q = settings.quality, dpr = window.devicePixelRatio || 1;
-  renderer.setPixelRatio([0.75, Math.min(dpr, 1.25), Math.min(dpr, 2)][q]);
+  // phones have tiny dense screens: their "low" keeps one device pixel per CSS pixel so text stays sharp
+  renderer.setPixelRatio([input.touchMode ? Math.min(dpr, 1) : 0.75, Math.min(dpr, 1.25), Math.min(dpr, 2)][q]);
   renderer.setSize(innerWidth, innerHeight);
   const on = q > 0, size = q === 2 ? 4096 : 2048;
   if (sun.castShadow !== on || sun.shadow.mapSize.x !== size) {

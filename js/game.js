@@ -4,10 +4,10 @@ const game = { state: 'menu', round: 0, score: { KT: 0, T: 0 }, timer: 0, loss: 
 const ROUND_TIME = 115;
 const TEAM_NAME = { KT: 'Kontr-terroristlar', T: 'Terroristlar' };
 const els = {};
-['hud', 'moneyV', 'moneyPop', 'scKT', 'scT', 'pipKT', 'pipT', 'timer', 'feed', 'dmg', 'dirs', 'scope', 'hitmark', 'pick', 'speedo', 'spdV', 'tPick', 'prog', 'progF', 'progL', 'flashO', 'center', 'centerH', 'centerP', 'hint', 'spec',
+['hud', 'moneyV', 'moneyPop', 'scKT', 'scT', 'pipKT', 'pipT', 'timer', 'feed', 'dmg', 'dirs', 'scope', 'hitmark', 'pick', 'speedo', 'spdV', 'prog', 'progF', 'progL', 'flashO', 'center', 'centerH', 'centerP', 'hint', 'spec',
  'hpV', 'hpBox', 'arV', 'wName', 'magV', 'resV', 'slots', 'menu', 'pause', 'buy', 'buyGrid', 'buyMoney', 'buyTime', 'board', 'boardCard', 'over', 'touch'].forEach(id => els[id] = document.getElementById(id));
 const input = { keys: {}, mouseDown: false, locked: false, fallback: false, touchMode: false, buyOpen: false, boardOpen: false };
-const touch = { mx: 0, my: 0, fire: false, jump: false, crouch: false };
+const touch = { mx: 0, my: 0, fire: false, jump: false, crouch: false, use: false, auto: false };
 let spectating = null, playerBody = null, bodyPh = 0;
 
 function setupTeams(team) {
@@ -157,7 +157,7 @@ function updatePlayer(dt) {
   if (p.reloadT > 0) { p.reloadT -= dt; if (p.reloadT <= 0) finishReload(); }
   if (p.autoReload && p.cool <= 0) startReload();
   if (p.rescopeT > 0) { p.rescopeT -= dt; if (p.rescopeT <= 0 && p.scopeResume && curDef().scope && p.reloadT <= 0) p.scope = p.scopeResume; if (p.rescopeT <= 0) p.scopeResume = 0; }
-  const firing = input.mouseDown || touch.fire;
+  const firing = input.mouseDown || touch.fire || (touch.auto && input.touchMode);
   if (firing && (game.state === 'live' || game.state === 'end')) tryFire();
   if (!firing) p.triggerReleased = true;
   // Between bursts the spray resets: the shot index winds back and the aim punch settles
@@ -317,7 +317,7 @@ function updateHUD(dt) {
   setT('hint', hint); els.hint.hidden = !hint;
   const pt = pickTarget && pickTarget.st.def, cur = pt && p.inv[pt.slot];
   const pk = pt ? `E — ${pt.name} olish${cur ? ` (${cur.def.name} tashlanadi)` : ''}` : '';
-  setT('pick', pk); els.pick.hidden = !pk; els.tPick.hidden = !input.touchMode || !(pk || (bomb.state === 'planted' && p.team === 'KT'));
+  setT('pick', pk); els.pick.hidden = !pk;
   const kmh = Math.round(Math.hypot(p.vel.x, p.vel.z) * 3.6);
   els.speedo.hidden = !settings.speedo || !p.alive;
   if (settings.speedo) { setT('spdV', String(kmh)); els.speedo.classList.toggle('fast', kmh > 24); }
@@ -453,7 +453,7 @@ function lockFailed() {
 }
 function pauseGame() {
   if (game.state === 'menu' || game.paused || !els.over.hidden) return;
-  game.paused = true; input.mouseDown = false; els.pause.hidden = false; syncSens();
+  game.paused = true; input.mouseDown = false; els.pause.hidden = false; syncSens(); TouchUI.reset();
 }
 function resumeGame() { game.paused = false; els.pause.hidden = true; tryFullscreen(); lockPointer(); Snd.init(); }
 // Fullscreen + keyboard lock lets Ctrl+W be used for crouch-walking without closing the tab (where the browser allows it).
@@ -473,6 +473,7 @@ function selectMap(id) {
 }
 function toMenu() {
   game.state = 'menu'; game.paused = false; els.pause.hidden = true; els.over.hidden = true; closeBuy(false); Snd.ambient(0);
+  document.body.classList.remove('playing'); TouchUI.reset();
   els.hud.hidden = true; els.touch.hidden = true; els.menu.hidden = false; setSpectate(null);
   if (document.pointerLockElement) document.exitPointerLock();
 }
@@ -491,9 +492,21 @@ function startGame(e) {
   Snd.init();
   input.touchMode = (e && e.pointerType === 'touch') || matchMedia('(pointer: coarse)').matches;
   SK = SKILL[settings.diff];
+  // phones start on the fast graphics preset unless the player picked one
+  if (input.touchMode && store.get('kq_quality', null) === null) settings.quality = 0;
+  applyQuality();
   els.menu.hidden = true; els.over.hidden = true; els.hud.hidden = false; els.touch.hidden = !input.touchMode;
+  document.body.classList.toggle('touch', input.touchMode); document.body.classList.add('playing');
+  TouchUI.reset(); TouchUI.place();
   sizeRadar(); newMatch(); Snd.ambient(MAP.theme.wind);
-  if (input.touchMode) { try { const r = document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); if (r && r.catch) r.catch(() => {}); } catch (err) {} }
+  if (input.touchMode) {
+    // fullscreen + landscape lock where the browser allows it
+    try {
+      const r = document.documentElement.requestFullscreen && document.documentElement.requestFullscreen({ navigationUI: 'hide' });
+      const lockLand = () => { try { const o = screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape'); if (o && o.catch) o.catch(() => {}); } catch (err) {} };
+      if (r && r.then) r.then(lockLand).catch(() => {}); else lockLand();
+    } catch (err) {}
+  }
   else { tryFullscreen(); lockPointer(); }
 }
 function syncSens() {
@@ -518,6 +531,8 @@ function initMenu() {
   const sp = initSettingsUI();
   document.getElementById('setBtn').addEventListener('click', () => sp.open());
   document.getElementById('setBtn2').addEventListener('click', () => sp.open());
+  document.getElementById('teOpen').addEventListener('click', () => TouchUI.open());
+  document.getElementById('teOpen2').addEventListener('click', () => TouchUI.open());
   const xh = initCrosshairUI();
   document.getElementById('xhBtn').addEventListener('click', () => xh.open());
   document.getElementById('xhBtn2').addEventListener('click', () => xh.open());
@@ -607,43 +622,6 @@ document.addEventListener('pointerlockchange', () => {
 });
 document.addEventListener('pointerlockerror', lockFailed);
 
-// Touch controls
-(function initTouch() {
-  const base = document.getElementById('stickBase'), knob = document.getElementById('stickKnob');
-  let stickId = null, sx = 0, sy = 0;
-  const zone = document.getElementById('stickZone');
-  zone.addEventListener('pointerdown', e => { stickId = e.pointerId; zone.setPointerCapture(e.pointerId); const r = base.getBoundingClientRect(); sx = r.left + r.width / 2; sy = r.top + r.height / 2; moveStick(e); });
-  zone.addEventListener('pointermove', e => { if (e.pointerId === stickId) moveStick(e); });
-  const endStick = e => { if (e.pointerId !== stickId) return; stickId = null; touch.mx = touch.my = 0; knob.style.transform = ''; };
-  zone.addEventListener('pointerup', endStick); zone.addEventListener('pointercancel', endStick);
-  function moveStick(e) {
-    let dx = e.clientX - sx, dy = e.clientY - sy; const d = Math.hypot(dx, dy), max = 50;
-    if (d > max) { dx *= max / d; dy *= max / d; }
-    touch.mx = dx / max; touch.my = dy / max; knob.style.transform = `translate(${dx}px,${dy}px)`;
-  }
-  const lookers = {};
-  const lookStart = e => { lookers[e.pointerId] = { x: e.clientX, y: e.clientY }; e.currentTarget.setPointerCapture(e.pointerId); };
-  const lookMove = e => { const l = lookers[e.pointerId]; if (!l || !playing()) return; look(e.clientX - l.x, e.clientY - l.y, 0.006); l.x = e.clientX; l.y = e.clientY; };
-  const lookEnd = e => { delete lookers[e.pointerId]; };
-  const lz = document.getElementById('lookZone');
-  lz.addEventListener('pointerdown', lookStart); lz.addEventListener('pointermove', lookMove); lz.addEventListener('pointerup', lookEnd); lz.addEventListener('pointercancel', lookEnd);
-  const fire = document.getElementById('tFire');
-  fire.addEventListener('pointerdown', e => { touch.fire = true; fire.classList.add('on'); lookStart(e); });
-  fire.addEventListener('pointermove', lookMove);
-  const fireEnd = e => { touch.fire = false; fire.classList.remove('on'); lookEnd(e); };
-  fire.addEventListener('pointerup', fireEnd); fire.addEventListener('pointercancel', fireEnd);
-  const hold = (id, key) => { const b = document.getElementById(id); b.addEventListener('pointerdown', () => { touch[key] = true; b.classList.add('on'); }); const off = () => { touch[key] = false; b.classList.remove('on'); }; b.addEventListener('pointerup', off); b.addEventListener('pointercancel', off); };
-  hold('tJump', 'jump');
-  const crouchBtn = document.getElementById('tCrouch');
-  crouchBtn.addEventListener('pointerdown', () => { touch.crouch = !touch.crouch; crouchBtn.classList.toggle('on', touch.crouch); });
-  const tap = (id, fn) => document.getElementById(id).addEventListener('pointerdown', e => { e.preventDefault(); if (playing()) fn(); });
-  const pb = document.getElementById('tPick'); // tap to pick up, hold to defuse
-  pb.addEventListener('pointerdown', e => { e.preventDefault(); touch.use = true; if (playing()) pickupTarget(); });
-  const pOff = () => { touch.use = false; }; pb.addEventListener('pointerup', pOff); pb.addEventListener('pointercancel', pOff);
-  tap('tReload', startReload); tap('tSwap', () => cycleWeapon(1)); tap('tScope', secondaryAction);
-  tap('tBuy', () => input.buyOpen ? closeBuy(false) : openBuy()); tap('tPause', pauseGame);
-})();
-
 addEventListener('resize', () => {
   renderer.setSize(innerWidth, innerHeight);
   camera.aspect = vCam.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); vCam.updateProjectionMatrix();
@@ -664,6 +642,7 @@ function update(dt) {
   updateSmokes(dt);
   updateFlash(dt);
   updateStreak(dt);
+  TouchUI.update(dt);
   updateFx(dt);
   spotTick(dt);
   updateCamera(dt);

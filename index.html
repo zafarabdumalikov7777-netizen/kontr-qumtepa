@@ -2,7 +2,7 @@
 <html lang="uz">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="description" content="Brauzerda ishlaydigan 3D taktik shooter: 4 xarita, 5x5 botlar, raundlar, iqtisod, bunnyhop va spray naqshlari.">
 <title>Kontr Qumtepa</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -89,7 +89,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--sand);outline-o
 #speedo small{font-size:11px;letter-spacing:.12em;color:var(--muted)}
 #speedo.fast b{color:var(--sand)}
 .pair{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-#tPick{right:calc(196px + var(--ir));bottom:calc(120px + var(--ib));border-color:var(--sand)}
 #xhair{position:absolute;left:50%;top:50%;width:160px;height:160px;margin:-80px 0 0 -80px;text-shadow:none}
 .card.xh-card{width:min(100%,720px);gap:14px}
 #xhPrev{display:block;width:100%;height:110px;border:1px solid var(--line)}
@@ -230,21 +229,49 @@ tr.me td{color:var(--sand);font-weight:600}
 .stats small{color:var(--muted);font-size:11px;letter-spacing:.12em;text-transform:uppercase}
 
 /* ---------- Touch ---------- */
-#touch{position:fixed;inset:0;z-index:5}
-#stickZone{position:absolute;left:0;bottom:0;width:45%;height:60%}
-#lookZone{position:absolute;right:0;top:0;width:55%;height:100%}
-#stickBase{position:absolute;width:120px;height:120px;border-radius:50%;border:2px solid rgba(227,197,142,.35);background:rgba(10,12,14,.25);left:calc(30px + var(--il));bottom:calc(40px + var(--ib))}
-#stickKnob{position:absolute;width:52px;height:52px;border-radius:50%;background:rgba(227,197,142,.5);left:34px;top:34px}
-.tb{position:absolute;border-radius:50%;border:2px solid rgba(227,197,142,.45);background:rgba(10,12,14,.45);font-family:var(--f-display);font-size:12px;font-weight:700;letter-spacing:.06em;width:58px;height:58px;display:flex;align-items:center;justify-content:center;touch-action:none}
-.tb.on{background:rgba(227,197,142,.5);color:#1a140b}
-#tFire{width:84px;height:84px;right:calc(26px + var(--ir));bottom:calc(120px + var(--ib));border-color:rgba(255,77,64,.7);font-size:14px}
-#tJump{right:calc(124px + var(--ir));bottom:calc(60px + var(--ib))}
-#tCrouch{right:calc(196px + var(--ir));bottom:calc(30px + var(--ib))}
-#tReload{right:calc(124px + var(--ir));bottom:calc(140px + var(--ib))}
-#tSwap{right:calc(26px + var(--ir));bottom:calc(220px + var(--ib))}
-#tScope{right:calc(110px + var(--ir));bottom:calc(220px + var(--ib))}
-#tBuy{right:calc(26px + var(--ir));top:calc(200px + var(--it))}
-#tPause{right:calc(96px + var(--ir));top:calc(200px + var(--it))}
+#touch{position:fixed;inset:0;z-index:5;touch-action:none;--op:.75}
+#touch .tb,#stickBase{opacity:var(--op)}
+#stickBase{position:absolute;transform:translate(-50%,-50%);border-radius:50%;border:2px solid rgba(227,197,142,.45);background:rgba(10,12,14,.3);width:130px;height:130px}
+#stickKnob{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);border-radius:50%;background:rgba(227,197,142,.55);width:52px;height:52px;pointer-events:none}
+.tb{position:absolute;transform:translate(-50%,-50%);border-radius:50%;border:2px solid rgba(227,197,142,.5);background:rgba(10,12,14,.5);font-family:var(--f-display);font-size:12px;font-weight:700;letter-spacing:.04em;display:flex;align-items:center;justify-content:center;touch-action:none;padding:0;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+.tb.red{border-color:rgba(255,77,64,.75)}
+.tb.on{background:rgba(227,197,142,.55);color:#1a140b}
+#touch.edit{z-index:31;background:rgba(6,8,10,.35)}
+#touch.edit .tb,#touch.edit #stickBase{opacity:1;cursor:grab;outline:1px dashed rgba(227,197,142,.6);outline-offset:3px}
+#touch.edit .tb.off{opacity:.3;text-decoration:line-through}
+#touch.edit .sel{outline:2px solid var(--sand);box-shadow:0 0 0 6px rgba(227,197,142,.2)}
+#tedit{position:fixed;z-index:32;left:50%;top:calc(8px + var(--it));transform:translateX(-50%);width:min(calc(100% - 24px),760px);background:rgba(18,21,25,.96);border:1px solid var(--line);padding:10px 12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px 14px;align-items:end;font-size:12px;max-height:46vh;overflow:auto}
+#tedit.bottom{top:auto;bottom:calc(8px + var(--ib))}
+#tedit .te-title{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+#tedit .te-title b{font-family:var(--f-display);font-size:15px;color:var(--sand)}
+#tedit .field{gap:4px}
+#tedit .seg button{padding:6px}
+#tedit .te-actions{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap}
+#tedit .te-actions>*{flex:1;padding:9px 12px;font-size:14px}
+#rotate{position:fixed;inset:0;z-index:40;background:var(--ink);display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;padding:24px;font-family:var(--f-display)}
+#rotate i{width:46px;height:80px;border:3px solid var(--sand);border-radius:8px;animation:rot 1.6s ease-in-out infinite}
+@keyframes rot{0%,30%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
+@media (orientation:portrait){body.touch.playing #rotate{display:flex}}
+@media (max-height:500px){
+  #radar{width:104px;height:104px;left:calc(8px + var(--il));top:calc(8px + var(--it))}
+  #money{top:calc(118px + var(--it));left:calc(10px + var(--il));font-size:16px}
+  #top .sc{min-width:44px;font-size:16px;padding:3px 8px 4px}
+  #timer{font-size:17px;min-width:60px;padding:3px 10px}
+  #feed{top:calc(30px + var(--it))!important}
+  .kf{font-size:11px;padding:2px 7px}
+  .v{font-size:20px;padding:4px 9px}
+  .v small{display:none}
+  #vitals{left:calc(8px + var(--il));bottom:calc(8px + var(--ib))}
+  #ammo{min-width:0;padding:4px 10px;right:calc(8px + var(--ir));bottom:calc(8px + var(--ib))}
+  #ammoNum{font-size:22px}
+  #wName,#slots{display:none}
+  #speedo{bottom:auto;top:calc(40px + var(--it));padding:2px 8px;min-width:0}
+  #speedo b{font-size:16px}
+  #hint{bottom:auto;top:calc(64px + var(--it));font-size:12px}
+  #center{top:18%}
+  .brand h1{font-size:56px}
+  .lede{display:none}
+}
 @media (max-width:640px){
   #speedo{bottom:auto;top:calc(64px + var(--it));min-width:0;padding:3px 10px}
   #speedo b{font-size:18px}
@@ -297,18 +324,21 @@ tr.me td{color:var(--sand);font-weight:600}
 </div>
 
 <div id="touch" hidden>
-  <div id="stickZone"><div id="stickBase"><div id="stickKnob"></div></div></div>
-  <div id="lookZone"></div>
-  <button class="tb" id="tFire" type="button">OTISH</button>
-  <button class="tb" id="tJump" type="button">SAKRA</button>
-  <button class="tb" id="tCrouch" type="button">CHO‘K</button>
-  <button class="tb" id="tReload" type="button">O‘Q</button>
-  <button class="tb" id="tSwap" type="button">QUROL</button>
-  <button class="tb" id="tScope" type="button">OPTIKA</button>
-  <button class="tb" id="tBuy" type="button">$</button>
-  <button class="tb" id="tPause" type="button">II</button>
-  <button class="tb" id="tPick" type="button" hidden>OLISH</button>
+  <div id="stickBase"><div id="stickKnob"></div></div>
 </div>
+
+<div id="tedit" hidden>
+  <div class="te-title"><b id="teName">Tugmani tanlang — keyin sudrang</b><button id="teMove" class="ghost" type="button" style="padding:5px 10px">Panelni ko‘chirish ↕</button></div>
+  <label class="field" for="teSize"><span class="label">Hajmi <output id="teSizeO">100%</output></span><input type="range" id="teSize" min="0.6" max="1.8" step="0.05"></label>
+  <label class="check" for="teHide"><input type="checkbox" id="teHide"> Bu tugmani yashirish</label>
+  <label class="field" for="teOp"><span class="label">Tugmalar ko‘rinishi <output id="teOpO">75%</output></span><input type="range" id="teOp" min="0.2" max="1" step="0.05"></label>
+  <label class="field" for="teSens"><span class="label">Ekran sezgirligi <output id="teSensO">1.00</output></span><input type="range" id="teSens" min="0.2" max="3" step="0.05"></label>
+  <div class="field"><span class="label">Joystik</span><div class="seg seg2" id="teStick"><button type="button" data-v="fixed">Qotgan</button><button type="button" data-v="float">Suzuvchi</button></div></div>
+  <label class="check" for="teAuto"><input type="checkbox" id="teAuto"> Avto-otish (nishon raqibda bo‘lsa)</label>
+  <div class="te-actions"><button id="teReset" class="ghost" type="button">Standart joylashuv</button><button id="teDone" class="primary" type="button">SAQLASH</button></div>
+</div>
+
+<div id="rotate"><i></i><div>Telefonni gorizontal holatga burang</div></div>
 
 <section id="menu" class="overlay menu">
   <div class="menu-grid">
@@ -369,6 +399,7 @@ tr.me td{color:var(--sand);font-weight:600}
     <div><div class="eyebrow">Pauza</div><h2>O‘yin to‘xtatildi</h2></div>
     <label class="field" for="sens2"><span class="label">Sichqoncha sezgirligi <output id="sensOut2">1.00</output></span><input type="range" id="sens2" min="0.2" max="3" step="0.05"></label>
     <div class="pair"><button id="xhBtn2" class="ghost" type="button">Pritsel</button><button id="setBtn2" class="ghost" type="button">Sozlamalar</button></div>
+    <button id="teOpen2" class="ghost" type="button">Tugmalarni joylashtirish</button>
     <div class="row"><button id="resumeBtn" class="primary" type="button">DAVOM ETISH</button><button id="quitBtn" class="ghost" type="button">Bosh menyu</button></div>
   </div>
 </section>
@@ -389,6 +420,7 @@ tr.me td{color:var(--sand);font-weight:600}
       <label class="check" for="setFps"><input type="checkbox" id="setFps"> FPS ko‘rsatkichi</label>
       <label class="check" for="setSpeedo"><input type="checkbox" id="setSpeedo"> Tezlik (km/soat)</label>
     </div>
+    <button id="teOpen" class="ghost" type="button">Sensorli tugmalarni joylashtirish</button>
     <button id="setDone" class="primary" type="button">TAYYOR</button>
   </div>
 </section>
@@ -461,6 +493,7 @@ tr.me td{color:var(--sand);font-weight:600}
 <script src="js/bomb.js"></script>
 <script src="js/modes.js"></script>
 <script src="js/extras.js"></script>
+<script src="js/touch.js"></script>
 <script src="js/game.js"></script>
 </body>
 </html>
