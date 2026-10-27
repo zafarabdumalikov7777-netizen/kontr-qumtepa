@@ -118,19 +118,21 @@ function botHurt(b, att) {
 const curState = () => player.inv[player.slot];
 const curDef = () => (curState() || player.inv[3]).def;
 // ---------- Spray patterns: cumulative [right, up] offsets in degrees for each shot of a burst ----------
+// AK-47 and M4 use Counter-Strike's per-shot recoil table (screen deltas, x right / y up), summed into a path.
+const AK_DELTAS = [[-4, 7], [4, 19], [-3, 29], [-1, 31], [13, 31], [8, 28], [13, 21], [-17, 12], [-42, -3], [-21, 2], [12, 11], [-15, 7], [-26, -8], [-3, 4], [40, 1],
+  [19, 7], [14, 10], [27, 0], [33, -10], [-21, -2], [7, 3], [-7, 9], [-8, 4], [19, -3], [5, 6], [-20, -1], [-33, -4], [-45, -21], [-14, 1]];
+const M4_DELTAS = [[2, 7], [0, 9], [-6, 16], [7, 21], [-9, 23], [-5, 27], [16, 15], [11, 13], [22, 5], [-4, 11], [-18, 6], [-30, -4], [-24, 0], [-25, -6],
+  [0, 4], [8, 4], [-11, 1], [-13, -2], [2, 2], [33, -1], [10, 6], [27, 3], [10, 2], [11, 0]];
+const fromDeltas = (deltas, degPerUnit) => { let x = 0, y = 0; return [[0, 0], ...deltas.map(([dx, dy]) => { x += dx; y += dy; return [x * degPerUnit, y * degPerUnit]; })]; };
 const SPRAY = (() => {
-  const ak = [[0, 0], [0, 0.35], [0.05, 0.9], [0.1, 1.6], [0.05, 2.35], [-0.05, 3], [-0.15, 3.55], [-0.1, 3.95], [0.05, 4.25], [-0.35, 4.45],
-    [-0.75, 4.55], [-1.15, 4.6], [-1.45, 4.65], [-1.6, 4.75], [-1.4, 4.8], [-0.9, 4.85], [-0.3, 4.85], [0.3, 4.9], [0.85, 4.95], [1.25, 5],
-    [1.45, 5], [1.2, 5.05], [0.8, 5.05], [0.4, 5.1], [0.1, 5.1], [-0.2, 5.15], [0, 5.2], [0.3, 5.2], [0.55, 5.25], [0.7, 5.25]];
-  const m4 = [[0, 0], [0, 0.25], [0, 0.65], [0.05, 1.15], [0.05, 1.65], [0, 2.1], [-0.05, 2.45], [-0.1, 2.7], [-0.25, 2.9], [-0.45, 3],
-    [-0.6, 3.05], [-0.65, 3.1], [-0.5, 3.15], [-0.25, 3.2], [0.05, 3.2], [0.35, 3.25], [0.6, 3.25], [0.75, 3.3], [0.7, 3.3], [0.5, 3.35],
-    [0.25, 3.35], [0, 3.4], [-0.2, 3.4], [-0.35, 3.45], [-0.4, 3.45]];
+  const ak = fromDeltas(AK_DELTAS, 0.05);   // tops out ≈ 9.5° up, −4°…+2.6° sideways
+  const m4 = fromDeltas(M4_DELTAS, 0.042);  // silenced M4: ≈ 7.5° up, smaller sway
   const mp5 = Array.from({ length: 30 }, (_, i) => [0.5 * Math.sin(i / 3.2) * Math.min(1, i / 8), 2.2 * (1 - Math.exp(-i / 5))]);
   const semi = k => Array.from({ length: 12 }, (_, i) => [(i % 2 ? 1 : -1) * 0.08 * i, k * Math.min(i, 6)]);
   return { ak47: ak, m4a1: m4, mp5, usp: semi(0.45), glock: semi(0.4), deagle: semi(1.5), awp: [[0, 0], [0, 2.5]] };
 })();
 // How far each pattern is stretched (AK tops out near 9° like CS2) and how hard each shot snaps the view (radians)
-const SPRAY_SCALE = { ak47: 1.75, m4a1: 1.6, mp5: 1.5, deagle: 1.3, usp: 1.3, glock: 1.3 };
+const SPRAY_SCALE = { ak47: 1, m4a1: 1, mp5: 1.5, deagle: 1.3, usp: 1.3, glock: 1.3 };
 const KICK = { ak47: 0.012, m4a1: 0.008, mp5: 0.006, awp: 0.06, deagle: 0.035, usp: 0.013, glock: 0.011 };
 function sprayAt(def, i) {
   const pat = SPRAY[def.id]; if (!pat) return [0, 0];
@@ -169,6 +171,7 @@ function startReload() {
 function finishReload() {
   const st = curState(); if (!st || !st.def.mag) return;
   const n = Math.min(st.def.mag - st.mag, st.res); st.mag += n; st.res -= n;
+  if (game.mode === 'practice') st.res = st.def.res;
 }
 function secondaryAction() {
   const p = player, def = curDef(); if (!p.alive) return;
@@ -192,6 +195,7 @@ function tryFire() {
   if (st.mag <= 0) { if (p.triggerReleased) Snd.dry(); p.triggerReleased = false; startReload(); return; }
   p.triggerReleased = false;
   st.mag--; p.cool = def.rate; p.lastShot = game.time;
+  if (game.mode === 'practice') st.res = st.def.res; // practice: endless reserve, reloads stay real
   // Each shot lands on the weapon's fixed spray pattern; pulling the mouse down compensates
   const idx = Math.round(p.shotsF), sp = sprayAt(def, idx);
   p.punchY = -sp[0]; p.punchP = sp[1];

@@ -45,6 +45,52 @@ function dmRespawn(a) {
   } else resetBotModel(a);
   updatePips();
 }
+// ---------- Practice range: face a wall ~11 m away and hang a white target board on it ----------
+let practiceBoard = null;
+function removePracticeBoard() {
+  if (!practiceBoard) return;
+  worldGroup.remove(practiceBoard); const i = worldMeshes.indexOf(practiceBoard); if (i >= 0) worldMeshes.splice(i, 1);
+  practiceBoard.geometry.dispose(); practiceBoard.material.map.dispose(); practiceBoard.material.dispose(); practiceBoard = null;
+}
+function setupPractice() {
+  removePracticeBoard();
+  const p = player; let best = null;
+  for (let i = 0; i < 72; i++) {
+    const yaw = i / 72 * Math.PI * 2, fx = -Math.sin(yaw), fz = -Math.cos(yaw);
+    let d = 0.5, pcx = wcx(p.pos.x), pcz = wcz(p.pos.z), axis = '';
+    while (d < 40) {
+      const x = p.pos.x + fx * d, z = p.pos.z + fz * d, cx = wcx(x), cz = wcz(z);
+      const c = G[cz] && G[cz][cx];
+      if (c === undefined || c === '#' || c === 'C') { axis = cx !== pcx ? 'x' : 'z'; break; }
+      pcx = cx; pcz = cz; d += 0.05;
+    }
+    if (d > 6 && d < 40) {
+      // prefer facing the wall squarely, and the whole 3.4 m board must land on solid wall
+      const square = axis === 'x' ? Math.abs(fx) : Math.abs(fz);
+      const hx = p.pos.x + fx * d, hz = p.pos.z + fz * d, tx = axis === 'x' ? 0 : 1, tz = axis === 'x' ? 1 : 0;
+      const into = (x, z) => { const c = G[wcz(z)] && G[wcz(z)][wcx(x)]; return c === '#'; };
+      const fits = [-1.8, 1.8].every(o => into(hx + tx * o + fx * 0.15, hz + tz * o + fz * 0.15));
+      const score = Math.abs(d - 11) + 10 * (1 - square) + (fits ? 0 : 100);
+      if (!best || score < best.score) best = { yaw, d, score, fx, fz, axis };
+    }
+  }
+  if (!best) return;
+  p.yaw = best.yaw; p.pitch = 0;
+  const tex = canvasTex(512, (g, s) => {
+    g.fillStyle = '#f4f2ee'; g.fillRect(0, 0, s, s);
+    g.strokeStyle = 'rgba(60,60,70,0.18)'; g.lineWidth = 1;
+    for (let k = 0; k <= s; k += s / 32) { g.beginPath(); g.moveTo(k, 0); g.lineTo(k, s); g.stroke(); g.beginPath(); g.moveTo(0, k); g.lineTo(s, k); g.stroke(); }
+    g.strokeStyle = 'rgba(200,40,30,0.8)'; g.lineWidth = 3;
+    for (const r of [24, 64, 120]) { g.beginPath(); g.arc(s / 2, s * 0.62, r, 0, Math.PI * 2); g.stroke(); }
+    g.fillStyle = '#c8281e'; g.beginPath(); g.arc(s / 2, s * 0.62, 7, 0, Math.PI * 2); g.fill();
+  }, { repeat: false });
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 3.4), std({ map: tex, roughness: 0.95 }));
+  const hx = p.pos.x + best.fx * (best.d - 0.04), hz = p.pos.z + best.fz * (best.d - 0.04);
+  // hang it flat on the wall: its normal points back along the axis the ray crossed
+  const nx = best.axis === 'x' ? -Math.sign(best.fx) : 0, nz = best.axis === 'z' ? -Math.sign(best.fz) : 0;
+  m.position.set(hx + nx * 0.07, 1.65 + 0.46, hz + nz * 0.07); m.rotation.y = Math.atan2(nx, nz); m.receiveShadow = true;
+  worldGroup.add(m); worldMeshes.push(m); practiceBoard = m;
+}
 function dmTick(dt) {
   for (const a of agents) if (!a.alive && a.respawnT > 0) { a.respawnT -= dt; if (a.respawnT <= 0) dmRespawn(a); }
 }

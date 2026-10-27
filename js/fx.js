@@ -132,7 +132,7 @@ function tracer(a, b) {
 }
 const decals = [];
 const decalMat = new THREE.MeshBasicMaterial({ map: texHole, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 });
-for (let i = 0; i < 80; i++) { const m = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 0.16), decalMat); m.visible = false; scene.add(m); decals.push(m); }
+for (let i = 0; i < 180; i++) { const m = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 0.16), decalMat); m.visible = false; scene.add(m); decals.push(m); }
 let decalIdx = 0;
 const _look = new V3();
 function addDecal(p, n) {
@@ -171,13 +171,14 @@ const VM_KIND = { ak: 'rifle', m4: 'rifle', awp: 'rifle', smg: 'rifle', pistol: 
 const flashMat = new THREE.SpriteMaterial({ map: texFlash, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true });
 const vmFlash = new THREE.Sprite(flashMat); vmFlash.scale.set(0.22, 0.22, 0.22); vmFlash.visible = false;
 const vm = {
-  root: new THREE.Group(), cur: null, kind: 'pistol', cache: {}, kick: 0, bob: 0, swayX: 0, swayY: 0, swing: 0, flashT: 0,
+  root: new THREE.Group(), cur: null, kind: 'pistol', cache: {}, kick: 0, kv: 0, bob: 0, swayX: 0, swayY: 0, swing: 0, flashT: 0,
   set(def, team) {
     const key = def.model + '_' + team;
     if (this.cur) this.root.remove(this.cur);
     let m = this.cache[key]; if (!m) { m = buildGun(def.model, team); this.cache[key] = m; }
     this.cur = m; this.root.add(m); m.userData.muzzle.add(vmFlash); this.kind = VM_KIND[def.model] || 'rifle';
   },
-  fire(power = 1) { this.kick = power; this.kickY = (Math.random() - 0.5) * 0.06 * power; vmFlash.visible = this.kind !== 'knife' && this.kind !== 'he'; vmFlash.material.rotation = Math.random() * 6; this.flashT = 0.045; }
+  // the weapon is kicked like a spring: it snaps back, overshoots a little and settles
+  fire(power = 1) { this.kv += 30 * power; this.kickY = (Math.random() - 0.5) * 0.06 * power; vmFlash.visible = this.kind !== 'knife' && this.kind !== 'he'; vmFlash.material.rotation = Math.random() * 6; this.flashT = 0.045; }
 };
 vScene.add(vm.root);

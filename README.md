@@ -10,6 +10,7 @@ Mahalliy ishga tushirish: `index.html` faylini Chrome yoki Edge’da oching (int
 
 - **Raqobat (C4 bomba):** T jamoa bombani A yoki B nuqtasiga qo‘yadi, KT zararsizlantiradi. 8 g‘alabagacha, iqtisod va xarid menyusi bilan.
 - **Deathmatch:** 6 daqiqa, o‘lsangiz 2,5 soniyada qayta tug‘ilasiz, qurollar bepul.
+- **Mashq:** botlarsiz, cheksiz o‘q, devordagi oq nishon taxtasiga spray qilib tepkini nazorat qilishni o‘rganasiz.
 
 ## Imkoniyatlar
 
@@ -17,6 +18,7 @@ Mahalliy ishga tushirish: `index.html` faylini Chrome yoki Edge’da oching (int
 - Ittifoqchi va raqib botlar soni (har jamoada 10 tagacha), 3 xil qiyinlik; botlar bomba qo‘yadi va zararsizlantiradi
 - Granatalar: HE, flesh (ko‘r qiladi), tutun (ko‘rinishni to‘sadi); defuse kit
 - Qurol olish/almashtirish (E), tashlash (G), qurolni ko‘zdan kechirish (F)
+- CS2’dagi haqiqiy tepki: AK-47 va M4 uchun CS’ning har bir o‘qdagi siljish jadvali, ko‘rinish sapchishi, qurolning prujinali tepkisi; «Pritsel tepkiga ergashsin» sozlamasi
 - CS2 uslubidagi spray naqshlari, bunnyhop va air strafe, km/soat va FPS ko‘rsatkichlari
 - Seriya bannerlari (IKKITA!, UCHTA!, ACE!), hisob jadvalida BOSH% va ADR
 - Sozlanadigan pritsel (rang, uzunlik, qalinlik, oraliq, kontur, nuqta, T-shakl, ulashish kodi)

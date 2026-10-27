@@ -16,8 +16,9 @@ function setupTeams(team) {
   playerBody = makeSoldier(team, 0, true);
   player.team = team; bots = []; let id = 1;
   const enemy = team === 'KT' ? 'T' : 'KT';
-  NAMES[team].slice(0, settings.allies).forEach(n => bots.push(makeBot(n, team, id++)));
-  NAMES[enemy].slice(0, settings.enemies).forEach(n => bots.push(makeBot(n, enemy, id++)));
+  const practice = settings.mode === 'practice'; // practice range: no bots at all
+  NAMES[team].slice(0, practice ? 0 : settings.allies).forEach(n => bots.push(makeBot(n, team, id++)));
+  NAMES[enemy].slice(0, practice ? 0 : settings.enemies).forEach(n => bots.push(makeBot(n, enemy, id++)));
   agents = [player, ...bots];
   const roles = ['A', 'B', 'mid']; let r = 0;
   bots.forEach(b => { if (b.team === 'KT') b.role = roles[r++ % roles.length]; });
@@ -65,13 +66,20 @@ function startRound(first) {
   clearFx(); clearDrops(); clearUtility(); nades.forEach(n => scene.remove(n.mesh)); nades.length = 0;
   setSpectate(null);
   spawnAll(first);
-  if (game.mode === 'dm') {
+  if (game.mode === 'practice') {
+    game.state = 'live'; game.timer = 0; bombReset();
+    player.inv[1] = wstate(player.team === 'T' ? WEAPONS.ak47 : WEAPONS.m4a1); player.slot = 0; switchTo(1); player.switchT = 0;
+    player.armor = 100; player.helmet = true; setupPractice();
+    showCenter('Mashq', 'Cheksiz o‘q · devorga spray qilib tepkini o‘rganing · B — bepul qurollar', '', 4);
+  } else if (game.mode === 'dm') {
+    removePracticeBoard();
     game.timer = 3;
     for (const a of agents) dmLoadout(a);
     player.slot = 1; vm.set(player.inv[1].def, player.team);
     bombReset();
     showCenter('Deathmatch', `${DM_TIME / 60} daqiqa · o‘lsangiz qayta tug‘ilasiz · B — bepul qurollar`, '', 3);
   } else {
+    removePracticeBoard();
     for (const b of bots) { botBuy(b); planBot(b); }
     bombRoundStart();
     showCenter(`Raund ${game.round}`, `Xarid vaqti · B tugmasi · ${game.score.KT}:${game.score.T}`, '', 2.5);
@@ -95,19 +103,20 @@ function endRound(winner, reason) {
 }
 function checkRoundEnd() {
   updatePips();
-  if (game.state !== 'live' || game.mode === 'dm') return;
+  if (game.state !== 'live' || game.mode !== 'comp') return;
   const kt = agents.some(a => a.alive && a.team === 'KT'), t = agents.some(a => a.alive && a.team === 'T');
   if (!kt) endRound('T', 'elim');
   else if (!t && bomb.state !== 'planted') endRound('KT', 'elim'); // a planted bomb must still be defused
 }
 function updateRound(dt) {
+  if (game.mode === 'practice') return; // no clock, no rounds
   game.timer -= dt;
   if (game.state === 'freeze' && game.timer <= 0) { game.state = 'live'; game.timer = game.mode === 'dm' ? DM_TIME : ROUND_TIME; showCenter('Oldinga!', '', '', 1); }
   else if (game.state === 'live' && game.mode === 'dm') { dmTick(dt); if (game.timer <= 0) { game.timer = 0; showMatchEnd(); } }
   else if (game.state === 'live' && game.timer <= 0 && bomb.state !== 'planted') { game.timer = 0; endRound('KT', 'time'); }
   else if (game.state === 'end' && game.timer <= 0) { if (game.over) showMatchEnd(); else startRound(false); }
 }
-const canBuy = () => player.alive && (game.mode === 'dm' || game.state === 'freeze' || (game.state === 'live' && ROUND_TIME - game.timer < game.buyWindow));
+const canBuy = () => player.alive && (game.mode !== 'comp' || game.state === 'freeze' || (game.state === 'live' && ROUND_TIME - game.timer < game.buyWindow));
 
 // ---------- Player ----------
 function updatePlayer(dt) {
@@ -242,7 +251,8 @@ function updateVM(dt) {
   const hs = Math.hypot(p.vel.x, p.vel.z);
   if (p.onGround && hs > 0.5) vm.bob += dt * hs * 1.5;
   const amp = Math.min(1, hs / 6) * (p.onGround ? 1 : 0.3);
-  vm.kick *= Math.exp(-dt * 14); vm.swing *= Math.exp(-dt * 8); vm.swayX *= Math.exp(-dt * 8); vm.swayY *= Math.exp(-dt * 8);
+  vm.kv += (-vm.kick * 380 - vm.kv * 26) * dt; vm.kick += vm.kv * dt; // damped spring
+  vm.swing *= Math.exp(-dt * 8); vm.swayX *= Math.exp(-dt * 8); vm.swayY *= Math.exp(-dt * 8);
   vm.kickY = (vm.kickY || 0) * Math.exp(-dt * 12);
   let y = base[1] - Math.abs(Math.cos(vm.bob)) * 0.01 * amp - vm.swayY + vm.kick * 0.012, rx = vm.kick * 0.22, ry = (base[3] || 0) + vm.kickY, rz = vm.kickY * 0.6;
   const x = base[0] + Math.sin(vm.bob) * 0.012 * amp - vm.swayX, z = base[2] + vm.kick * 0.075;
@@ -297,8 +307,8 @@ function updateHUD(dt) {
   setT('scKT', String(game.score.KT)); setT('scT', String(game.score.T));
   const planted = bomb.state === 'planted' && game.state === 'live';
   const t = Math.max(0, Math.ceil(planted ? bomb.timer : game.timer));
-  setT('timer', (planted ? 'C4 ' : '') + `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`);
-  els.timer.className = planted ? 'bomb' : game.state === 'freeze' ? 'freeze' : (game.state === 'live' && t <= 10 ? 'low' : '');
+  setT('timer', game.mode === 'practice' ? 'MASHQ' : (planted ? 'C4 ' : '') + `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`);
+  els.timer.className = planted ? 'bomb' : game.state === 'freeze' ? 'freeze' : (game.state === 'live' && t <= 10 && game.mode !== 'practice' ? 'low' : '');
   const pr = bombHud();
   els.prog.hidden = !pr;
   if (pr) { setT('progL', pr.label); els.progF.style.width = `${Math.round(clamp(pr.k, 0, 1) * 100)}%`; }
@@ -311,12 +321,20 @@ function updateHUD(dt) {
   const slotsKey = [1, 2, 3, 4].map(s => (p.inv[s] ? s : '') + (s === p.slot ? '*' : '')).join(',');
   if (cache.slots !== slotsKey) { cache.slots = slotsKey; els.slots.innerHTML = [1, 2, 3, 4].filter(s => p.inv[s]).map(s => `<span class="${s === p.slot ? 'on' : ''}">${s}</span>`).join(''); }
   Xhair.render(Math.min(52, currentSpread() * 700 + p.punchP * 60), p.alive && !p.scope && !def.scope);
+  // "follow recoil": slide the crosshair to where the next bullet actually goes (bullet aim minus what the view already shows)
+  let ox = 0, oy = 0;
+  if (settings.xhRecoil && p.alive) {
+    const px = (innerHeight / 2) / Math.tan(camera.fov * Math.PI / 360);
+    ox = -(p.punchY - p.vpY * 0.55 - p.kickY) * px; oy = -(p.punchP - p.vpP * 0.55 - p.kickP) * px;
+  }
+  const xt = `translate(${ox.toFixed(1)}px, ${oy.toFixed(1)}px)`;
+  if (cache.xt !== xt) { cache.xt = xt; document.getElementById('xhair').style.transform = xt; }
   els.scope.hidden = !(p.alive && p.scope > 0);
   flashDmg = Math.max(0, flashDmg - dt * 1.4); els.dmg.style.opacity = String(flashDmg);
   if (centerT > 0) { centerT -= dt; if (centerT <= 0) els.center.hidden = true; }
   if (popT > 0) { popT -= dt; if (popT <= 0) els.moneyPop.classList.remove('on'); }
   const buyLeft = game.state === 'freeze' ? game.timer + game.buyWindow : game.buyWindow - (ROUND_TIME - game.timer);
-  const hint = bombHint() || (canBuy() && !input.buyOpen ? (game.mode === 'dm' ? 'B — bepul qurollar' : `B — xarid menyusi · ${Math.ceil(buyLeft)} s`) : '');
+  const hint = bombHint() || (canBuy() && !input.buyOpen ? (game.mode !== 'comp' ? 'B — bepul qurollar' : `B — xarid menyusi · ${Math.ceil(buyLeft)} s`) : '');
   setT('hint', hint); els.hint.hidden = !hint;
   const pt = pickTarget && pickTarget.st.def, cur = pt && p.inv[pt.slot];
   const pk = pt ? `E — ${pt.name} olish${cur ? ` (${cur.def.name} tashlanadi)` : ''}` : '';
@@ -380,7 +398,7 @@ const BUY = [
 ];
 const buyDef = it => it.id === 'rifle' ? (player.team === 'T' ? WEAPONS.ak47 : WEAPONS.m4a1) : WEAPONS[it.id];
 function priceOf(it) {
-  if (game.mode === 'dm') return 0;
+  if (game.mode !== 'comp') return 0;
   if (it.id === 'kevlarh') return player.armor >= 100 && !player.helmet ? 350 : 1000;
   const d = buyDef(it); return d ? d.price : it.price;
 }
