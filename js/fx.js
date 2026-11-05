@@ -12,9 +12,27 @@ const Snd = {
         const len = this.ctx.sampleRate, buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate), d = buf.getChannelData(0);
         for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
         this.noise = buf;
+        // room: a convolution reverb (synthetic impulse response) and a slap-back echo off distant walls
+        this.verb = this.ctx.createConvolver(); this.verbOut = this.ctx.createGain(); this.verb.connect(this.verbOut); this.verbOut.connect(this.master);
+        this.echo = this.ctx.createDelay(1); const fb = this.ctx.createGain(), elp = this.ctx.createBiquadFilter();
+        elp.type = 'lowpass'; elp.frequency.value = 1400; fb.gain.value = 0.28;
+        this.echo.connect(elp); elp.connect(fb); fb.connect(this.echo); this.echoOut = this.ctx.createGain(); elp.connect(this.echoOut); this.echoOut.connect(this.master);
+        // soft clipping gives near shots their punch
+        this.clip = this.ctx.createWaveShaper(); const curve = new Float32Array(1024);
+        for (let i = 0; i < 1024; i++) { const x = i / 511.5 - 1; curve[i] = Math.tanh(2.4 * x) / Math.tanh(2.4); }
+        this.clip.curve = curve; this.clip.connect(this.master);
+        this.setRoom();
       }
       if (this.ctx.state === 'suspended') this.ctx.resume();
     } catch (e) { this.ctx = null; }
+  },
+  // Outdoor maps ring with a long thin tail and a clear echo; the warehouse map is a boomy room
+  setRoom() {
+    if (!this.ctx) return;
+    const indoor = MAP && MAP.roofs, len = indoor ? 1.6 : 2.4, sr = this.ctx.sampleRate, ir = this.ctx.createBuffer(2, Math.floor(sr * len), sr);
+    for (let ch = 0; ch < 2; ch++) { const d = ir.getChannelData(ch); for (let i = 0; i < d.length; i++) { const t = i / sr; d[i] = (Math.random() * 2 - 1) * Math.pow(1 - t / len, indoor ? 2.2 : 3.4) * (t < 0.012 ? t / 0.012 : 1); } }
+    this.verb.buffer = ir; this.verbOut.gain.value = indoor ? 0.55 : 0.32;
+    this.echo.delayTime.value = indoor ? 0.07 : 0.21; this.echoOut.gain.value = indoor ? 0.08 : 0.2;
   },
   bus(vol, pan) {
     const c = this.ctx, g = c.createGain(); g.gain.value = vol;
@@ -34,12 +52,29 @@ const Snd = {
     const g = c.createGain(); g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
     o.connect(g); g.connect(out); o.start(t); o.stop(t + dur + 0.05);
   },
+  // A gunshot in layers: supersonic crack, muzzle blast body, low boom, action clack, then room reverb + echo
   shot(kind, vol = 1, pan = 0) {
     if (!this.ctx) return;
-    const P = SHOT[kind] || SHOT.pistol, t = this.ctx.currentTime, out = this.bus(vol, pan), far = vol < 0.35;
-    this.noiseHit(out, t, P.d, far ? P.f * 0.45 : P.f, 'lowpass', 0.7, 1);
-    this.noiseHit(out, t, P.d * 0.35, far ? 900 : 5200, 'bandpass', 1.2, 0.45);
-    this.tone(out, t, P.th, P.th * 0.35, P.d * 0.8, P.tv);
+    const c = this.ctx, P = SHOT[kind] || SHOT.pistol, t = c.currentTime, far = vol < 0.35, near = vol > 0.7;
+    const out = c.createGain(); out.gain.value = vol;
+    const pn = c.createStereoPanner ? c.createStereoPanner() : null; if (pn) { pn.pan.value = clamp(pan, -1, 1); out.connect(pn); }
+    const dry = pn || out;
+    dry.connect(near ? this.clip : this.master);
+    const send = c.createGain(); send.gain.value = far ? 1.1 : 0.55; dry.connect(send); send.connect(this.verb); send.connect(this.echo);
+    if (!far) this.noiseHit(out, t, 0.018, 6500, 'highpass', 0.7, 0.9);                       // crack
+    this.noiseHit(out, t, P.d, far ? P.f * 0.4 : P.f, 'lowpass', 0.8, 1.1);                    // blast body
+    this.noiseHit(out, t + 0.004, P.d * 1.6, far ? 380 : 650, 'lowpass', 0.6, 0.7);            // pressure thump
+    this.tone(out, t, P.th, P.th * 0.32, P.d * 0.9, P.tv);                                      // low boom
+    if (P.d > 0.15) this.tone(out, t, 55, 38, 0.32, P.tv * 0.6);
+    if (!far) this.noiseHit(out, t + 0.045, 0.03, 2800, 'bandpass', 3, 0.22);                 // bolt clack
+  },
+  tink(vol, pan) { // brass casing hitting the floor
+    if (!this.ctx) return; const t = this.ctx.currentTime, o = this.bus(vol, pan);
+    this.tone(o, t, 4700 + Math.random() * 600, 4500, 0.09, 0.35, 'triangle'); this.tone(o, t + 0.005, 7300 + Math.random() * 800, 7000, 0.05, 0.18, 'sine');
+  },
+  whiz(pan) { // an enemy bullet passing close to your head
+    if (!this.ctx) return; const t = this.ctx.currentTime, o = this.bus(0.55, pan);
+    this.noiseHit(o, t, 0.09, 3800, 'bandpass', 4, 0.9); this.noiseHit(o, t, 0.02, 7000, 'highpass', 0.7, 0.6);
   },
   dry() { if (!this.ctx) return; this.tone(this.bus(0.4), this.ctx.currentTime, 1900, 1700, 0.03, 0.6, 'square'); },
   reload() {
@@ -150,8 +185,41 @@ function puff(x, y, z, size, life, fire) {
   p.s.material.map = fire ? texFire : texSmoke; p.s.material.blending = fire ? THREE.AdditiveBlending : THREE.NormalBlending;
   p.s.position.set(x, y, z); p.s.scale.set(size, size, size); p.s.visible = true; p.t = life; p.max = life; p.grow = fire ? 3 : 1.4; p.base = size;
 }
+// ---------- Ejected brass ----------
+const shellMat = new THREE.MeshStandardMaterial({ color: lin(0xd6a64a), metalness: 0.9, roughness: 0.28 });
+const shellGeo = { rifle: new THREE.CylinderGeometry(0.0055, 0.0055, 0.034, 8), pistol: new THREE.CylinderGeometry(0.0055, 0.0055, 0.02, 8) };
+const shells = [];
+for (let i = 0; i < 40; i++) { const m = new THREE.Mesh(shellGeo.rifle, shellMat); m.visible = false; m.castShadow = true; scene.add(m); shells.push({ m, v: new V3(), w: new V3(), t: 0, bounced: 0 }); }
+let shellIdx = 0;
+const _sr = new V3(), _su = new V3(), _sf = new V3();
+// Casings fly out of the ejection port to the right, spin, bounce on the floor and lie there a moment
+function ejectShell(pistol) {
+  const s = shells[shellIdx++ % shells.length];
+  s.m.geometry = pistol ? shellGeo.pistol : shellGeo.rifle;
+  s.m.position.copy(camera.localToWorld(_sf.set(settings.hand === 'left' ? -0.12 : 0.12, -0.08, -0.45)));
+  _sr.set(1, 0, 0).applyQuaternion(camera.quaternion); _su.set(0, 1, 0).applyQuaternion(camera.quaternion); camera.getWorldDirection(_sf);
+  const side = settings.hand === 'left' ? -1 : 1;
+  s.v.copy(_sr).multiplyScalar(side * rand(2.2, 3.2)).addScaledVector(_su, rand(1.3, 2.2)).addScaledVector(_sf, rand(-0.6, 0.2)).add(player.vel);
+  s.w.set(rand(-25, 25), rand(-25, 25), rand(-25, 25));
+  s.t = 3; s.bounced = 0; s.floor = player.pos.y; s.m.visible = true;
+}
+function updateShells(dt) {
+  for (const s of shells) {
+    if (s.t <= 0) continue;
+    s.t -= dt; if (s.t <= 0) { s.m.visible = false; continue; }
+    if (s.bounced > 3) continue; // resting
+    s.v.y -= 9.8 * dt; s.m.position.addScaledVector(s.v, dt);
+    s.m.rotation.x += s.w.x * dt; s.m.rotation.y += s.w.y * dt; s.m.rotation.z += s.w.z * dt;
+    if (s.m.position.y < s.floor + 0.006) {
+      s.m.position.y = s.floor + 0.006; s.v.y = -s.v.y * 0.35; s.v.x *= 0.55; s.v.z *= 0.55; s.w.multiplyScalar(0.5); s.bounced++;
+      if (s.bounced === 1) { const sp = spatial(s.m.position); Snd.tink(Math.min(0.35, sp.vol * 0.5), sp.pan); }
+      if (s.bounced > 3) { s.m.rotation.set(Math.PI / 2, s.m.rotation.y, 0); }
+    }
+  }
+}
 function updateFx(dt) {
   updateParts(dt);
+  updateShells(dt);
   for (const tr of tracers) { if (tr.t > 0) { tr.t -= dt; tr.l.material.opacity = Math.max(0, tr.t / 0.07) * 0.8; } }
   for (const p of puffs) {
     if (!p.s.visible) continue; p.t -= dt;
@@ -161,7 +229,7 @@ function updateFx(dt) {
   }
 }
 function clearFx() {
-  parts.length = 0; decals.forEach(d => d.visible = false); puffs.forEach(p => p.s.visible = false); tracers.forEach(t => { t.t = 0; t.l.material.opacity = 0; });
+  parts.length = 0; shells.forEach(s => { s.t = 0; s.m.visible = false; }); decals.forEach(d => d.visible = false); puffs.forEach(p => p.s.visible = false); tracers.forEach(t => { t.t = 0; t.l.material.opacity = 0; });
 }
 
 // ---------- First-person viewmodel ----------
@@ -173,9 +241,10 @@ const vmFlash = new THREE.Sprite(flashMat); vmFlash.scale.set(0.22, 0.22, 0.22);
 const vm = {
   root: new THREE.Group(), cur: null, kind: 'pistol', cache: {}, kick: 0, kv: 0, bob: 0, swayX: 0, swayY: 0, swing: 0, flashT: 0,
   set(def, team) {
-    const key = def.model + '_' + team;
+    const skin = equippedSkin(def.id), agent = equippedAgent(team);
+    const key = def.model + '_' + team + '_' + (skin || '') + '_' + (agent ? agent.id : '');
     if (this.cur) this.root.remove(this.cur);
-    let m = this.cache[key]; if (!m) { m = buildGun(def.model, team); this.cache[key] = m; }
+    let m = this.cache[key]; if (!m) { m = buildGun(def.model, team, skin, agent); this.cache[key] = m; }
     this.cur = m; this.root.add(m); m.userData.muzzle.add(vmFlash); this.kind = VM_KIND[def.model] || 'rifle';
   },
   // the weapon is kicked like a spring: it snaps back, overshoots a little and settles

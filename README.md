@@ -24,6 +24,15 @@ Mahalliy ishga tushirish: `index.html` faylini Chrome yoki Edge’da oching (int
 - Sozlanadigan pritsel (rang, uzunlik, qalinlik, oraliq, kontur, nuqta, T-shakl, ulashish kodi)
 - Sozlamalar: grafika sifati, FOV, ovoz, qurolni chap qo‘lda ushlash
 
+## Keyslar, skinlar va agentlar
+
+Bosh menyuda **KEYSLAR VA INVENTAR**. Har bir o‘yin oxirida hisobingizga pul tushadi (g‘alaba, qotillik, yutilgan raundlar uchun), boshlanishiga $1000 sovg‘a.
+
+- **5 ta keys:** Qumtepa, Registon, Ipak yo‘li, Qish va Agentlar keysi. CS’dagidek ruletka va noyoblik darajalari: Harbiy, Cheklangan, Maxfiy, Yashirin, ★ Nodir pichoq.
+- **36 ta qurol skini** (atlas, suzani, koshin naqshlari ham bor) va **12 ta agent** (personaj kiyimi).
+- **Inventar:** skinni jihozlash, sotish; **Do‘kon:** har kuni yangilanadigan takliflar.
+- Jihozlangan skin qo‘lingizdagi qurolda, agent esa qo‘l/yeng va soyangizda ko‘rinadi. Botlar ham har xil agent kiyimida.
+
 ## Boshqaruv
 
 | Tugma | Vazifa |
@@ -46,6 +55,8 @@ Mahalliy ishga tushirish: `index.html` faylini Chrome yoki Edge’da oching (int
 ## Telefonda
 
 Telefonni gorizontal holatga burang. Chap tomonda joystik, ekranning bo‘sh joyini surib qaraysiz, «OTISH» tugmasini bosib turib ham nishonni surish mumkin.
+
+**Giroskop:** telefonni burib nishonga olasiz (Doim / Faqat otganda / O‘chiq, alohida sezgirlik) — «Tugmalarni joylashtirish» oynasida.
 
 **Tugmalarni o‘zingizga moslash:** Pauza (II) yoki Sozlamalar → «Tugmalarni joylashtirish». Tugmani bosib, kerakli joyga suring; pastdagi panelda hajmini o‘zgartiring yoki yashiring. Shu yerda tugmalar ko‘rinishi (shaffofligi), ekran sezgirligi, qotgan/suzuvchi joystik va avto-otish bor. «SAQLASH» — joylashuv telefoningizda saqlanadi.
 

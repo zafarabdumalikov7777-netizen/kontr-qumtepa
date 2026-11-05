@@ -25,14 +25,15 @@ const OUTFITS = {
   ]
 };
 const _ya = new V3(0, 1, 0), _dv = new V3();
+// `variant` is an index into the stock outfits or an agent (whose `look` dresses the soldier)
 function makeSoldier(team, variant, ghost) {
-  const o = OUTFITS[team][variant % OUTFITS[team].length];
+  const o = typeof variant === 'object' && variant ? variant.look : OUTFITS[team][variant % OUTFITS[team].length];
   const g = new THREE.Group(); g.rotation.order = 'YXZ';
   const upper = new THREE.Group(); g.add(upper);
   const mats = [], hit = [], cache = {};
   const M = (c, rough = 0.85, metal = 0) => {
-    const k = c + '_' + rough; if (cache[k]) return cache[k];
-    const m = std({ color: lin(c), roughness: rough, metalness: metal });
+    const k = (typeof c === 'object' ? JSON.stringify(c) : c) + '_' + rough; if (cache[k]) return cache[k];
+    const m = typeof c === 'object' ? clothMaterial(c, rough) : std({ color: lin(c), roughness: rough, metalness: metal });
     mats.push(m); cache[k] = m; return m;
   };
   const mesh = (geo, mat, parent, x, y, z, part) => {
@@ -45,7 +46,7 @@ function makeSoldier(team, variant, ghost) {
     _dv.set(b[0] - a[0], b[1] - a[1], b[2] - a[2]); m.scale.y = _dv.length(); m.quaternion.setFromUnitVectors(_ya, _dv.normalize());
     return m;
   };
-  const skin = 0xc2946c, boot = 0x1b1a18, glove = 0x22201d;
+  const skin = o.skin || 0xc2946c, boot = 0x1b1a18, glove = o.glove || 0x22201d;
   const legs = [];
   for (const s of [-1, 1]) {
     const hip = new THREE.Group(); hip.position.set(0.1 * s, 0.94, 0); g.add(hip);
@@ -64,9 +65,18 @@ function makeSoldier(team, variant, ghost) {
   const headMat = o.head === 'balaclava' ? M(0x1f1d1b) : M(skin, 0.6);
   mesh(SGEO.head, headMat, upper, 0, 1.72, 0.01, 'head');
   if (o.head === 'balaclava') mesh(SGEO.eyes, M(skin, 0.6), upper, 0, 1.74, 0.11);
-  if (o.head === 'helmet') { mesh(SGEO.helmet, M(0x2e3a2c, 0.7), upper, 0, 1.75, 0); mesh(SGEO.goggles, M(0x101214, 0.3, 0.4), upper, 0, 1.76, 0.115); }
-  if (o.head === 'beanie') mesh(SGEO.beanie, M(0x2a2622), upper, 0, 1.75, 0);
-  if (o.head === 'cap') { mesh(SGEO.beanie, M(team === 'T' ? 0x3a3428 : 0x232c38), upper, 0, 1.74, 0).scale.y = 0.6; mesh(SGEO.visor, M(0x1d1c1a), upper, 0, 1.76, 0.13); }
+  if (o.head === 'helmet') { mesh(SGEO.helmet, M(o.helmetCol || 0x2e3a2c, 0.7), upper, 0, 1.75, 0); mesh(SGEO.goggles, M(0x101214, 0.3, 0.4), upper, 0, 1.76, 0.115); }
+  if (o.head === 'beanie') mesh(SGEO.beanie, M(o.headCol || 0x2a2622), upper, 0, 1.75, 0);
+  if (o.head === 'cap') { mesh(SGEO.beanie, M(o.headCol || (team === 'T' ? 0x3a3428 : 0x232c38)), upper, 0, 1.74, 0).scale.y = 0.6; mesh(SGEO.visor, M(0x1d1c1a), upper, 0, 1.76, 0.13); }
+  if (o.head === 'beret') { const b = mesh(SGEO.head, M(o.headCol || 0x7a1c1c), upper, -0.02, 1.81, 0); b.scale.set(1.12, 0.38, 1.1); b.rotation.z = 0.28; }
+  if (o.head === 'bandana') { mesh(SGEO.goggles, M(o.headCol || 0xb3261e), upper, 0, 1.68, 0.1).scale.set(1.15, 1.8, 1.4); mesh(SGEO.beanie, M(o.headCol || 0xb3261e), upper, 0, 1.75, 0).scale.y = 0.5; }
+  if (o.head === 'hood') { const hd = mesh(SGEO.head, M(o.headCol || 0x2a1838), upper, 0, 1.74, -0.03); hd.scale.set(1.25, 1.18, 1.22); mesh(SGEO.eyes, M(0x0c0a0c), upper, 0, 1.72, 0.115).scale.set(1.2, 2.2, 1); }
+  if (o.head === 'mask') { // gas mask: dark faceplate, round eye glass and a filter canister
+    mesh(SGEO.goggles, M(0x15171a, 0.5), upper, 0, 1.7, 0.1).scale.set(1, 2.6, 1.6);
+    for (const x of [-0.045, 0.045]) mesh(SGEO.hand, M(0x2b3a40, 0.15, 0.6), upper, x, 1.745, 0.115).scale.set(0.55, 0.45, 0.3);
+    const f = mesh(SGEO.barrel, M(0x30343a, 0.5, 0.4), upper, 0, 1.63, 0.15); f.scale.set(2.6, 0.25, 2.6); f.rotation.x = Math.PI / 2;
+    mesh(SGEO.beanie, M(o.headCol || 0x1b1d20), upper, 0, 1.74, -0.01).scale.set(1.05, 0.9, 1.05);
+  }
   // arms holding the rifle
   const top = M(o.top), gl = M(glove, 0.7);
   const shR = [0.21, 1.5, -0.01], elR = [0.25, 1.27, 0.15], haR = [0.08, 1.33, 0.33];

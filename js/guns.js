@@ -240,19 +240,26 @@ function limb(g, mat, a, b, r0, r1) {
   const m = new THREE.Mesh(new THREE.CylinderGeometry(r1, r0, _hd.length(), 14), mat);
   m.position.set((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2); m.quaternion.setFromUnitVectors(_hy, _hd.normalize()); g.add(m); return m;
 }
-function fist(g, x, y, z, ry = 0) {
+function fist(g, x, y, z, ry = 0, glove = gmat('glove'), knuckle = gmat('knuckle')) {
   const h = new THREE.Group(); h.position.set(x, y, z); h.rotation.y = ry; g.add(h);
-  const palm = new THREE.Mesh(new THREE.SphereGeometry(0.034, 14, 10), gmat('glove')); palm.scale.set(0.9, 1.15, 1.35); h.add(palm);
+  const palm = new THREE.Mesh(new THREE.SphereGeometry(0.034, 14, 10), glove); palm.scale.set(0.9, 1.15, 1.35); h.add(palm);
   for (let i = 0; i < 4; i++) {
-    const f = new THREE.Mesh(new THREE.CylinderGeometry(0.0095, 0.0088, 0.046, 8), gmat('glove'));
+    const f = new THREE.Mesh(new THREE.CylinderGeometry(0.0095, 0.0088, 0.046, 8), glove);
     f.rotation.z = Math.PI / 2; f.position.set(-0.012, 0.026 - i * 0.017, -0.03); h.add(f);
-    const k = new THREE.Mesh(new THREE.SphereGeometry(0.0105, 8, 6), gmat('knuckle')); k.position.set(0.012, 0.026 - i * 0.017, -0.032); h.add(k);
+    const k = new THREE.Mesh(new THREE.SphereGeometry(0.0105, 8, 6), knuckle); k.position.set(0.012, 0.026 - i * 0.017, -0.032); h.add(k);
   }
-  const th = new THREE.Mesh(new THREE.CylinderGeometry(0.0105, 0.009, 0.05, 8), gmat('glove')); th.rotation.x = 1.1; th.position.set(-0.024, 0.03, -0.012); h.add(th);
+  const th = new THREE.Mesh(new THREE.CylinderGeometry(0.0105, 0.009, 0.05, 8), glove); th.rotation.x = 1.1; th.position.set(-0.024, 0.03, -0.012); h.add(th);
   return h;
 }
-function addHands(g, team, info) {
-  const sv = gmat('sleeve_' + team), cuff = gmat('poly');
+// An equipped agent dresses the first-person arms: its sleeve (colour or camo) and gloves
+function addHands(g, team, info, agent) {
+  const look = agent && agent.look;
+  const sv = look ? clothMaterial(look.top, 0.85) : gmat('sleeve_' + team), cuff = gmat('poly');
+  const gl = look && look.glove ? std({ color: lin(look.glove), roughness: 0.8 }) : gmat('glove'), kn = look && look.glove ? gl : gmat('knuckle');
+  const fist0 = fist; const fistA = (gg, x, y, z, ry = 0) => fist0(gg, x, y, z, ry, gl, kn);
+  return addHandsWith(g, info, sv, cuff, fistA);
+}
+function addHandsWith(g, info, sv, cuff, fist) {
   const arm = (hand, elbow) => { limb(g, cuff, hand, [hand[0] + (elbow[0] - hand[0]) * 0.12, hand[1] + (elbow[1] - hand[1]) * 0.12, hand[2] + (elbow[2] - hand[2]) * 0.12], 0.036, 0.038); limb(g, sv, hand, elbow, 0.04, 0.052); };
   if (info.he) { fist(g, 0.005, -0.075, -0.035); arm([0.01, -0.1, 0.0], [0.11, -0.3, 0.3]); return; }
   if (info.knife) { fist(g, 0, -0.012, 0.06); arm([0.01, -0.035, 0.095], [0.11, -0.25, 0.38]); return; }
@@ -264,10 +271,21 @@ function addHands(g, team, info) {
 function finishGun(g, info) {
   const mz = new THREE.Object3D(); mz.name = 'muzzle'; mz.position.set(0, info.mzY || 0, -info.mz); g.add(mz); g.userData.muzzle = mz;
 }
-// First-person model (with hands)
-function buildGun(kind, team) {
+// A skin repaints the gun body (receiver, furniture, slide, blade) and leaves the steel bits alone
+function applySkin(g, skinId) {
+  if (!skinId || !SKINS[skinId]) return;
+  const body = new Set(['park', 'poly', 'wood', 'olive', 'chrome', 'bakelite', 'blade'].map(gmat)), mat = skinMaterial(skinId);
+  g.traverse(o => { if (o.isMesh && body.has(o.material)) o.material = mat; });
+}
+function gunModel(kind, skinId) {
   const g = new THREE.Group(), info = (GUNS[kind] || GUNS.ak)(g);
-  addHands(g, team, info); finishGun(g, info);
+  applySkin(g, skinId);
+  return { g, info };
+}
+// First-person model (with hands)
+function buildGun(kind, team, skinId, agent) {
+  const { g, info } = gunModel(kind, skinId);
+  addHands(g, team, info, agent); finishGun(g, info);
   return g;
 }
 // Third-person model for soldiers: same gun, no hands, facing +z

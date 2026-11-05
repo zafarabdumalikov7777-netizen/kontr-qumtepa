@@ -16,7 +16,7 @@ const TOUCH_BTNS = [
   { id: 'score', label: 'HISOB', x: 0.77, y: 0.09, s: 46, kind: 'score' },
   { id: 'pause', label: 'II', x: 0.68, y: 0.09, s: 46, kind: 'tap', act: () => pauseGame() }
 ];
-const TOUCH_DEFAULT = { stick: { x: 0.14, y: 0.7, s: 1 }, stickMode: 'fixed', opacity: 0.75, lookSens: 1, autoFire: false, btn: {} };
+const TOUCH_DEFAULT = { stick: { x: 0.14, y: 0.7, s: 1 }, stickMode: 'fixed', opacity: 0.75, lookSens: 1, autoFire: false, gyro: 'always', gyroSens: 1, btn: {} };
 const STICK_SIZE = 130;
 function loadTouchLayout() {
   const t = store.get('kq_touch', null), o = JSON.parse(JSON.stringify(TOUCH_DEFAULT));
@@ -24,6 +24,7 @@ function loadTouchLayout() {
     if (t.stick) o.stick = { x: clamp(+t.stick.x || 0.14, 0, 1), y: clamp(+t.stick.y || 0.7, 0, 1), s: clamp(+t.stick.s || 1, 0.6, 1.8) };
     if (t.stickMode === 'float') o.stickMode = 'float';
     o.opacity = clamp(+t.opacity || 0.75, 0.2, 1); o.lookSens = clamp(+t.lookSens || 1, 0.2, 3); o.autoFire = !!t.autoFire;
+    if (['always', 'fire', 'off'].includes(t.gyro)) o.gyro = t.gyro; o.gyroSens = clamp(+t.gyroSens || 1, 0.2, 3);
     for (const b of TOUCH_BTNS) { const v = t.btn && t.btn[b.id]; if (v) o.btn[b.id] = { x: clamp(+v.x, 0, 1), y: clamp(+v.y, 0, 1), s: clamp(+v.s || 1, 0.6, 1.8), hide: !!v.hide }; }
   }
   return o;
@@ -106,8 +107,31 @@ const TouchUI = (() => {
     }
   }
   // Context buttons (pick up, grenade, scope…) only appear when they do something
+  // ---- gyroscope: turning the phone turns the view ----
+  let gyro = null, gyroAsked = false;
+  addEventListener('devicemotion', e => { const r = e.rotationRate; if (r && (r.alpha !== null || r.beta !== null)) gyro = { a: r.alpha || 0, b: r.beta || 0, g: r.gamma || 0 }; });
+  function requestGyro() {
+    // iPhone asks once, from a tap; Android just delivers the events
+    if (gyroAsked || TL.gyro === 'off') return; gyroAsked = true;
+    try { if (window.DeviceMotionEvent && typeof DeviceMotionEvent.requestPermission === 'function') DeviceMotionEvent.requestPermission().catch(() => {}); } catch (e) {}
+  }
+  function applyGyro(dt) {
+    if (!gyro || TL.gyro === 'off' || !player.alive || !playing() || input.buyOpen || (TL.gyro === 'fire' && !touch.fire)) return;
+    let ang = screen.orientation && typeof screen.orientation.angle === 'number' ? screen.orientation.angle : (window.orientation || 0);
+    ang = ((ang % 360) + 360) % 360;
+    // map the device axes onto screen yaw/pitch for the current orientation (deg/s)
+    let yaw, pitch;
+    if (ang === 90) { yaw = gyro.b; pitch = -gyro.g; }
+    else if (ang === 270) { yaw = -gyro.b; pitch = gyro.g; }
+    else if (ang === 180) { yaw = -gyro.g; pitch = -gyro.b; }
+    else { yaw = gyro.g; pitch = gyro.b; }
+    const dz = v => Math.abs(v) < 1.2 ? 0 : v; // ignore sensor drift when the phone is held still
+    const k = TL.gyroSens * Math.PI / 180 * dt * (camera.fov / settings.fov);
+    player.yaw += dz(yaw) * k; player.pitch = clamp(player.pitch + dz(pitch) * k, -1.5, 1.5);
+  }
   function update(dt) {
     if (editing || layer.hidden) return;
+    applyGyro(dt);
     for (const b of TOUCH_BTNS) { const c = btnCfg(b); els[b.id].hidden = c.hide || (b.when ? !b.when() : false); }
     // optional auto-fire: shoot when the crosshair rests on an enemy
     autoT -= dt;
@@ -156,6 +180,8 @@ const TouchUI = (() => {
     document.getElementById('teOp').value = TL.opacity; document.getElementById('teOpO').textContent = Math.round(TL.opacity * 100) + '%';
     document.getElementById('teSens').value = TL.lookSens; document.getElementById('teSensO').textContent = TL.lookSens.toFixed(2);
     document.getElementById('teAuto').checked = TL.autoFire;
+    document.querySelectorAll('#teGyro button').forEach(n => n.setAttribute('aria-pressed', String(n.dataset.v === TL.gyro)));
+    document.getElementById('teGyroS').value = TL.gyroSens; document.getElementById('teGyroSO').textContent = TL.gyroSens.toFixed(2);
     document.querySelectorAll('#teStick button').forEach(n => n.setAttribute('aria-pressed', String(n.dataset.v === TL.stickMode)));
   }
   document.getElementById('teSize').addEventListener('input', e => {
@@ -171,6 +197,8 @@ const TouchUI = (() => {
   document.getElementById('teOp').addEventListener('input', e => { TL.opacity = +e.target.value; place(); syncBar(); save(); });
   document.getElementById('teSens').addEventListener('input', e => { TL.lookSens = +e.target.value; syncBar(); save(); });
   document.getElementById('teAuto').addEventListener('change', e => { TL.autoFire = e.target.checked; save(); });
+  document.getElementById('teGyro').addEventListener('click', e => { const n = e.target.closest('[data-v]'); if (!n) return; TL.gyro = n.dataset.v; gyroAsked = false; requestGyro(); syncBar(); save(); });
+  document.getElementById('teGyroS').addEventListener('input', e => { TL.gyroSens = +e.target.value; syncBar(); save(); });
   document.getElementById('teStick').addEventListener('click', e => { const n = e.target.closest('[data-v]'); if (n) { TL.stickMode = n.dataset.v; syncBar(); save(); } });
   document.getElementById('teReset').addEventListener('click', () => { TL = JSON.parse(JSON.stringify(TOUCH_DEFAULT)); place(); select(null); save(); });
   document.getElementById('teMove').addEventListener('click', () => bar.classList.toggle('bottom'));
@@ -197,5 +225,5 @@ const TouchUI = (() => {
   function reset() { fireN = 0; touch.fire = touch.jump = touch.use = touch.auto = false; touch.mx = touch.my = 0; for (const k in lookers) delete lookers[k]; stickId = null; knob.style.transform = 'translate(-50%, -50%)'; }
   addEventListener('resize', () => place());
   place();
-  return { update, open, place, reset, get editing() { return editing; } };
+  return { update, open, place, reset, requestGyro, get editing() { return editing; } };
 })();

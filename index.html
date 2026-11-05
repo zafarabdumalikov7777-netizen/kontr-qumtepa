@@ -89,6 +89,56 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--sand);outline-o
 #speedo small{font-size:11px;letter-spacing:.12em;color:var(--muted)}
 #speedo.fast b{color:var(--sand)}
 .pair{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+/* ---------- Cases & inventory ---------- */
+.shop-btn{background:linear-gradient(90deg,rgba(227,197,142,.16),rgba(227,197,142,.04));border:1px solid var(--sand);padding:12px 16px;font-family:var(--f-display);font-weight:700;letter-spacing:.1em;display:flex;justify-content:space-between;align-items:center}
+.shop-btn b{color:var(--money);font-size:16px}
+.shop-btn:hover{background:rgba(227,197,142,.2)}
+.shop-card{background:rgba(16,19,23,.98);border:1px solid var(--line);width:min(100%,1000px);margin-block:auto;padding:18px;display:flex;flex-direction:column;gap:14px}
+.shop-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.wallet-box{font-family:var(--f-display);font-size:15px;color:var(--muted)}
+.wallet-box b{color:var(--money);font-size:28px;margin-left:6px}
+.shop-tabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}
+.shop-tabs button{background:none;border:0;border-bottom:2px solid transparent;padding:10px 16px;font-family:var(--f-display);font-weight:700;letter-spacing:.08em;color:var(--muted)}
+.shop-tabs button[aria-pressed="true"]{color:var(--text);border-bottom-color:var(--sand)}
+.shop-note{color:var(--muted);font-size:13px;margin:0}
+.shop-warn{color:var(--danger);font-size:13px;margin:6px 0 0}
+.case-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.case{background:radial-gradient(ellipse at 50% 35%,color-mix(in srgb,var(--cc) 22%,transparent),rgba(255,255,255,.02) 70%);border:1px solid var(--line);padding:10px;display:flex;flex-direction:column;align-items:center;gap:4px}
+.case:hover{border-color:var(--cc)}
+.case img{width:100%;max-width:200px}
+.case b{font-family:var(--f-display);font-size:15px}
+.case span{color:var(--money);font-family:var(--f-display);font-weight:600}
+.case-head{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.case-head img{width:200px;max-width:45vw}
+.case-head h3,.won h3{font-family:var(--f-display);font-size:24px;margin:2px 0 4px}
+.case-head p,.won p{color:var(--muted);margin:0 0 10px}
+.odds{display:flex;gap:6px;flex-wrap:wrap}
+.odds span{font-size:11px;letter-spacing:.08em;padding:3px 8px;border-left:3px solid var(--rc);background:rgba(255,255,255,.04)}
+.item-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.icard{position:relative;background:linear-gradient(180deg,rgba(255,255,255,.05),color-mix(in srgb,var(--rc) 14%,transparent));border:1px solid rgba(255,255,255,.08);border-bottom:3px solid var(--rc);padding:8px 8px 10px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.icard img{width:100%;height:70px;object-fit:contain;filter:drop-shadow(0 4px 5px rgba(0,0,0,.55))}
+.iname{font-family:var(--f-display);font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.isub{font-size:12px;color:var(--rc);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;filter:brightness(1.35)}
+.ival{font-size:11px;color:var(--muted)}
+.icard.pickable{cursor:pointer}
+.icard.pickable:hover,.icard.pickable:focus-visible{border-color:var(--rc);outline:none}
+.icard.equipped{box-shadow:inset 0 0 0 1px var(--sand)}
+.eqb{position:absolute;top:6px;right:6px;font-style:normal;font-size:9px;letter-spacing:.1em;background:var(--sand);color:#1a140b;padding:2px 5px;font-weight:700}
+.gold-star{height:70px;display:flex;align-items:center;justify-content:center;font-size:44px;color:#e4ae39;text-shadow:0 0 18px rgba(228,174,57,.7)}
+.buyb{margin-top:6px;background:var(--money);color:#0f1a0b;border:0;padding:6px;font-family:var(--f-display);font-weight:700}
+.buyb:disabled{opacity:.4;cursor:not-allowed}
+.inv-filter{grid-template-columns:repeat(3,1fr);max-width:420px}
+.roll{z-index:35;background:rgba(6,8,10,.88);align-items:center;justify-content:center}
+.roll-box{width:min(100%,980px);display:flex;flex-direction:column;gap:14px;align-items:center}
+.roll-wrap{position:relative;width:100%;overflow:hidden;border:1px solid var(--line);background:rgba(255,255,255,.03);padding:10px 0}
+.roll-track{display:flex;gap:8px;will-change:transform;padding-left:4px}
+.roll-track .icard{flex:0 0 130px}
+.roll-mark{position:absolute;left:50%;top:0;bottom:0;width:3px;margin-left:-1.5px;background:var(--sand);box-shadow:0 0 12px var(--sand)}
+.won{display:flex;gap:20px;align-items:center;flex-wrap:wrap;background:radial-gradient(ellipse at 20% 50%,color-mix(in srgb,var(--rc) 30%,transparent),transparent 65%);border:1px solid var(--rc);padding:16px;width:100%}
+.won img{width:260px;max-width:70vw;filter:drop-shadow(0 0 22px color-mix(in srgb,var(--rc) 70%,transparent))}
+.won .row{margin-top:8px}
+.reward{margin:0;padding:10px 12px;border:1px solid rgba(147,232,111,.4);background:rgba(147,232,111,.08);font-size:14px}
+.reward b{color:var(--money)}
 #xhair{position:absolute;left:50%;top:50%;width:160px;height:160px;margin:-80px 0 0 -80px;text-shadow:none}
 .card.xh-card{width:min(100%,720px);gap:14px}
 #xhPrev{display:block;width:100%;height:110px;border:1px solid var(--line)}
@@ -342,6 +392,8 @@ tr.me td{color:var(--sand);font-weight:600}
   <label class="field" for="teSens"><span class="label">Ekran sezgirligi <output id="teSensO">1.00</output></span><input type="range" id="teSens" min="0.2" max="3" step="0.05"></label>
   <div class="field"><span class="label">Joystik</span><div class="seg seg2" id="teStick"><button type="button" data-v="fixed">Qotgan</button><button type="button" data-v="float">Suzuvchi</button></div></div>
   <label class="check" for="teAuto"><input type="checkbox" id="teAuto"> Avto-otish (nishon raqibda bo‘lsa)</label>
+  <div class="field"><span class="label">Giroskop (telefonni burib nishonga olish)</span><div class="seg" id="teGyro"><button type="button" data-v="always">Doim</button><button type="button" data-v="fire">Otganda</button><button type="button" data-v="off">O‘chiq</button></div></div>
+  <label class="field" for="teGyroS"><span class="label">Giroskop sezgirligi <output id="teGyroSO">1.00</output></span><input type="range" id="teGyroS" min="0.2" max="3" step="0.05"></label>
   <div class="te-actions"><button id="teReset" class="ghost" type="button">Standart joylashuv</button><button id="teDone" class="primary" type="button">SAQLASH</button></div>
 </div>
 
@@ -377,6 +429,7 @@ tr.me td{color:var(--sand);font-weight:600}
       <label class="field" for="sens"><span class="label">Sichqoncha sezgirligi <output id="sensOut">1.00</output></span><input type="range" id="sens" min="0.2" max="3" step="0.05"></label>
       <div class="pair"><button id="xhBtn" class="ghost" type="button">Pritsel</button><button id="setBtn" class="ghost" type="button">Sozlamalar</button></div>
       <label class="check" for="fsChk"><input type="checkbox" id="fsChk"> To‘liq ekranda o‘ynash (Ctrl+W tabni yopib qo‘ymasligi uchun)</label>
+      <button id="shopBtn" class="shop-btn" type="button">KEYSLAR VA INVENTAR <b>$0</b></button>
       <button id="startBtn" class="primary" type="button">O‘YINGA KIRISH</button>
     </div>
     <div class="keys">
@@ -464,6 +517,26 @@ tr.me td{color:var(--sand);font-weight:600}
   </div>
 </section>
 
+<section id="shop" class="overlay dim" hidden>
+  <div class="shop-card">
+    <header class="shop-head">
+      <div><div class="eyebrow">Arsenal</div><h2>Keyslar va inventar</h2></div>
+      <div class="wallet-box">Hisob <b id="shopWallet">$0</b></div>
+      <button id="shopClose" class="ghost" type="button">Yopish</button>
+    </header>
+    <nav class="shop-tabs" id="shopTabs"><button data-t="cases" type="button">Keyslar</button><button data-t="inv" type="button">Inventar</button><button data-t="market" type="button">Do‘kon</button></nav>
+    <div id="shopBody"></div>
+  </div>
+</section>
+
+<section id="roll" class="overlay roll" hidden>
+  <div class="roll-box">
+    <div class="eyebrow" id="rollCase"></div>
+    <div class="roll-wrap"><div class="roll-track" id="rollTrack"></div><i class="roll-mark"></i></div>
+    <div id="rollResult" hidden></div>
+  </div>
+</section>
+
 <section id="buy" class="overlay buy" hidden>
   <div class="buy-card">
     <header><div><div class="eyebrow">Xarid menyusi</div><h2>Qurol-aslaha</h2></div><div class="wallet">$<span id="buyMoney">0</span></div></header>
@@ -481,8 +554,9 @@ tr.me td{color:var(--sand);font-weight:600}
   <div class="card">
     <div><div class="eyebrow" id="overEyebrow">O‘yin tugadi</div><h2 id="overTitle">G‘alaba</h2><p id="overSub" style="margin:6px 0 0;color:var(--muted)"></p></div>
     <div class="stats"><div><b id="stK">0</b><small>Qotillik</small></div><div><b id="stD">0</b><small>O‘lim</small></div><div><b id="stR">0</b><small>K/D</small></div></div>
+    <p id="overReward" class="reward" hidden></p>
     <div class="row"><button id="againBtn" class="primary" type="button">QAYTA O‘YNASH</button><button id="nextMapBtn" class="ghost" type="button">Keyingi xarita</button></div>
-    <button id="menuBtn" class="ghost" type="button">Bosh menyu</button>
+    <div class="row"><button id="overShop" class="ghost" type="button">Keyslar va inventar</button><button id="menuBtn" class="ghost" type="button">Bosh menyu</button></div>
   </div>
 </section>
 
@@ -493,7 +567,9 @@ tr.me td{color:var(--sand);font-weight:600}
 <script src="js/world.js"></script>
 <script src="js/models.js"></script>
 <script src="js/guns.js"></script>
+<script src="js/skins.js"></script>
 <script src="js/icons.js"></script>
+<script src="js/caseui.js"></script>
 <script src="js/crosshair.js"></script>
 <script src="js/fx.js"></script>
 <script src="js/agents.js"></script>

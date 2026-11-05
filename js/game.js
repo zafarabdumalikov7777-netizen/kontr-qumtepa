@@ -13,7 +13,7 @@ let spectating = null, playerBody = null, bodyPh = 0;
 function setupTeams(team) {
   for (const b of bots) disposeSoldier(b.model);
   if (playerBody) disposeSoldier(playerBody);
-  playerBody = makeSoldier(team, 0, true);
+  playerBody = makeSoldier(team, equippedAgent(team) || 0, true);
   player.team = team; bots = []; let id = 1;
   const enemy = team === 'KT' ? 'T' : 'KT';
   const practice = settings.mode === 'practice'; // practice range: no bots at all
@@ -176,7 +176,9 @@ function updatePlayer(dt) {
   }
   p.shots = Math.round(p.shotsF);
   const vk = 1 - Math.exp(-dt * 25); p.vpP += (p.punchP - p.vpP) * vk; p.vpY += (p.punchY - p.vpY) * vk;
-  const kd = Math.exp(-dt * 13); p.kickP *= kd; p.kickY *= kd;
+  // view kick spring (ω≈18, critically damped): rises in ~60 ms, settles in ~200 ms
+  p.kickV += (-p.kickP * 320 - p.kickV * 36) * dt; p.kickP += p.kickV * dt;
+  p.kickYV += (-p.kickY * 320 - p.kickYV * 36) * dt; p.kickY += p.kickYV * dt;
 }
 const BHOP_MAX = 12.5; // ≈45 km/h
 function groundFriction(p, dt) {
@@ -229,7 +231,7 @@ function updateCamera(dt) {
   if (p.alive) {
     camera.position.set(p.pos.x, p.pos.y + eyeH(), p.pos.z);
     // the view follows ~55% of the spray (bullets land the full amount above the crosshair, as in CS2) plus the shot kick
-    camera.rotation.set(p.pitch + p.vpP * 0.55 + p.kickP + sy, p.yaw + p.vpY * 0.55 + p.kickY + sx, -p.kickY * 0.5);
+    camera.rotation.set(p.pitch + p.vpP * 0.55 + p.kickP + sy, p.yaw + p.vpY * 0.55 + p.kickY + sx, 0);
   } else if (p.deathT < 2.5 || !agents.some(a => a.alive && a.team === p.team)) {
     setSpectate(null);
     const k = Math.min(1, p.deathT / 0.6);
@@ -251,10 +253,10 @@ function updateVM(dt) {
   const hs = Math.hypot(p.vel.x, p.vel.z);
   if (p.onGround && hs > 0.5) vm.bob += dt * hs * 1.5;
   const amp = Math.min(1, hs / 6) * (p.onGround ? 1 : 0.3);
-  vm.kv += (-vm.kick * 380 - vm.kv * 26) * dt; vm.kick += vm.kv * dt; // damped spring
+  vm.kv += (-vm.kick * 420 - vm.kv * 34) * dt; vm.kick += vm.kv * dt; // damped spring, a hint of overshoot
   vm.swing *= Math.exp(-dt * 8); vm.swayX *= Math.exp(-dt * 8); vm.swayY *= Math.exp(-dt * 8);
   vm.kickY = (vm.kickY || 0) * Math.exp(-dt * 12);
-  let y = base[1] - Math.abs(Math.cos(vm.bob)) * 0.01 * amp - vm.swayY + vm.kick * 0.012, rx = vm.kick * 0.22, ry = (base[3] || 0) + vm.kickY, rz = vm.kickY * 0.6;
+  let y = base[1] - Math.abs(Math.cos(vm.bob)) * 0.01 * amp - vm.swayY + vm.kick * 0.012, rx = vm.kick * 0.2 + p.vpP * 0.9, ry = (base[3] || 0) + vm.kickY, rz = vm.kickY * 0.6;
   const x = base[0] + Math.sin(vm.bob) * 0.012 * amp - vm.swayX, z = base[2] + vm.kick * 0.075;
   if (p.reloadT > 0) { const s = Math.sin(clamp(1 - p.reloadT / (def.reload || 2), 0, 1) * Math.PI); rx -= s * 0.55; y -= s * 0.08; rz += s * 0.3; }
   if (p.switchT > 0) { const s = p.switchT / 0.55; y -= s * 0.25; rx -= s * 0.5; }
@@ -420,7 +422,7 @@ function renderBuy() {
   const card = it => {
     const d = buyDef(it), name = d ? d.name : it.name, price = priceOf(it), own = owned(it);
     const stat = d ? (d.mag ? `${d.stat} · zarar ${d.dmg} · ${d.mag}/${d.res}` : d.stat) : it.stat;
-    const pic = iconFor(d ? d.model : it.id);
+    const sk = d && equippedSkin(d.id), pic = sk ? itemIcon(sk) : iconFor(d ? d.model : it.id);
     return `<button class="item${own ? ' owned' : ''}" data-buy="${it.id}" type="button" ${own || player.money < price || !canBuy() ? 'disabled' : ''}>` +
       `<span class="pic">${pic ? `<img src="${pic}" alt="">` : ''}</span><kbd>${it.k}</kbd><span class="nm">${name}</span><span class="pr">${own ? 'Bor' : price ? '$' + price : 'Bepul'}</span><span class="st">${stat}</span></button>`;
   };
@@ -524,6 +526,11 @@ function showMatchEnd() {
   document.getElementById('overSub').textContent = tie ? 'Ikki jamoa teng qotillik qildi.' : dm ? `${TEAM_NAME[win]} ko‘proq raqibni yo‘q qildi.` : `${TEAM_NAME[win]} ${game.winTo} raundda birinchi bo‘lib g‘olib chiqdi.`;
   document.getElementById('stK').textContent = player.kills; document.getElementById('stD').textContent = player.deaths;
   document.getElementById('stR').textContent = (player.kills / Math.max(1, player.deaths)).toFixed(2);
+  // pay the match reward into the wallet used for cases and skins
+  const reward = matchReward();
+  INV.wallet += reward; INV.earned += reward; saveInv();
+  const rw = document.getElementById('overReward');
+  rw.hidden = !reward; rw.innerHTML = `<b>+$${reward}</b> hisobingizga qo‘shildi · hisob: <b>$${INV.wallet}</b>`;
   els.over.hidden = false; if (document.pointerLockElement) document.exitPointerLock();
 }
 function startGame(e) {
@@ -535,7 +542,7 @@ function startGame(e) {
   applyQuality();
   els.menu.hidden = true; els.over.hidden = true; els.hud.hidden = false; els.touch.hidden = !input.touchMode;
   document.body.classList.toggle('touch', input.touchMode); document.body.classList.add('playing');
-  TouchUI.reset(); TouchUI.place();
+  TouchUI.reset(); TouchUI.place(); if (input.touchMode) TouchUI.requestGyro();
   warmIcons(); sizeRadar(); newMatch(); Snd.ambient(MAP.theme.wind);
   if (input.touchMode) {
     // fullscreen + landscape lock where the browser allows it
@@ -571,6 +578,9 @@ function initMenu() {
   document.getElementById('setBtn2').addEventListener('click', () => sp.open());
   document.getElementById('teOpen').addEventListener('click', () => TouchUI.open());
   document.getElementById('teOpen2').addEventListener('click', () => TouchUI.open());
+  document.getElementById('shopBtn').addEventListener('click', () => ShopUI.open());
+  document.getElementById('overShop').addEventListener('click', () => ShopUI.open());
+  ShopUI.money();
   const xh = initCrosshairUI();
   document.getElementById('xhBtn').addEventListener('click', () => xh.open());
   document.getElementById('xhBtn2').addEventListener('click', () => xh.open());

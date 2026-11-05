@@ -273,4 +273,5 @@ function applyAtmosphere() {
 function loadMap(id) {
   const def = MAPS.find(m => m.id === id) || MAPS[0];
   setGrid(def); clearWorld(); buildWorld(); applyAtmosphere();
+  if (typeof Snd !== 'undefined') Snd.setRoom();
 }

@@ -10,30 +10,54 @@ const iconRim = new THREE.DirectionalLight(0xbfd6ff, 0.9); iconRim.position.set(
 const iconCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.01, 50);
 iconCam.rotation.y = Math.PI / 2; // looking along −x: the muzzle (−z) points to the right of the picture
 
-function pixelsToPng(buf, w, h) {
+function pixelsToPng(buf, w, h, ow, oh) {
   const big = document.createElement('canvas'); big.width = w; big.height = h;
   const bctx = big.getContext('2d'), img = bctx.createImageData(w, h);
   for (let y = 0; y < h; y++) img.data.set(buf.subarray((h - 1 - y) * w * 4, (h - y) * w * 4), y * w * 4); // WebGL rows are bottom-up
   bctx.putImageData(img, 0, 0);
-  const out = document.createElement('canvas'); out.width = ICON_W; out.height = ICON_H;
-  const octx = out.getContext('2d'); octx.imageSmoothingQuality = 'high'; octx.drawImage(big, 0, 0, ICON_W, ICON_H);
+  const out = document.createElement('canvas'); out.width = ow; out.height = oh;
+  const octx = out.getContext('2d'); octx.imageSmoothingQuality = 'high'; octx.drawImage(big, 0, 0, ow, oh);
   return out.toDataURL('image/png');
 }
-function renderGunIcon(kind) {
-  const g = new THREE.Group(); (GUNS[kind] || GUNS.ak)(g);
-  iconScene.add(g); g.updateMatrixWorld(true);
-  const box = new THREE.Box3().setFromObject(g), size = box.getSize(new V3()), c = box.getCenter(new V3());
-  const s = Math.max(size.z / (ICON_W * 0.9), size.y / (ICON_H * 0.82)); // world units per pixel, so the gun fills the frame
-  Object.assign(iconCam, { left: -ICON_W / 2 * s, right: ICON_W / 2 * s, top: ICON_H / 2 * s, bottom: -ICON_H / 2 * s });
-  iconCam.updateProjectionMatrix(); iconCam.position.set(c.x + 5, c.y, c.z);
-  const w = ICON_W * ICON_SS, h = ICON_H * ICON_SS;
+// Photograph `obj` with an orthographic camera that frames it; side = gun profile, front = a soldier
+function snapshot(obj, side, W, H) {
+  iconScene.add(obj); obj.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(obj);
+  if (!side) box.min.y = Math.max(box.min.y, box.max.y - 1.05); // soldiers: frame from the waist up so the outfit reads at card size
+  const size = box.getSize(new V3()), c = box.getCenter(new V3());
+  const across = side ? size.z : size.x;
+  const s = Math.max(across / (W * 0.9), size.y / (H * (side ? 0.82 : 0.92))); // world units per pixel, so the object fills the frame
+  Object.assign(iconCam, { left: -W / 2 * s, right: W / 2 * s, top: H / 2 * s, bottom: -H / 2 * s });
+  iconCam.rotation.y = side ? Math.PI / 2 : 0;
+  iconCam.updateProjectionMatrix(); if (side) iconCam.position.set(c.x + 5, c.y, c.z); else iconCam.position.set(c.x, c.y, c.z + 5);
+  const w = W * ICON_SS, h = H * ICON_SS;
   const rt = new THREE.WebGLRenderTarget(w, h, { encoding: THREE.sRGBEncoding });
   const prevColor = renderer.getClearColor(new THREE.Color()), prevAlpha = renderer.getClearAlpha();
   renderer.setRenderTarget(rt); renderer.setClearColor(0x000000, 0); renderer.clear(); renderer.render(iconScene, iconCam);
   const buf = new Uint8Array(w * h * 4); renderer.readRenderTargetPixels(rt, 0, 0, w, h, buf);
   renderer.setRenderTarget(null); renderer.setClearColor(prevColor, prevAlpha);
-  rt.dispose(); iconScene.remove(g); g.traverse(o => { if (o.geometry) o.geometry.dispose(); });
-  return pixelsToPng(buf, w, h);
+  rt.dispose(); iconScene.remove(obj);
+  return pixelsToPng(buf, w, h, W, H);
+}
+function renderGunIcon(kind, skinId) {
+  const { g } = gunModel(kind, skinId);
+  const url = snapshot(g, true, ICON_W, ICON_H);
+  g.traverse(o => { if (o.geometry) o.geometry.dispose(); });
+  return url;
+}
+function renderAgentIcon(agentId) {
+  const a = AGENTS[agentId], m = makeSoldier(a.team, a, false);
+  scene.remove(m.group); if (m.marker) m.marker.visible = false;
+  m.group.rotation.y = 0.35; poseSoldier(m, 0, 0, 0, false);
+  const url = snapshot(m.group, false, 150, 140);
+  disposeSoldier(m);
+  return url;
+}
+// Picture for an inventory item: a skinned gun or an agent
+function itemIcon(id) {
+  const key = 'item|' + id;
+  if (!iconCache[key]) iconCache[key] = SKINS[id] ? renderGunIcon(WEAPONS[SKINS[id].weapon].model, id) : renderAgentIcon(id);
+  return iconCache[key];
 }
 
 // Gear has no 3D model: kevlar vest, vest + helmet, defuse kit are drawn by hand

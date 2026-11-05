@@ -9,7 +9,7 @@ const player = {
   isPlayer: true, id: 0, name: 'Siz', team: 'KT', alive: true, hp: 100, armor: 0, helmet: false, money: 800, kills: 0, deaths: 0,
   pos: new V3(), vel: new V3(), yaw: 0, pitch: 0, onGround: true, crouch: 0, jumpReady: true,
   inv: { 1: null, 2: null, 3: null, 4: null }, slot: 2, prevSlot: 3,
-  cool: 0, reloadT: 0, switchT: 0, shots: 0, shotsF: 0, punchP: 0, punchY: 0, vpP: 0, vpY: 0, kickP: 0, kickY: 0, hops: 0, groundT: 0, scope: 0, scopeResume: 0, rescopeT: 0, autoReload: false,
+  cool: 0, reloadT: 0, switchT: 0, shots: 0, shotsF: 0, punchP: 0, punchY: 0, vpP: 0, vpY: 0, kickP: 0, kickY: 0, kickV: 0, kickYV: 0, hops: 0, groundT: 0, scope: 0, scopeResume: 0, rescopeT: 0, autoReload: false,
   triggerReleased: true, lastShot: -99, spotUntil: 0, deathT: 0, stepDist: 0, hitMeshes: []
 };
 const eyeH = () => 1.65 - 0.45 * player.crouch;
@@ -39,7 +39,9 @@ function makeBot(name, team, id) {
     path: null, pi: 0, plan: [], holdT: 0, pendingHold: 0, watchYaw: 0, stuckT: 0, lastPos: new V3(), noticeAgent: null, noticeUntil: 0,
     role: 'A', spotUntil: 0, lastShot: -99, hitMeshes: null
   };
-  b.model = makeSoldier(team, id);
+  // bots wear a random agent most of the time, so a team never looks like clones
+  const looks = Object.values(AGENTS).filter(a => a.team === team);
+  b.model = makeSoldier(team, Math.random() < 0.65 ? pick(looks) : id);
   b.model.hit.forEach(m => { m.userData.agent = b; });
   b.hitMeshes = b.model.hit;
   return b;
@@ -133,7 +135,7 @@ const SPRAY = (() => {
 })();
 // How far each pattern is stretched (AK tops out near 9° like CS2) and how hard each shot snaps the view (radians)
 const SPRAY_SCALE = { ak47: 1, m4a1: 1, mp5: 1.5, deagle: 1.3, usp: 1.3, glock: 1.3 };
-const KICK = { ak47: 0.012, m4a1: 0.008, mp5: 0.006, awp: 0.06, deagle: 0.035, usp: 0.013, glock: 0.011 };
+const KICK = { ak47: 0.012, m4a1: 0.009, mp5: 0.007, awp: 0.065, deagle: 0.052, usp: 0.014, glock: 0.012 };
 function sprayAt(def, i) {
   const pat = SPRAY[def.id]; if (!pat) return [0, 0];
   const k = pat[Math.min(i, pat.length - 1)], s = (SPRAY_SCALE[def.id] || 1.4) * Math.PI / 180;
@@ -201,13 +203,15 @@ function tryFire() {
   p.punchY = -sp[0]; p.punchP = sp[1];
   // view kick: a sharp snap upward with a random sideways twitch that settles in a fraction of a second
   const kk = KICK[def.id] || 0.008;
-  p.kickP = Math.min(0.09, p.kickP + kk * rand(0.85, 1.15)); p.kickY += kk * rand(-0.45, 0.45);
-  shake = Math.max(shake, kk * 0.2);
+  // the kick is an impulse into a critically damped spring: the view punches up and settles smoothly, no jitter
+  p.kickV += kk * rand(54, 64); p.kickYV += kk * rand(-10, 10);
   const dir = aimDir(currentSpread());
   const res = shootRay(camera.position.clone(), dir, p, def);
   const from = p.scope ? camera.localToWorld(new V3(0, -0.3, -0.5)) : camera.localToWorld(new V3(0.15, -0.13, -0.7));
   tracer(from, res.point);
-  vm.fire(clamp((KICK[def.id] || 0.008) / 0.012, 0.6, 2.2)); muzzleLight.position.copy(from); muzzleLight.intensity = 2.2;
+  vm.fire(clamp((KICK[def.id] || 0.008) / 0.012, 0.6, 2.2)); muzzleLight.position.copy(from); muzzleLight.intensity = 3.2;
+  if (!def.melee) ejectShell(def.slot === 2);
+  if (p.shots % 3 === 2) puff(from.x, from.y, from.z, 0.22, 0.7, false); // barrel smoke builds up during a spray
   Snd.shot(def.snd, 0.9, 0.05);
   p.shotsF = idx + 1; p.shots = idx + 1;
   if (def.scope && p.scope) { p.scopeResume = p.scope; p.scope = 0; p.rescopeT = def.rate * 0.9; }
@@ -331,6 +335,13 @@ function botFire(b) {
   _r.crossVectors(_d, UP).normalize(); _u.crossVectors(_r, _d);
   _d.addScaledVector(_r, Math.cos(th) * r).addScaledVector(_u, Math.sin(th) * r).normalize();
   const res = shootRay(_o.clone(), _d.clone(), b, def);
+  // a miss that passes close to the player's head cracks past their ear
+  if (player.alive && res.agent !== player && b.team !== player.team) {
+    const e = camera.position, ab = _m.subVectors(res.point, _o), L = ab.lengthSq() || 1;
+    const k = clamp(((e.x - _o.x) * ab.x + (e.y - _o.y) * ab.y + (e.z - _o.z) * ab.z) / L, 0, 1);
+    const dx = _o.x + ab.x * k - e.x, dy = _o.y + ab.y * k - e.y, dz = _o.z + ab.z * k - e.z;
+    if (k > 0.05 && k < 0.99 && dx * dx + dy * dy + dz * dz < 2.2) Snd.whiz(spatial(res.point).pan);
+  }
   b.model.muzzle.getWorldPosition(_m); tracer(_m, res.point);
   b.model.flash.visible = true; b.model.flashT = 0.05; b.model.flash.material.rotation = Math.random() * 6;
   const s = spatial(_o); Snd.shot(def.snd, s.vol, s.pan);
