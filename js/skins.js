@@ -147,7 +147,7 @@ const INV = (() => {
 const saveInv = () => store.set('kq_inv', INV);
 const usd = n => '$' + Math.floor(n).toLocaleString('en-US');
 // one-time codes typed into the shop
-const PROMO = { MILLIARDER: 99999999999 };
+const PROMO = { MILLIARDER: 99999999999999 };
 function redeemPromo(code) {
   const k = String(code || '').trim().toUpperCase(), amt = PROMO[k];
   if (!amt) return 'bad';

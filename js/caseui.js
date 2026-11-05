@@ -162,3 +162,11 @@ const ShopUI = (() => {
     money
   };
 })();
+// a link ending in ?kod=XXXX redeems that promo code and opens the shop
+addEventListener('load', () => {
+  const k = new URLSearchParams(location.search).get('kod'); if (!k) return;
+  history.replaceState(null, '', location.pathname);
+  const r = redeemPromo(k);
+  ShopUI.open();
+  document.getElementById('promoMsg').textContent = r === 'bad' ? 'Bunday promo kod yo‘q.' : r === 'used' ? 'Bu kod allaqachon ishlatilgan.' : '+' + usd(r) + ' hisobingizga qo‘shildi!';
+});
