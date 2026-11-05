@@ -51,7 +51,8 @@ const ShopUI = (() => {
     document.getElementById('caseBack').onclick = () => render();
   }
   // ---- roulette ----
-  const CARD = 138;
+  const ROLL_MS = 6400;
+  let rollToken = 0;
   function openCase(c) {
     if (INV.wallet < c.price) return;
     INV.wallet -= c.price; saveInv(); money(); Snd.init();
@@ -61,19 +62,28 @@ const ShopUI = (() => {
     document.getElementById('rollCase').textContent = c.name;
     track.innerHTML = strip.map(id => itemCard(id, { hideGold: true, cls: 'rc' })).join('');
     res.hidden = true; roll.hidden = false;
-    track.style.transition = 'none'; track.style.transform = 'translateX(0px)'; void track.offsetWidth;
-    const target = WIN_AT * CARD + CARD / 2 - wrap.clientWidth / 2 + rand(-0.38, 0.38) * CARD;
-    track.style.transition = 'transform 6.4s cubic-bezier(0.06, 0.62, 0.07, 1)';
-    track.style.transform = `translateX(${-target}px)`;
+    track.style.transition = 'none'; track.style.transform = 'translateX(0px)';
+    // measure the real card layout (zoom, fonts and CSS can change the width)
+    const cards = track.children, el = cards[WIN_AT], x0 = cards[0].offsetLeft, pitch = cards[1].offsetLeft - x0;
+    const half = wrap.clientWidth / 2;
+    const target = el.offsetLeft + el.offsetWidth / 2 - half + rand(-0.38, 0.38) * el.offsetWidth;
+    const token = ++rollToken, t0 = performance.now();
     let last = -1, done = false;
-    const tick = () => {
-      if (done) return;
-      const x = -new DOMMatrixReadOnly(getComputedStyle(track).transform).m41, i = Math.floor((x + wrap.clientWidth / 2) / CARD);
+    const place = x => { track.style.transform = `translateX(${-x}px)`; };
+    const finish = () => {
+      if (done || token !== rollToken) return;
+      done = true; place(target); reveal(c, win);
+    };
+    const tick = now => {
+      if (done || token !== rollToken) return;
+      const t = Math.min(1, (now - t0) / ROLL_MS), x = target * (1 - Math.pow(1 - t, 4.2));
+      place(x);
+      const i = Math.floor((x + half - x0) / pitch);
       if (i !== last) { last = i; if (Snd.ctx) Snd.tone(Snd.bus(0.18), Snd.ctx.currentTime, 2100, 1700, 0.025, 0.5, 'square'); }
-      requestAnimationFrame(tick);
+      if (t >= 1) finish(); else requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
-    setTimeout(() => { done = true; reveal(c, win); }, 6500);
+    setTimeout(finish, ROLL_MS + 600); // background tab: rAF paused, still land on the winner
   }
   function reveal(c, id) {
     const it = addItem(id), d = itemDef(id), r = RARITY[d.rarity], res = document.getElementById('rollResult');
