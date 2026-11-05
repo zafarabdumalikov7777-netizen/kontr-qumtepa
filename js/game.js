@@ -291,7 +291,8 @@ function addFeed(att, vic, def, hs) {
   const el = document.createElement('div');
   el.className = 'kf' + (att.isPlayer || vic.isPlayer ? ' me' : '');
   const tag = a => `<span class="${a.team === 'KT' ? 'c-kt' : 'c-te'}">${a.name}</span>`;
-  el.innerHTML = (att !== vic ? tag(att) : '') + `<em>${def.name}</em>` + (hs ? '<b>BOSH</b>' : '') + tag(vic);
+  const pic = def.model && iconCache[def.model];
+  el.innerHTML = (att !== vic ? tag(att) : '') + (pic ? `<img class="kfi" src="${pic}" alt="${def.name}" title="${def.name}">` : `<em>${def.name}</em>`) + (hs ? '<b>BOSH</b>' : '') + tag(vic);
   els.feed.prepend(el); while (els.feed.children.length > 6) els.feed.lastChild.remove();
   setTimeout(() => el.remove(), 6000);
 }
@@ -315,6 +316,7 @@ function updateHUD(dt) {
   if (game.mode === 'dm' && !p.alive && p.respawnT > 0) showCenter('Qayta tug‘ilish', `${Math.ceil(p.respawnT)} soniyadan keyin`, '', 0.2);
   const st = curState() || p.inv[3], def = st.def;
   setT('wName', def.name);
+  if (cache.wIcon !== def.model) { cache.wIcon = def.model; const ic = iconCache[def.model]; const im = document.getElementById('wIcon'); im.hidden = !ic; if (ic) im.src = ic; }
   if (def.mag) { setT('magV', String(st.mag)); setT('resV', String(st.res)); }
   else if (def.slot === 4) { setT('magV', String(st.count)); setT('resV', String(NADE_MAX[def.id])); }
   else { setT('magV', '—'); setT('resV', '—'); }
@@ -409,11 +411,22 @@ function owned(it) {
   if (NADE_MAX[it.id]) return (p.nades && p.nades[it.id] || 0) >= NADE_MAX[it.id];
   return !!d && Object.values(p.inv).some(s => s && s.def === d);
 }
+const BUY_CATS = [
+  ['To‘pponchalar', ['deagle']], ['Avtomatlar', ['mp5', 'rifle', 'awp']],
+  ['Jihozlar', ['kevlar', 'kevlarh', 'kit']], ['Granatalar', ['he', 'flash', 'smoke']]
+];
 function renderBuy() {
-  els.buyGrid.innerHTML = BUY.filter(it => (!it.team || it.team === player.team) && !(game.mode === 'dm' && it.id === 'kit')).map(it => {
+  const shown = it => (!it.team || it.team === player.team) && !(game.mode !== 'comp' && it.id === 'kit');
+  const card = it => {
     const d = buyDef(it), name = d ? d.name : it.name, price = priceOf(it), own = owned(it);
     const stat = d ? (d.mag ? `${d.stat} · zarar ${d.dmg} · ${d.mag}/${d.res}` : d.stat) : it.stat;
-    return `<button class="item${own ? ' owned' : ''}" data-buy="${it.id}" type="button" ${own || player.money < price || !canBuy() ? 'disabled' : ''}><kbd>${it.k}</kbd><span class="nm">${name}</span><span class="pr">${own ? 'Bor' : '$' + price}</span><span class="st">${stat}</span></button>`;
+    const pic = iconFor(d ? d.model : it.id);
+    return `<button class="item${own ? ' owned' : ''}" data-buy="${it.id}" type="button" ${own || player.money < price || !canBuy() ? 'disabled' : ''}>` +
+      `<span class="pic">${pic ? `<img src="${pic}" alt="">` : ''}</span><kbd>${it.k}</kbd><span class="nm">${name}</span><span class="pr">${own ? 'Bor' : price ? '$' + price : 'Bepul'}</span><span class="st">${stat}</span></button>`;
+  };
+  els.buyGrid.innerHTML = BUY_CATS.map(([title, ids]) => {
+    const items = ids.map(id => BUY.find(b => b.id === id)).filter(it => it && shown(it));
+    return items.length ? `<section class="buy-cat"><h5>${title}</h5><div class="buy-grid">${items.map(card).join('')}</div></section>` : '';
   }).join('');
 }
 function buy(id) {
@@ -523,7 +536,7 @@ function startGame(e) {
   els.menu.hidden = true; els.over.hidden = true; els.hud.hidden = false; els.touch.hidden = !input.touchMode;
   document.body.classList.toggle('touch', input.touchMode); document.body.classList.add('playing');
   TouchUI.reset(); TouchUI.place();
-  sizeRadar(); newMatch(); Snd.ambient(MAP.theme.wind);
+  warmIcons(); sizeRadar(); newMatch(); Snd.ambient(MAP.theme.wind);
   if (input.touchMode) {
     // fullscreen + landscape lock where the browser allows it
     try {

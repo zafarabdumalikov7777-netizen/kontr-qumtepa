@@ -202,7 +202,14 @@ kbd{font-family:var(--f-display);font-size:11px;min-width:24px;text-align:center
 .buy-card header{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
 .wallet{font-family:var(--f-display);font-size:30px;font-weight:700;color:var(--money)}
 .buy-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
-.item{background:rgba(255,255,255,.03);border:1px solid var(--line);padding:12px;text-align:left;display:grid;grid-template-columns:auto 1fr auto;gap:4px 10px;align-items:baseline}
+.buy-cats{display:flex;flex-direction:column;gap:14px}
+.buy-cat h5{margin:0 0 6px;font-family:var(--f-display);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.item{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.015));border:1px solid var(--line);padding:10px 12px 12px;text-align:left;display:grid;grid-template-columns:auto 1fr auto;gap:4px 10px;align-items:baseline}
+.item .pic{grid-column:1 / -1;height:76px;display:flex;align-items:center;justify-content:center;margin-bottom:4px;background:radial-gradient(ellipse at 50% 60%,rgba(227,197,142,.10),transparent 70%)}
+.item .pic img{max-width:100%;max-height:76px;filter:drop-shadow(0 4px 6px rgba(0,0,0,.5));transition:transform .15s ease}
+.item:hover:not(:disabled) .pic img{transform:scale(1.06)}
+.kfi{height:20px;width:auto;filter:drop-shadow(0 1px 1px rgba(0,0,0,.8))}
+#wIcon{display:block;height:34px;width:auto;margin:0 0 2px auto;filter:drop-shadow(0 2px 3px rgba(0,0,0,.6))}
 .item:hover:not(:disabled){border-color:var(--sand);background:rgba(227,197,142,.08)}
 .item:disabled{opacity:.38;cursor:not-allowed}
 .item kbd{grid-row:span 2}
@@ -320,7 +327,7 @@ tr.me td{color:var(--sand);font-weight:600}
     <div class="v" id="hpBox"><b>+</b><span id="hpV">100</span><small>SOG‘LIQ</small></div>
     <div class="v"><b>◆</b><span id="arV">0</span><small>ZIRH</small></div>
   </div>
-  <div id="ammo"><div id="wName">USP-S</div><div id="ammoNum"><span id="magV">12</span> <small>/ <span id="resV">24</span></small></div><div id="slots"></div></div>
+  <div id="ammo"><img id="wIcon" alt="" hidden><div id="wName">USP-S</div><div id="ammoNum"><span id="magV">12</span> <small>/ <span id="resV">24</span></small></div><div id="slots"></div></div>
 </div>
 
 <div id="touch" hidden>
@@ -460,7 +467,7 @@ tr.me td{color:var(--sand);font-weight:600}
 <section id="buy" class="overlay buy" hidden>
   <div class="buy-card">
     <header><div><div class="eyebrow">Xarid menyusi</div><h2>Qurol-aslaha</h2></div><div class="wallet">$<span id="buyMoney">0</span></div></header>
-    <div class="buy-grid" id="buyGrid"></div>
+    <div class="buy-cats" id="buyGrid"></div>
     <footer><span>Raqam tugmasi bilan tez xarid · B yoki Esc bilan yopish</span><span id="buyTime"></span></footer>
     <button id="buyClose" class="ghost" type="button">Yopish va o‘yinga qaytish</button>
   </div>
@@ -486,6 +493,7 @@ tr.me td{color:var(--sand);font-weight:600}
 <script src="js/world.js"></script>
 <script src="js/models.js"></script>
 <script src="js/guns.js"></script>
+<script src="js/icons.js"></script>
 <script src="js/crosshair.js"></script>
 <script src="js/fx.js"></script>
 <script src="js/agents.js"></script>
