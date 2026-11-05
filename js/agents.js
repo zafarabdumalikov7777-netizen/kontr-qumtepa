@@ -9,7 +9,7 @@ const player = {
   isPlayer: true, id: 0, name: 'Siz', team: 'KT', alive: true, hp: 100, armor: 0, helmet: false, money: 800, kills: 0, deaths: 0,
   pos: new V3(), vel: new V3(), yaw: 0, pitch: 0, onGround: true, crouch: 0, jumpReady: true,
   inv: { 1: null, 2: null, 3: null, 4: null }, slot: 2, prevSlot: 3,
-  cool: 0, reloadT: 0, switchT: 0, shots: 0, shotsF: 0, punchP: 0, punchY: 0, vpP: 0, vpY: 0, kickP: 0, kickY: 0, kickV: 0, kickYV: 0, hops: 0, groundT: 0, scope: 0, scopeResume: 0, rescopeT: 0, autoReload: false,
+  cool: 0, reloadT: 0, switchT: 0, shots: 0, shotsF: 0, punchP: 0, punchY: 0, vpP: 0, vpY: 0, kickP: 0, kickY: 0, hops: 0, groundT: 0, scope: 0, scopeResume: 0, rescopeT: 0, autoReload: false,
   triggerReleased: true, lastShot: -99, spotUntil: 0, deathT: 0, stepDist: 0, hitMeshes: []
 };
 const eyeH = () => 1.65 - 0.45 * player.crouch;
@@ -135,7 +135,7 @@ const SPRAY = (() => {
 })();
 // How far each pattern is stretched (AK tops out near 9° like CS2) and how hard each shot snaps the view (radians)
 const SPRAY_SCALE = { ak47: 1, m4a1: 1, mp5: 1.5, deagle: 1.3, usp: 1.3, glock: 1.3 };
-const KICK = { ak47: 0.012, m4a1: 0.009, mp5: 0.007, awp: 0.065, deagle: 0.052, usp: 0.014, glock: 0.012 };
+const KICK = { ak47: 0.0045, m4a1: 0.0034, mp5: 0.0024, awp: 0.03, deagle: 0.028, usp: 0.008, glock: 0.007 };
 function sprayAt(def, i) {
   const pat = SPRAY[def.id]; if (!pat) return [0, 0];
   const k = pat[Math.min(i, pat.length - 1)], s = (SPRAY_SCALE[def.id] || 1.4) * Math.PI / 180;
@@ -201,15 +201,14 @@ function tryFire() {
   // Each shot lands on the weapon's fixed spray pattern; pulling the mouse down compensates
   const idx = Math.round(p.shotsF), sp = sprayAt(def, idx);
   p.punchY = -sp[0]; p.punchP = sp[1];
-  // view kick: a sharp snap upward with a random sideways twitch that settles in a fraction of a second
-  const kk = KICK[def.id] || 0.008;
-  // the kick is an impulse into a critically damped spring: the view punches up and settles smoothly, no jitter
-  p.kickV += kk * rand(54, 64); p.kickYV += kk * rand(-10, 10);
+  // view punch: an instant snap up that eases straight back (no spring, no wobble), like CS2's view punch
+  const kk = KICK[def.id] || 0.004;
+  p.kickP += kk * rand(0.9, 1.1); p.kickY += kk * rand(-0.3, 0.3);
   const dir = aimDir(currentSpread());
   const res = shootRay(camera.position.clone(), dir, p, def);
   const from = p.scope ? camera.localToWorld(new V3(0, -0.3, -0.5)) : camera.localToWorld(new V3(0.15, -0.13, -0.7));
   tracer(from, res.point);
-  vm.fire(clamp((KICK[def.id] || 0.008) / 0.012, 0.6, 2.2)); muzzleLight.position.copy(from); muzzleLight.intensity = 3.2;
+  vm.fire(clamp(kk / 0.0045, 0.6, 2.2)); muzzleLight.position.copy(from); muzzleLight.intensity = 3.2;
   if (!def.melee) ejectShell(def.slot === 2);
   if (p.shots % 3 === 2) puff(from.x, from.y, from.z, 0.22, 0.7, false); // barrel smoke builds up during a spray
   Snd.shot(def.snd, 0.9, 0.05);

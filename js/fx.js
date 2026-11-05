@@ -247,7 +247,7 @@ const vm = {
     let m = this.cache[key]; if (!m) { m = buildGun(def.model, team, skin, agent); this.cache[key] = m; }
     this.cur = m; this.root.add(m); m.userData.muzzle.add(vmFlash); this.kind = VM_KIND[def.model] || 'rifle';
   },
-  // the weapon is kicked like a spring: it snaps back, overshoots a little and settles
-  fire(power = 1) { this.kv += 30 * power; this.kickY = (Math.random() - 0.5) * 0.06 * power; vmFlash.visible = this.kind !== 'knife' && this.kind !== 'he'; vmFlash.material.rotation = Math.random() * 6; this.flashT = 0.045; }
+  // the weapon is kicked back like a stiff spring and returns without bouncing
+  fire(power = 1) { this.kv += 30 * power; this.kickY = (Math.random() - 0.5) * 0.025 * power; vmFlash.visible = this.kind !== 'knife' && this.kind !== 'he'; vmFlash.material.rotation = Math.random() * 6; this.flashT = 0.045; }
 };
 vScene.add(vm.root);

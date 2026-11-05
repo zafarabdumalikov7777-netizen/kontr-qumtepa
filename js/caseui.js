@@ -31,12 +31,25 @@ function itemCard(id, opts = {}) {
 const ShopUI = (() => {
   const el = document.getElementById('shop'), body = document.getElementById('shopBody'), roll = document.getElementById('roll');
   let tab = 'cases', invFilter = 'all', onClose = null;
-  const money = () => { document.getElementById('shopWallet').textContent = '$' + INV.wallet; const b = document.getElementById('shopBtn'); if (b) b.querySelector('b').textContent = '$' + INV.wallet; };
+  const money = () => { document.getElementById('shopWallet').textContent = usd(INV.wallet); const b = document.getElementById('shopBtn'); if (b) b.querySelector('b').textContent = usd(INV.wallet); };
   function setTab(t) { tab = t; document.querySelectorAll('#shopTabs button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.t === t))); render(); }
   function render() {
     money();
     if (tab === 'cases') body.innerHTML = `<div class="case-grid">${CASES.map(c => `<button class="case" data-case="${c.id}" type="button" style="--cc:${c.color}"><img src="${caseIcon(c)}" alt=""><b>${c.name}</b><span>$${c.price}</span></button>`).join('')}</div>
-      <p class="shop-note">Har bir o‘yin oxirida hisobingizga pul tushadi: g‘alaba, qotillik va yutilgan raundlar uchun.</p>`;
+      <p class="shop-note">Har bir o‘yin oxirida hisobingizga pul tushadi: g‘alaba, qotillik va yutilgan raundlar uchun.</p>
+      <div class="code-row promo"><input id="promoIn" type="text" placeholder="Promo kod" autocomplete="off" spellcheck="false" aria-label="Promo kod"><button class="ghost" id="promoBtn" type="button">Faollashtirish</button></div>
+      <p class="shop-note" id="promoMsg" role="status"></p>`;
+    if (tab === 'cases') {
+      const inp = document.getElementById('promoIn'), msg = document.getElementById('promoMsg');
+      const go = () => {
+        const r = redeemPromo(inp.value);
+        if (r === 'bad') msg.textContent = 'Bunday promo kod yo‘q.';
+        else if (r === 'used') msg.textContent = 'Bu kod allaqachon ishlatilgan.';
+        else { msg.textContent = '+' + usd(r) + ' hisobingizga qo‘shildi!'; inp.value = ''; money(); if (Snd.ctx) Snd.chime(true); }
+      };
+      document.getElementById('promoBtn').onclick = go;
+      inp.onkeydown = e => { e.stopPropagation(); if (e.key === 'Enter') go(); };
+    }
     else if (tab === 'inv') renderInv();
     else renderMarket();
   }

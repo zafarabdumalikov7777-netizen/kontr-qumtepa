@@ -172,13 +172,14 @@ function updatePlayer(dt) {
   // Between bursts the spray resets: the shot index winds back and the aim punch settles
   if (game.time - p.lastShot > Math.max(0.12, (def.rate || 0.2) * 1.25)) {
     p.shotsF = Math.max(0, p.shotsF - dt * 14);
-    const rec = 1 - Math.exp(-dt * 6); p.punchP -= p.punchP * rec; p.punchY -= p.punchY * rec;
+    // CS2-style recovery: exponential plus a steady ≈18°/s pull back to the crosshair
+    const keep = Math.exp(-dt * 8), lin = dt * 0.31, back = v => Math.sign(v) * Math.max(0, Math.abs(v) * keep - lin);
+    p.punchP = back(p.punchP); p.punchY = back(p.punchY);
   }
   p.shots = Math.round(p.shotsF);
   const vk = 1 - Math.exp(-dt * 25); p.vpP += (p.punchP - p.vpP) * vk; p.vpY += (p.punchY - p.vpY) * vk;
-  // view kick spring (ω≈18, critically damped): rises in ~60 ms, settles in ~200 ms
-  p.kickV += (-p.kickP * 320 - p.kickV * 36) * dt; p.kickP += p.kickV * dt;
-  p.kickYV += (-p.kickY * 320 - p.kickYV * 36) * dt; p.kickY += p.kickYV * dt;
+  // view punch eases back with a ≈60 ms half-life
+  const kd = Math.exp(-dt * 11); p.kickP *= kd; p.kickY *= kd;
 }
 const BHOP_MAX = 12.5; // ≈45 km/h
 function groundFriction(p, dt) {
@@ -253,7 +254,7 @@ function updateVM(dt) {
   const hs = Math.hypot(p.vel.x, p.vel.z);
   if (p.onGround && hs > 0.5) vm.bob += dt * hs * 1.5;
   const amp = Math.min(1, hs / 6) * (p.onGround ? 1 : 0.3);
-  vm.kv += (-vm.kick * 420 - vm.kv * 34) * dt; vm.kick += vm.kv * dt; // damped spring, a hint of overshoot
+  vm.kv += (-vm.kick * 420 - vm.kv * 41) * dt; vm.kick += vm.kv * dt; // critically damped: snaps back without bouncing
   vm.swing *= Math.exp(-dt * 8); vm.swayX *= Math.exp(-dt * 8); vm.swayY *= Math.exp(-dt * 8);
   vm.kickY = (vm.kickY || 0) * Math.exp(-dt * 12);
   let y = base[1] - Math.abs(Math.cos(vm.bob)) * 0.01 * amp - vm.swayY + vm.kick * 0.012, rx = vm.kick * 0.2 + p.vpP * 0.9, ry = (base[3] || 0) + vm.kickY, rz = vm.kickY * 0.6;
@@ -530,7 +531,7 @@ function showMatchEnd() {
   const reward = matchReward();
   INV.wallet += reward; INV.earned += reward; saveInv();
   const rw = document.getElementById('overReward');
-  rw.hidden = !reward; rw.innerHTML = `<b>+$${reward}</b> hisobingizga qo‘shildi · hisob: <b>$${INV.wallet}</b>`;
+  rw.hidden = !reward; rw.innerHTML = `<b>+${usd(reward)}</b> hisobingizga qo‘shildi · hisob: <b>${usd(INV.wallet)}</b>`;
   els.over.hidden = false; if (document.pointerLockElement) document.exitPointerLock();
 }
 function startGame(e) {

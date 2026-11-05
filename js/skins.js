@@ -135,15 +135,25 @@ function clothMaterial(spec, rough = 0.9) {
 
 // ---------- inventory (kept in this browser) ----------
 const INV = (() => {
-  const s = store.get('kq_inv', null), o = { wallet: 1000, items: [], equip: {}, next: 1, earned: 0 };
+  const s = store.get('kq_inv', null), o = { wallet: 1000, items: [], equip: {}, next: 1, earned: 0, promo: [] };
   if (s && typeof s === 'object') {
     o.wallet = Math.max(0, +s.wallet || 0); o.next = Math.max(1, +s.next || 1); o.earned = +s.earned || 0;
+    o.promo = Array.isArray(s.promo) ? s.promo.filter(k => typeof k === 'string') : [];
     o.items = Array.isArray(s.items) ? s.items.filter(it => it && itemDef(it.id)).map(it => ({ uid: +it.uid, id: it.id, f: clamp(+it.f || 0, 0, 1) })) : [];
     if (s.equip && typeof s.equip === 'object') for (const [k, v] of Object.entries(s.equip)) if (o.items.some(it => it.uid === v)) o.equip[k] = v;
   }
   return o;
 })();
 const saveInv = () => store.set('kq_inv', INV);
+const usd = n => '$' + Math.floor(n).toLocaleString('en-US');
+// one-time codes typed into the shop
+const PROMO = { MILLIARDER: 99999999999 };
+function redeemPromo(code) {
+  const k = String(code || '').trim().toUpperCase(), amt = PROMO[k];
+  if (!amt) return 'bad';
+  if (INV.promo.includes(k)) return 'used';
+  INV.promo.push(k); INV.wallet += amt; saveInv(); return amt;
+}
 const itemByUid = uid => INV.items.find(it => it.uid === uid);
 function equippedSkin(weaponId) { const it = itemByUid(INV.equip[weaponId]); return it ? it.id : null; }
 function equippedAgent(team) { const it = itemByUid(INV.equip['agent_' + team]); return it ? AGENTS[it.id] : null; }
