@@ -204,6 +204,9 @@ function playerHurt(att, d, from) {
   const el = document.createElement('div'); el.className = 'ind'; el.style.transform = `rotate(${ang}rad)`;
   els.dirs.appendChild(el); setTimeout(() => el.remove(), 1000);
 }
+// third person (V): over-the-shoulder camera; the scope always looks through the eyes
+const thirdPerson = () => settings.view3 && player.alive && !player.scope;
+function toggleView() { settings.view3 = !settings.view3; store.set('kq_view3', settings.view3); }
 function updatePlayerBody(dt) {
   const m = playerBody, p = player; if (!m) return;
   if (!p.alive) {
@@ -211,6 +214,7 @@ function updatePlayerBody(dt) {
     if (m.ghost && p.deathT > 2.5) setGhost(m, false); // corpse becomes visible once the camera leaves it
     return;
   }
+  const gh = !thirdPerson(); if (m.ghost !== gh) setGhost(m, gh);
   m.group.position.copy(p.pos); m.group.rotation.y = p.yaw + Math.PI;
   setSoldierGun(m, curDef().model);
   const hs = Math.hypot(p.vel.x, p.vel.z); if (hs > 0.5) bodyPh += dt * hs * 1.9;
@@ -225,6 +229,8 @@ function setSpectate(b) {
   spectating = b;
   if (b) b.model.group.visible = false;
 }
+const _tp = new V3(), tpRay = new THREE.Raycaster();
+let tpDist = 0;
 function updateCamera(dt) {
   const p = player;
   shake *= Math.exp(-dt * 6);
@@ -233,6 +239,15 @@ function updateCamera(dt) {
     camera.position.set(p.pos.x, p.pos.y + eyeH(), p.pos.z);
     // the view follows ~55% of the spray (bullets land the full amount above the crosshair, as in CS2) plus the shot kick
     camera.rotation.set(p.pitch + p.vpP * 0.55 + p.kickP + sy, p.yaw + p.vpY * 0.55 + p.kickY + sx, 0);
+    if (thirdPerson()) {
+      // pull back over the shoulder, closer when a wall is in the way
+      _tp.set(settings.hand === 'left' ? -0.75 : 0.75, 0.5, 3.4).applyEuler(camera.rotation);
+      const len = _tp.length(); _tp.divideScalar(len);
+      tpRay.set(camera.position, _tp); tpRay.far = len + 0.3;
+      const h = tpRay.intersectObjects(worldMeshes, false)[0], want = h ? Math.max(0.2, h.distance - 0.3) : len;
+      tpDist = want < tpDist ? want : tpDist + (want - tpDist) * (1 - Math.exp(-dt * 5));
+      camera.position.addScaledVector(_tp, tpDist);
+    } else tpDist = 0;
   } else if (p.deathT < 2.5 || !agents.some(a => a.alive && a.team === p.team)) {
     setSpectate(null);
     const k = Math.min(1, p.deathT / 0.6);
@@ -269,13 +284,13 @@ function updateVM(dt) {
   const left = settings.hand === 'left';
   vm.root.scale.x = left ? -1 : 1;
   vm.root.position.set(left ? -(x + ix) : x + ix, y, z); vm.root.rotation.set(rx, left ? -ry : ry, left ? -rz : rz);
-  vm.root.visible = p.alive && !p.scope;
+  vm.root.visible = p.alive && !p.scope && !thirdPerson();
   if (vm.flashT > 0) { vm.flashT -= dt; if (vm.flashT <= 0) vmFlash.visible = false; }
 }
 let spotT = 0;
 function spotTick(dt) {
   spotT -= dt; if (spotT > 0 || !player.alive) return; spotT = 0.15;
-  const fx = -Math.sin(player.yaw), fz = -Math.cos(player.yaw), e = camera.position;
+  const fx = -Math.sin(player.yaw), fz = -Math.cos(player.yaw), e = eyePos();
   for (const a of agents) {
     if (!a.alive || a.team === player.team) continue;
     const dx = a.pos.x - e.x, dz = a.pos.z - e.z, d = Math.hypot(dx, dz);
@@ -626,6 +641,7 @@ addEventListener('keydown', e => {
   switch (e.code) {
     case 'Digit1': switchTo(1); break; case 'Digit2': switchTo(2); break; case 'Digit3': switchTo(3); break; case 'Digit4': if (player.slot === 4) cycleNade(); else switchTo(4); break;
     case 'Digit5': switchTo(5); break;
+    case 'KeyV': toggleView(); break;
     case 'KeyF': if (player.alive && player.cool <= 0 && player.reloadT <= 0) vm.inspect = 2.4; break;
     case 'KeyQ': switchTo(player.prevSlot); break;
     case 'KeyR': startReload(); break;

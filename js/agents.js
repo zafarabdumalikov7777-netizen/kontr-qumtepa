@@ -51,6 +51,15 @@ const botWeapon = b => b.primary || b.pistol;
 // ---------- Combat ----------
 const raycaster = new THREE.Raycaster();
 const _list = [];
+const eyePos = () => new V3(player.pos.x, player.pos.y + eyeH(), player.pos.z);
+// third person: the bullet leaves the eyes toward whatever the camera's crosshair ray hits
+function aimPoint(origin, dir, range = 220) {
+  raycaster.set(origin, dir); raycaster.far = range; _list.length = 0;
+  for (const m of worldMeshes) _list.push(m);
+  for (const a of agents) { if (a === player || !a.alive) continue; for (const m of a.hitMeshes) _list.push(m); }
+  const h = raycaster.intersectObjects(_list, false)[0];
+  return h ? h.point.clone() : origin.clone().addScaledVector(dir, range);
+}
 function shootRay(origin, dir, shooter, def, range) {
   range = range || 220; raycaster.set(origin, dir); raycaster.far = range;
   _list.length = 0;
@@ -183,7 +192,7 @@ function secondaryAction() {
 function knifeAttack(heavy) {
   const p = player, def = WEAPONS.knife;
   p.cool = heavy ? 1.0 : def.rate; vm.swing = 1; Snd.knife();
-  shootRay(camera.position.clone(), aimDir(0), p, heavy ? Object.assign({}, def, { dmg: 65 }) : def, 2.3);
+  shootRay(eyePos(), aimDir(0), p, heavy ? Object.assign({}, def, { dmg: 65 }) : def, 2.3);
 }
 function tryFire() {
   const p = player, st = curState(); if (!st) return;
@@ -204,12 +213,15 @@ function tryFire() {
   // view punch: an instant snap up that eases straight back (no spring, no wobble), like CS2's view punch
   const kk = KICK[def.id] || 0.004;
   p.kickP += kk * rand(0.9, 1.1); p.kickY += kk * rand(-0.3, 0.3);
-  const dir = aimDir(currentSpread());
-  const res = shootRay(camera.position.clone(), dir, p, def);
-  const from = p.scope ? camera.localToWorld(new V3(0, -0.3, -0.5)) : camera.localToWorld(new V3(0.15, -0.13, -0.7));
+  const tp = thirdPerson(), eye = eyePos();
+  let dir = aimDir(currentSpread());
+  if (tp) { const t = aimPoint(camera.position, dir); if (t.distanceTo(eye) > 0.6) dir = t.sub(eye).normalize(); }
+  const res = shootRay(eye, dir, p, def);
+  const from = tp && playerBody && playerBody.muzzle ? playerBody.muzzle.getWorldPosition(new V3())
+    : p.scope ? camera.localToWorld(new V3(0, -0.3, -0.5)) : camera.localToWorld(new V3(0.15, -0.13, -0.7));
   tracer(from, res.point);
   vm.fire(clamp(kk / 0.0045, 0.6, 2.2)); muzzleLight.position.copy(from); muzzleLight.intensity = 3.2;
-  if (!def.melee) ejectShell(def.slot === 2);
+  if (!def.melee && !tp) ejectShell(def.slot === 2);
   if (p.shots % 3 === 2) puff(from.x, from.y, from.z, 0.22, 0.7, false); // barrel smoke builds up during a spray
   Snd.shot(def.snd, 0.9, 0.05);
   p.shotsF = idx + 1; p.shots = idx + 1;
@@ -240,7 +252,7 @@ function throwNade() {
   const p = player, st = p.inv[4]; if (!st || !p.nades) return;
   const kind = st.def.id; if (!(p.nades[kind] > 0)) return;
   p.nades[kind]--;
-  const dir = aimDir(0), pos = camera.position.clone().addScaledVector(dir, 0.5);
+  const dir = aimDir(0), pos = eyePos().addScaledVector(dir, 0.5);
   const vel = dir.multiplyScalar(17).add(new V3(p.vel.x * 0.5, 2.5, p.vel.z * 0.5));
   const mesh = new THREE.Mesh(nadeGeo, nadeMats[kind]); mesh.castShadow = true; mesh.position.copy(pos); scene.add(mesh);
   nades.push({ mesh, pos, vel, t: 0, owner: p, kind }); Snd.knife();

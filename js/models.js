@@ -102,7 +102,7 @@ function setSoldierGun(m, kind) {
   if (m.gunKind === kind) return;
   if (m.gun) m.upper.remove(m.gun);
   const g = worldGun(kind); g.position.set(0.075, 1.395, 0.33);
-  if (m.ghostModel) g.traverse(o => { if (o.isMesh) o.material = ghostGunMat; });
+  if (m.ghostModel) g.traverse(o => { if (o.isMesh) { o.userData.mat = o.material; if (m.ghost) o.material = ghostGunMat; } });
   m.upper.add(g); m.gun = g; m.gunKind = kind;
   m.muzzle = g.getObjectByName('muzzle');
   if (m.flash) m.muzzle.add(m.flash);
@@ -111,6 +111,7 @@ function setSoldierGun(m, kind) {
 function setGhost(m, on) {
   for (const mat of m.mats) { mat.colorWrite = !on; mat.depthWrite = !on; }
   m.ghost = on;
+  if (m.gun && m.ghostModel) m.gun.traverse(o => { if (o.isMesh) o.material = on ? ghostGunMat : o.userData.mat || o.material; });
 }
 function poseSoldier(m, phase, run, crouch, air) {
   const drop = 0.42 * crouch, th = Math.acos(clamp((0.92 - drop) / 0.92, -1, 1));

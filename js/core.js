@@ -25,6 +25,7 @@ const settings = {
   allies: clamp(store.get('kq_allies', 4) | 0, 0, 9),
   enemies: clamp(store.get('kq_enemies', 5) | 0, 1, 10),
   speedo: store.get('kq_speedo', true) !== false,
+  view3: store.get('kq_view3', false) === true,
   mode: ['comp', 'dm', 'practice'].includes(store.get('kq_mode', 'comp')) ? store.get('kq_mode', 'comp') : 'comp',
   xhRecoil: store.get('kq_xhrec', false) === true,
   quality: clamp(store.get('kq_quality', 1) | 0, 0, 2),
