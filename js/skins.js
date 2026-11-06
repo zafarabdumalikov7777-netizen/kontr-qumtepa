@@ -135,10 +135,10 @@ function clothMaterial(spec, rough = 0.9) {
 
 // ---------- inventory (kept in this browser) ----------
 const INV = (() => {
-  const s = store.get('kq_inv', null), o = { wallet: 1000, items: [], equip: {}, next: 1, earned: 0, promo: [], vip: false };
+  const s = store.get('kq_inv', null), o = { wallet: 1000, items: [], equip: {}, next: 1, earned: 0, promoDay: {}, vip: false };
   if (s && typeof s === 'object') {
     o.wallet = Math.max(0, +s.wallet || 0); o.next = Math.max(1, +s.next || 1); o.earned = +s.earned || 0;
-    o.promo = Array.isArray(s.promo) ? s.promo.filter(k => typeof k === 'string') : [];
+    if (s.promoDay && typeof s.promoDay === 'object') for (const [k, v] of Object.entries(s.promoDay)) if (typeof v === 'string') o.promoDay[k] = v;
     o.vip = s.vip === true; if (o.vip) o.wallet = Infinity; // VIP: endless money (saved as null, restored here)
     o.items = Array.isArray(s.items) ? s.items.filter(it => it && itemDef(it.id)).map(it => ({ uid: +it.uid, id: it.id, f: clamp(+it.f || 0, 0, 1) })) : [];
     if (s.equip && typeof s.equip === 'object') for (const [k, v] of Object.entries(s.equip)) if (o.items.some(it => it.uid === v)) o.equip[k] = v;
@@ -153,7 +153,7 @@ async function sha256(t) {
   const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t));
   return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
 }
-// Bonus codes: each works once per browser, unless marked repeat
+// Bonus codes: each works once a day (local date), VIP any number of times
 const BONUS = {
   VIP: { money: 10000, repeat: true },
   QUMTEPA: { money: 500 },
@@ -162,12 +162,13 @@ const BONUS = {
   AGENT: { case: 'agent' },
   PICHOQ: { knife: true }
 };
-// result: 'bad' | 'used' | 'vip' | { money } | { caseId, win? }
+// result: 'bad' | 'used' | 'vip' | 'vipon' | { money } | { caseId, win? }
 async function redeemPromo(code) {
   const k = String(code || '').trim().toUpperCase(); if (!k) return 'bad';
   const b = BONUS[k];
   if (b) {
-    if (!b.repeat) { if (INV.promo.includes(k)) return 'used'; INV.promo.push(k); }
+    const day = new Date().toLocaleDateString('en-CA');
+    if (!b.repeat) { if (INV.promoDay[k] === day) return 'used'; INV.promoDay[k] = day; }
     if (b.money) { INV.wallet += b.money; saveInv(); return { money: b.money }; }
     saveInv();
     if (b.case) return { caseId: b.case };
@@ -176,10 +177,10 @@ async function redeemPromo(code) {
     return { caseId: c.id, win: pick(c.items.filter(id => itemDef(id).rarity === 'gold')) };
   }
   if (!(window.crypto && crypto.subtle) || await sha256(k) !== VIP_HASH) return 'bad';
-  if (INV.vip) return 'used';
+  if (INV.vip) return 'vipon';
   INV.vip = true; INV.wallet = Infinity; saveInv(); return 'vip';
 }
-const promoText = r => r === 'bad' ? 'Bunday promo kod yo‘q.' : r === 'used' ? 'Bu kod allaqachon ishlatilgan.' : r === 'vip' ? 'VIP yoqildi: pulingiz endi cheksiz!'
+const promoText = r => r === 'bad' ? 'Bunday promo kod yo‘q.' : r === 'used' ? 'Bu kod bugun ishlatilgan. Ertaga yana ishlaydi!' : r === 'vipon' ? 'VIP allaqachon yoqilgan.' : r === 'vip' ? 'VIP yoqildi: pulingiz endi cheksiz!'
   : r.money ? '+' + usd(r.money) + ' bonus hisobingizga qo‘shildi!' : r.win ? 'Bonus: kafolatlangan ★ pichoq!' : 'Bonus: bepul keys ochilmoqda!';
 const itemByUid = uid => INV.items.find(it => it.uid === uid);
 function equippedSkin(weaponId) { const it = itemByUid(INV.equip[weaponId]); return it ? it.id : null; }

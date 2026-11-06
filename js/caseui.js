@@ -150,14 +150,67 @@ const ShopUI = (() => {
     return [...skins, knife, ...ags];
   }
   const priceFor = id => Math.round(RARITY[itemDef(id).rarity].val * 1.6 / 10) * 10;
-  function renderMarket() {
-    body.innerHTML = `<p class="shop-note">Bugungi takliflar har kuni yangilanadi.</p><div class="item-grid">${offers().map(id => itemCard(id, {
-      extra: `<button class="buyb" data-mk="${id}" type="button" ${INV.wallet < priceFor(id) ? 'disabled' : ''}>$${priceFor(id)}</button>` })).join('')}</div>`;
-    body.querySelectorAll('[data-mk]').forEach(b => b.onclick = () => {
-      const id = b.dataset.mk, p = priceFor(id); if (INV.wallet < p) return;
-      INV.wallet -= p; addItem(id); if (Snd.ctx) Snd.buy(); b.textContent = 'Olindi ✓'; b.disabled = true; money();
-      body.querySelectorAll('[data-mk]').forEach(o => { if (!o.disabled && INV.wallet < priceFor(o.dataset.mk)) o.disabled = true; });
+  const salePrice = id => Math.round(priceFor(id) * 0.75 / 10) * 10; // today's offers are 25% off
+  // the whole catalog, searchable and filterable by weapon, look (pattern) and rarity
+  const PAT_NAME = { camo: 'Kamuflyaj', digital: 'Raqamli', stripes: 'Chiziqli', fade: 'Fade', tiger: 'Yo‘lbars', neon: 'Neon', tiles: 'Koshin',
+    hex: 'Olti burchak', marble: 'Marmar', ikat: 'Atlas', suzani: 'Suzani', gold: 'Oltin' };
+  const mk = { q: '', w: 'all', look: 'all', rar: 'all', sort: 'rar' };
+  const norm = s => String(s).toLowerCase().replace(/[‘’ʻʼ`']/g, "'");
+  const itemPat = d => d.kind === 'skin' ? d.pat.p : d.look.top && d.look.top.p;
+  const searchText = id => {
+    const d = itemDef(id), c = CASES.find(c => c.items.includes(id));
+    return norm([itemTitle(d), d.kind === 'agent' ? 'agent ' + d.team : WEAPONS[d.weapon].name, PAT_NAME[itemPat(d)] || '', RARITY[d.rarity].name, c ? c.name : ''].join(' '));
+  };
+  function marketList() {
+    const q = norm(mk.q).trim().split(/\s+/).filter(Boolean);
+    const list = [...Object.keys(SKINS), ...Object.keys(AGENTS)].filter(id => {
+      const d = itemDef(id);
+      if (mk.w !== 'all' && (mk.w === 'agent' ? d.kind !== 'agent' : d.weapon !== mk.w)) return false;
+      if (mk.look !== 'all' && itemPat(d) !== mk.look) return false;
+      if (mk.rar !== 'all' && d.rarity !== mk.rar) return false;
+      const t = searchText(id); return q.every(w => t.includes(w));
     });
+    const ri = id => RARITY_ORDER.indexOf(itemDef(id).rarity);
+    const by = { rar: (a, b) => ri(b) - ri(a), cheap: (a, b) => priceFor(a) - priceFor(b), exp: (a, b) => priceFor(b) - priceFor(a),
+      name: (a, b) => itemTitle(itemDef(a)).localeCompare(itemTitle(itemDef(b))) }[mk.sort];
+    return list.sort((a, b) => by(a, b) || itemTitle(itemDef(a)).localeCompare(itemTitle(itemDef(b))));
+  }
+  const buyCard = (id, price) => itemCard(id, { extra: `<button class="buyb" data-mk="${id}" data-p="${price}" type="button" ${INV.wallet < price ? 'disabled' : ''}>${price < priceFor(id) ? `<s>$${priceFor(id)}</s> ` : ''}$${price}</button>` });
+  function renderMarketResults() {
+    const res = document.getElementById('mkRes'), filtered = mk.q.trim() || mk.w !== 'all' || mk.look !== 'all' || mk.rar !== 'all', list = marketList();
+    res.innerHTML = (filtered ? '' : `<h4 class="mk-h">Bugungi chegirma −25% <small>har kuni yangilanadi</small></h4><div class="item-grid">${offers().map(id => buyCard(id, salePrice(id))).join('')}</div>`) +
+      `<h4 class="mk-h">${filtered ? 'Topildi' : 'Barcha skinlar va agentlar'} <small>${list.length} ta</small></h4>` +
+      (list.length ? `<div class="item-grid">${list.map(id => buyCard(id, priceFor(id))).join('')}</div>` : '<p class="shop-note">Hech narsa topilmadi. Boshqa so‘z yozib ko‘ring yoki filtrlarni «Hammasi»ga qaytaring.</p>');
+  }
+  function renderMarket() {
+    const weapons = [...new Set(Object.values(SKINS).map(s => s.weapon))];
+    const pats = Object.keys(PAT_NAME).filter(p => [...Object.keys(SKINS), ...Object.keys(AGENTS)].some(id => itemPat(itemDef(id)) === p));
+    const chips = (id, label, opts) => `<div class="chips" id="${id}"><span>${label}</span>${opts.map(([v, t, col]) => `<button type="button" data-v="${v}"${col ? ` style="--rc:${col}" class="rar"` : ''}>${t}</button>`).join('')}</div>`;
+    body.innerHTML = `<div class="mk-tools"><input id="mkQ" type="search" placeholder="Qidirish: AK, atlas, pichoq, yo‘lbars…" autocomplete="off" spellcheck="false" aria-label="Skin qidirish" value="${mk.q.replace(/"/g, '&quot;')}">
+      <select id="mkSort" aria-label="Saralash"><option value="rar">Noyoblari oldin</option><option value="cheap">Arzonlari oldin</option><option value="exp">Qimmatlari oldin</option><option value="name">Nomi bo‘yicha</option></select></div>` +
+      chips('mkW', 'Qurol', [['all', 'Hammasi'], ...weapons.map(w => [w, WEAPONS[w].name]), ['agent', 'Agentlar']]) +
+      chips('mkLook', 'Ko‘rinish', [['all', 'Hammasi'], ...pats.map(p => [p, PAT_NAME[p]])]) +
+      chips('mkRar', 'Noyoblik', [['all', 'Hammasi'], ...RARITY_ORDER.map(r => [r, RARITY[r].name, RARITY[r].color])]) +
+      '<div id="mkRes"></div>';
+    const q = document.getElementById('mkQ'), sort = document.getElementById('mkSort');
+    sort.value = mk.sort;
+    q.oninput = () => { mk.q = q.value; renderMarketResults(); };
+    q.onkeydown = e => e.stopPropagation();
+    sort.onchange = () => { mk.sort = sort.value; renderMarketResults(); };
+    for (const [id, key] of [['mkW', 'w'], ['mkLook', 'look'], ['mkRar', 'rar']]) {
+      const box = document.getElementById(id), sync = () => box.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === mk[key])));
+      box.onclick = e => { const b = e.target.closest('button'); if (!b) return; mk[key] = b.dataset.v; sync(); renderMarketResults(); };
+      sync();
+    }
+    document.getElementById('mkRes').onclick = e => {
+      const b = e.target.closest('[data-mk]'); if (!b || b.disabled) return;
+      const id = b.dataset.mk, p = +b.dataset.p; if (INV.wallet < p) return;
+      INV.wallet -= p; addItem(id); if (Snd.ctx) Snd.buy(); money();
+      const was = b.innerHTML; b.textContent = 'Olindi ✓'; b.disabled = true;
+      setTimeout(() => { if (b.isConnected) { b.innerHTML = was; b.disabled = INV.wallet < p; } }, 900);
+      body.querySelectorAll('[data-mk]').forEach(o => { if (o !== b && !o.disabled && INV.wallet < +o.dataset.p) o.disabled = true; });
+    };
+    renderMarketResults();
   }
   body.addEventListener('click', e => { const c = e.target.closest('[data-case]'); if (c) showCase(c.dataset.case); });
   document.querySelectorAll('#shopTabs button').forEach(b => b.onclick = () => setTab(b.dataset.t));
