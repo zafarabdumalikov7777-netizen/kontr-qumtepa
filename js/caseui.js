@@ -222,7 +222,7 @@ const ShopUI = (() => {
   document.querySelectorAll('#shopTabs button').forEach(b => b.onclick = () => setTab(b.dataset.t));
   document.getElementById('shopClose').onclick = () => { el.hidden = true; vm.cache = {}; if (onClose) onClose(); };
   return {
-    open(cb) { onClose = cb; el.hidden = false; Snd.init(); setTab(tab); },
+    open(cb, t) { onClose = cb; if (t) tab = t; el.hidden = false; Snd.init(); setTab(tab); },
     money, bonusCase
   };
 })();

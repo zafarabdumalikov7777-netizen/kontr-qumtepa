@@ -263,16 +263,48 @@ h2{font-family:var(--f-display);font-size:28px;margin:4px 0 0;font-weight:700}
 .primary:hover{background:#f0d6a4}
 .ghost{background:transparent;border:1px solid var(--line);padding:13px 20px;font-family:var(--f-display);font-weight:600;letter-spacing:.08em}
 .ghost:hover{border-color:var(--sand)}
-.menu{background:linear-gradient(90deg,rgba(12,15,18,.94) 0%,rgba(12,15,18,.78) 46%,rgba(12,15,18,.12) 100%);align-items:center}
-.menu-grid{display:grid;grid-template-columns:minmax(0,520px);gap:24px;margin-left:clamp(0px,5vw,72px);margin-block:auto}
-@media (min-width:1100px){
-  .menu-grid{grid-template-columns:minmax(0,500px) minmax(0,300px);column-gap:56px;align-items:end}
-  .brand{grid-column:1 / 3}
-  .menu-grid .keys{grid-template-columns:1fr;border-top:0;border-left:1px solid var(--line);padding:0 0 0 24px}
+.menu{display:block;padding:0;background:linear-gradient(90deg,rgba(10,12,15,.55) 0%,rgba(10,12,15,0) 48%),linear-gradient(0deg,rgba(10,12,15,.45) 0%,rgba(10,12,15,0) 26%)}
+.topbar{position:absolute;top:0;left:0;right:0;z-index:2;display:flex;align-items:center;gap:20px;padding:calc(10px + var(--it)) max(24px,var(--ir)) 10px max(24px,var(--il));background:linear-gradient(180deg,rgba(10,12,15,.95),rgba(10,12,15,.7));border-bottom:1px solid var(--line)}
+.logo{font-family:var(--f-display);font-weight:700;font-size:26px;color:var(--sand);letter-spacing:.02em;line-height:1;white-space:nowrap}
+.logo span{display:block;font-size:10px;letter-spacing:.42em;color:var(--text);margin-top:3px;font-weight:600}
+.nav{display:flex;gap:2px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none}
+.nav button{background:none;border:0;border-bottom:2px solid transparent;padding:12px 16px;font-family:var(--f-display);font-weight:700;font-size:15px;letter-spacing:.12em;color:var(--muted);white-space:nowrap}
+.nav button:hover{color:var(--text)}
+.nav button[aria-pressed="true"]{color:var(--text);border-bottom-color:var(--sand)}
+.nav button[data-nav="play"]{color:var(--sand)}
+.nav-right{display:flex;gap:8px;align-items:center}
+.wallet-chip,.pf-chip{background:rgba(255,255,255,.04);border:1px solid var(--line);padding:8px 12px;font-family:var(--f-display);font-weight:600;font-size:13px;display:flex;gap:8px;align-items:center;white-space:nowrap}
+.wallet-chip b{color:var(--money);font-size:15px}
+.pf-chip:hover,.wallet-chip:hover{border-color:var(--sand)}
+.pf-chip .rk{font-size:11px;padding:2px 7px 2px 4px}
+.pf-chip .prime{font-size:10px;padding:2px 6px;margin-left:4px}
+.pf-card{position:absolute;z-index:3;top:calc(66px + var(--it));right:max(24px,var(--ir));width:min(330px,calc(100% - 32px));background:var(--panel-solid);margin:0}
+.pf-card[hidden]{display:none}
+.menu .setup{position:absolute;z-index:1;top:calc(70px + var(--it));left:max(24px,var(--il));bottom:calc(16px + var(--ib));width:min(470px,calc(100% - 32px));overflow:auto;background:rgba(12,15,18,.84);border:1px solid var(--line);padding:18px;backdrop-filter:blur(6px)}
+.menu .setup[hidden]{display:none}
+.keys-box summary{cursor:pointer;color:var(--muted);font-family:var(--f-display);letter-spacing:.1em;font-size:12px;text-transform:uppercase}
+.keys-box .keys{margin-top:10px}
+.show-ctl{position:absolute;left:68%;bottom:calc(22px + var(--ib));transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;z-index:1}
+.show-name{font-family:var(--f-display);font-weight:700;font-size:16px;letter-spacing:.06em;text-shadow:0 2px 8px rgba(0,0,0,.8);white-space:nowrap}
+.show-btn{width:46px;height:46px;border-radius:50%;background:rgba(12,15,18,.75);border:1px solid var(--line);font-size:24px;font-weight:700;line-height:1;color:var(--text);display:flex;align-items:center;justify-content:center}
+.show-btn:hover,.show-btn[aria-expanded="true"]{border-color:var(--sand);color:var(--sand)}
+.show-pop{position:absolute;z-index:3;left:68%;bottom:calc(112px + var(--ib));transform:translateX(-50%);width:min(460px,calc(100% - 24px));background:var(--panel-solid);border:1px solid var(--line);padding:14px;display:flex;flex-direction:column;gap:8px;max-height:calc(100% - 200px);overflow:auto}
+.show-pop[hidden]{display:none}
+.show-guns{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.show-guns button{background:rgba(255,255,255,.04);border:1px solid var(--line);padding:6px 4px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:600;min-width:0}
+.show-guns img{width:100%;height:38px;object-fit:contain}
+.show-guns span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.show-maps{display:flex;flex-wrap:wrap;gap:6px}
+.show-maps button{background:rgba(255,255,255,.04);border:1px solid var(--line);padding:6px 10px;font-family:var(--f-display);font-weight:600;font-size:13px}
+.show-guns button[aria-pressed="true"],.show-maps button[aria-pressed="true"]{border-color:var(--sand);background:rgba(227,197,142,.16);color:var(--sand)}
+@media (max-width:900px){
+  .topbar{flex-wrap:wrap;gap:8px}
+  .nav{order:3;flex-basis:100%}
+  .nav button{padding:8px 10px;font-size:13px}
+  .menu .setup{top:calc(120px + var(--it));width:min(420px,54%);padding:12px}
+  .show-ctl{left:79%}
+  .show-pop{left:auto;right:12px;transform:none;bottom:calc(84px + var(--ib));width:min(420px,calc(100% - 24px))}
 }
-.brand h1{font-family:var(--f-display);font-size:clamp(60px,10vw,112px);line-height:.86;margin:10px 0 0;color:var(--sand);letter-spacing:-.01em;font-weight:700}
-.brand h1 span{display:block;font-size:.34em;letter-spacing:.32em;color:var(--text);margin-top:10px;font-weight:600}
-.lede{max-width:46ch;line-height:1.55;color:#d6cfbf;font-size:16px;margin:16px 0 0}
 .setup{display:flex;flex-direction:column;gap:18px}
 .field{display:flex;flex-direction:column;gap:8px}
 .label{font-family:var(--f-display);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between}
@@ -391,8 +423,6 @@ tr.me td{color:var(--sand);font-weight:600}
   #speedo b{font-size:16px}
   #hint{bottom:auto;top:calc(64px + var(--it));font-size:12px}
   #center{top:18%}
-  .brand h1{font-size:56px}
-  .lede{display:none}
 }
 @media (max-width:640px){
   #speedo{bottom:auto;top:calc(64px + var(--it));min-width:0;padding:3px 10px}
@@ -467,45 +497,53 @@ tr.me td{color:var(--sand);font-weight:600}
 <div id="rotate"><i></i><div>Telefonni gorizontal holatga burang</div></div>
 
 <section id="menu" class="overlay menu">
-  <div class="menu-grid">
-    <div class="brand">
-      <div class="eyebrow">de_qumtepa · 5 × 5 · 8 g‘alabagacha</div>
-      <h1>KONTR<span>QUMTEPA</span></h1>
-      <p class="lede">Qumtepa ko‘chalarida raundma-raund jang. Har raund boshida pul bilan qurol va zirh oling. Terroristlar raqibni butunlay yo‘q qilishi kerak, kontr-terroristlar esa vaqt tugaguncha omon qolsa ham yutadi.</p>
-      <div class="profile">
-        <div class="pf-top"><input id="pfName" maxlength="16" aria-label="Ismingiz" spellcheck="false" autocomplete="off"><b id="pfPos">#1</b></div>
-        <div id="pfRank" class="pf-rank"></div>
-        <small id="pfStats"></small>
-        <div class="pf-lvl"><span id="pfLvl"></span><div class="bar"><i id="pfBar"></i></div></div>
-        <button id="pfBoard" class="ghost" type="button">REYTING JADVALI</button>
+  <header class="topbar">
+    <div class="logo">KONTR<span>QUMTEPA</span></div>
+    <nav class="nav" id="mainNav">
+      <button type="button" data-nav="play" aria-pressed="true">O‘YNASH</button>
+      <button type="button" data-nav="inv">INVENTAR</button>
+      <button type="button" data-nav="cases">KEYSLAR</button>
+      <button type="button" data-nav="market">DO‘KON</button>
+      <button type="button" data-nav="promo">PROMOKOD</button>
+      <button type="button" data-nav="settings">SOZLAMALAR</button>
+    </nav>
+    <div class="nav-right">
+      <button id="shopBtn" class="wallet-chip" type="button">Hisob <b>$0</b></button>
+      <button id="pfChip" class="pf-chip" type="button"><span id="pfChipRank"></span><b id="pfChipName">O‘yinchi</b></button>
+    </div>
+  </header>
+  <div class="profile pf-card" id="pfCard" hidden>
+    <div class="pf-top"><input id="pfName" maxlength="16" aria-label="Ismingiz" spellcheck="false" autocomplete="off"><b id="pfPos">#1</b></div>
+    <div id="pfRank" class="pf-rank"></div>
+    <small id="pfStats"></small>
+    <div class="pf-lvl"><span id="pfLvl"></span><div class="bar"><i id="pfBar"></i></div></div>
+    <button id="pfBoard" class="ghost" type="button">REYTING JADVALI</button>
+  </div>
+  <aside class="setup" id="playPanel">
+    <div class="field"><span class="label">Xarita</span>
+      <div class="maps" id="maps"></div>
+    </div>
+    <div class="field"><span class="label">Rejim</span>
+      <div class="seg mode-seg" id="modeSeg"><button data-m="comp" type="button">Raqobat (C4)</button><button data-m="dm" type="button">Deathmatch</button><button data-m="gg" type="button">Gun Game</button><button data-m="mod" type="button">Modli jang</button><button data-m="practice" type="button">Mashq</button></div>
+    </div>
+    <div class="field"><span class="label">Jamoa</span>
+      <div class="teams">
+        <button class="team kt" data-team="KT" type="button"><b>KT</b><span>Kontr-terroristlar</span><small>M4A1-S · USP-S</small></button>
+        <button class="team te" data-team="T" type="button"><b>T</b><span>Terroristlar</span><small>AK-47 · Glock-18</small></button>
       </div>
     </div>
-    <div class="setup">
-      <div class="field"><span class="label">Xarita</span>
-        <div class="maps" id="maps"></div>
-      </div>
-      <div class="field"><span class="label">Rejim</span>
-        <div class="seg mode-seg" id="modeSeg"><button data-m="comp" type="button">Raqobat (C4)</button><button data-m="dm" type="button">Deathmatch</button><button data-m="gg" type="button">Gun Game</button><button data-m="mod" type="button">Modli jang</button><button data-m="practice" type="button">Mashq</button></div>
-      </div>
-      <div class="field"><span class="label">Jamoa</span>
-        <div class="teams">
-          <button class="team kt" data-team="KT" type="button"><b>KT</b><span>Kontr-terroristlar</span><small>M4A1-S · USP-S</small></button>
-          <button class="team te" data-team="T" type="button"><b>T</b><span>Terroristlar</span><small>AK-47 · Glock-18</small></button>
-        </div>
-      </div>
-      <div class="field"><span class="label">Botlar darajasi</span>
-        <div class="seg" id="diffSeg"><button data-d="0" type="button">Oson</button><button data-d="1" type="button">O‘rta</button><button data-d="2" type="button">Qiyin</button></div>
-      </div>
-      <div class="pair">
-        <label class="field" for="allies"><span class="label">Ittifoqchi botlar <output id="alliesOut">4</output></span><input type="range" id="allies" min="0" max="9" step="1"></label>
-        <label class="field" for="enemies"><span class="label">Raqib botlar <output id="enemiesOut">5</output></span><input type="range" id="enemies" min="1" max="10" step="1"></label>
-      </div>
-      <label class="field" for="sens"><span class="label">Sichqoncha sezgirligi <output id="sensOut">1.00</output></span><input type="range" id="sens" min="0.2" max="3" step="0.05"></label>
-      <div class="pair"><button id="xhBtn" class="ghost" type="button">Pritsel</button><button id="setBtn" class="ghost" type="button">Sozlamalar</button></div>
-      <label class="check" for="fsChk"><input type="checkbox" id="fsChk"> To‘liq ekranda o‘ynash (Ctrl+W tabni yopib qo‘ymasligi uchun)</label>
-      <button id="shopBtn" class="shop-btn" type="button">KEYSLAR VA INVENTAR <b>$0</b></button>
-      <button id="startBtn" class="primary" type="button">O‘YINGA KIRISH</button>
+    <div class="field"><span class="label">Botlar darajasi</span>
+      <div class="seg" id="diffSeg"><button data-d="0" type="button">Oson</button><button data-d="1" type="button">O‘rta</button><button data-d="2" type="button">Qiyin</button></div>
     </div>
+    <div class="pair">
+      <label class="field" for="allies"><span class="label">Ittifoqchi botlar <output id="alliesOut">4</output></span><input type="range" id="allies" min="0" max="9" step="1"></label>
+      <label class="field" for="enemies"><span class="label">Raqib botlar <output id="enemiesOut">5</output></span><input type="range" id="enemies" min="1" max="10" step="1"></label>
+    </div>
+    <label class="field" for="sens"><span class="label">Sichqoncha sezgirligi <output id="sensOut">1.00</output></span><input type="range" id="sens" min="0.2" max="3" step="0.05"></label>
+    <div class="pair"><button id="xhBtn" class="ghost" type="button">Pritsel</button><button id="setBtn" class="ghost" type="button">Sozlamalar</button></div>
+    <label class="check" for="fsChk"><input type="checkbox" id="fsChk"> To‘liq ekranda o‘ynash (Ctrl+W tabni yopib qo‘ymasligi uchun)</label>
+    <button id="startBtn" class="primary" type="button">O‘YINGA KIRISH</button>
+    <details class="keys-box"><summary>Boshqaruv tugmalari</summary>
     <div class="keys">
       <div><kbd>W A S D</kbd>Yurish</div>
       <div><kbd>Sichq.</kbd>Nishon va otish</div>
@@ -527,6 +565,25 @@ tr.me td{color:var(--sand);font-weight:600}
       <div><kbd>Tab</kbd>Hisob jadvali</div>
       <div><kbd>Esc</kbd>Pauza</div>
     </div>
+    </details>
+  </aside>
+  <div class="show-ctl">
+    <span class="show-name" id="showName"></span>
+    <button id="showBtn" class="show-btn" type="button" aria-label="Qurol, xarita va agentni almashtirish" aria-expanded="false">⋮</button>
+  </div>
+  <div class="show-pop" id="showPop" hidden>
+    <span class="label">Qo‘ldagi qurol</span><div class="show-guns" id="showGuns"></div>
+    <span class="label">Fondagi xarita</span><div class="show-maps" id="showMaps"></div>
+    <span class="label">Agent</span><div class="seg seg2" id="showTeam"><button type="button" data-team="KT">KT agenti</button><button type="button" data-team="T">T agenti</button></div>
+  </div>
+</section>
+
+<section id="promoPanel" class="overlay dim" hidden>
+  <div class="card">
+    <div><div class="eyebrow">Promokod</div><h2>Kodni kiriting</h2></div>
+    <div class="code-row"><input id="pmIn" type="text" placeholder="Masalan: VIP" autocomplete="off" spellcheck="false" aria-label="Promokod"><button id="pmBtn" class="primary" type="button">FAOLLASHTIRISH</button></div>
+    <p class="note" id="pmMsg" role="status"></p>
+    <button id="pmClose" class="ghost" type="button">Yopish</button>
   </div>
 </section>
 

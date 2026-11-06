@@ -62,6 +62,8 @@ function leaderboard() {
 function renderProfile() {
   const lvl = levelOf(PROFILE.xp), into = PROFILE.xp % LEVEL_XP;
   document.getElementById('pfRank').innerHTML = rankBadge(PROFILE.rating) + primeBadge();
+  document.getElementById('pfChipRank').innerHTML = rankBadge(PROFILE.rating) + primeBadge();
+  document.getElementById('pfChipName').textContent = PROFILE.name;
   document.getElementById('pfStats').textContent = `Reyting ${PROFILE.rating} · ${PROFILE.wins} g‘alaba / ${PROFILE.matches} o‘yin`;
   document.getElementById('pfLvl').textContent = `Daraja ${lvl}${isPrime() ? '' : ` · Prime: ${PRIME_LEVEL}-daraja`}`;
   document.getElementById('pfBar').style.width = (into / LEVEL_XP * 100).toFixed(1) + '%';

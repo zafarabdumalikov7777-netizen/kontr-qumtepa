@@ -646,16 +646,111 @@ function renderMaps() {
   if (!pool.includes(MAP)) selectMap(pool[0].id);
   document.querySelectorAll('.map').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.map === MAP.id)));
 }
+// ---------- Main menu: your agent stands in the selected map holding the chosen weapon ----------
+const SHOW_GUNS = ['ak47', 'm4a1', 'awp', 'deagle', 'usp', 'glock', 'mp5', 'knife'];
+const show = { model: null, t: 0, pos: new V3(), look: new V3() };
+const showGunDef = () => { const id = store.get('kq_showgun', ''); return WEAPONS[SHOW_GUNS.includes(id) ? id : settings.team === 'T' ? 'ak47' : 'm4a1']; };
+// the same gun a soldier carries, but with the equipped skin painted on
+function showcaseGun(m, def) {
+  const skin = equippedSkin(def.id), kind = skinModel(def.model, skin);
+  if (m.gun) { m.upper.remove(m.gun); m.gun.traverse(o => { if (o.geometry) o.geometry.dispose(); }); }
+  const { g, info } = gunModel(kind, skin); finishGun(g, info); g.rotation.y = Math.PI;
+  g.traverse(o => { if (o.isMesh) o.castShadow = true; });
+  const outer = new THREE.Group(); outer.add(g); outer.position.set(0.075, 1.395, 0.33);
+  m.upper.add(outer); m.gun = outer; m.gunKind = kind;
+  document.getElementById('showName').textContent = skin ? itemTitle(SKINS[skin]) : def.name;
+}
+function buildShowcase() {
+  if (game.state !== 'menu') return;
+  if (show.model) { disposeSoldier(show.model); show.model = null; }
+  for (const b of bots) b.model.group.visible = false;
+  if (playerBody) playerBody.group.visible = false;
+  // stand at the team's spawn and look down the longest open line, so the map fills the background
+  const sc = SPAWN_C[settings.team];
+  let best = null;
+  for (let i = 0; i < 24; i++) {
+    const a = i / 24 * Math.PI * 2, dx = Math.sin(a), dz = Math.cos(a);
+    let d = 0; while (d < 70 && walkable(wcx(sc.x + dx * d), wcz(sc.z + dz * d))) d += 0.5;
+    if (!best || d > best.d) best = { d, dx, dz };
+  }
+  const rx = -best.dz, rz = best.dx; // camera right
+  const cam = new V3(sc.x - best.dx * 0.5, 1.5, sc.z - best.dz * 0.5);
+  show.pos.set(cam.x + best.dx * 3.6, 0, cam.z + best.dz * 3.6);
+  const off = innerWidth < 1000 ? 1.35 : 0.85; // agent sits right of centre, the play panel takes the left
+  show.look.set(show.pos.x - rx * off, 1.15, show.pos.z - rz * off);
+  camera.position.copy(cam); camera.lookAt(show.look);
+  camera.fov = 50; camera.updateProjectionMatrix();
+  const m = makeSoldier(settings.team, equippedAgent(settings.team) || 0, false);
+  m.marker.visible = false;
+  m.group.position.copy(show.pos); m.group.rotation.y = Math.atan2(-best.dx, -best.dz) + 0.42; m.baseYaw = m.group.rotation.y;
+  poseSoldier(m, 0, 0, 0, false);
+  showcaseGun(m, showGunDef());
+  show.model = m; show.t = 0;
+  updateSun(show.pos.x, show.pos.z);
+}
+function animateShowcase(dt) {
+  const m = show.model; if (!m) return;
+  show.t += dt;
+  m.upper.position.y = Math.sin(show.t * 1.7) * 0.006;            // breathing
+  m.group.rotation.y = m.baseYaw + Math.sin(show.t * 0.35) * 0.06; // a slow shift of weight
+  if (camera.fov !== 50) { camera.fov = 50; camera.updateProjectionMatrix(); }
+}
+function clearShowcase() { if (show.model) { disposeSoldier(show.model); show.model = null; } }
+// the ⋮ menu under the agent: weapon in hand, background map, which side's agent
+function renderShowPop() {
+  const def = showGunDef();
+  document.getElementById('showGuns').innerHTML = SHOW_GUNS.map(id => {
+    const d = WEAPONS[id], sk = equippedSkin(id);
+    return `<button type="button" data-g="${id}" aria-pressed="${d === def}"><img src="${sk ? itemIcon(sk) : iconFor(d.model)}" alt=""><span>${sk ? weaponName(SKINS[sk]) : d.name}</span></button>`;
+  }).join('');
+  document.getElementById('showMaps').innerHTML = mapPool(settings.mode).map(m => `<button type="button" data-map="${m.id}" aria-pressed="${m === MAP}">${m.name}</button>`).join('');
+  document.querySelectorAll('#showTeam button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.team === settings.team)));
+}
+function initMainMenu(sp) {
+  const panel = document.getElementById('playPanel'), nav = [...document.querySelectorAll('#mainNav button')];
+  const pop = document.getElementById('showPop'), sbtn = document.getElementById('showBtn'), card = document.getElementById('pfCard');
+  const promo = document.getElementById('promoPanel'), pin = document.getElementById('pmIn'), pmsg = document.getElementById('pmMsg');
+  const syncNav = () => nav.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.nav === 'play' && !panel.hidden)));
+  nav.forEach(b => b.addEventListener('click', () => {
+    const n = b.dataset.nav;
+    if (n === 'play') panel.hidden = !panel.hidden;
+    else if (n === 'settings') sp.open();
+    else if (n === 'promo') { pmsg.textContent = ''; promo.hidden = false; pin.focus(); }
+    else ShopUI.open(buildShowcase, n);
+    syncNav();
+  }));
+  // promo codes straight from the top bar
+  const redeem = async () => {
+    const r = await redeemPromo(pin.value); pmsg.textContent = promoText(r);
+    if (typeof r === 'object' || r === 'vip') { pin.value = ''; ShopUI.money(); if (Snd.ctx) Snd.chime(true); }
+    if (r.caseId) { promo.hidden = true; ShopUI.open(buildShowcase, 'cases'); ShopUI.bonusCase(r); }
+  };
+  document.getElementById('pmBtn').addEventListener('click', redeem);
+  pin.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') redeem(); });
+  document.getElementById('pmClose').addEventListener('click', () => { promo.hidden = true; });
+  document.getElementById('pfChip').addEventListener('click', () => { card.hidden = !card.hidden; });
+  sbtn.addEventListener('click', () => { pop.hidden = !pop.hidden; sbtn.setAttribute('aria-expanded', String(!pop.hidden)); if (!pop.hidden) renderShowPop(); });
+  pop.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.g) { store.set('kq_showgun', b.dataset.g); if (show.model) showcaseGun(show.model, WEAPONS[b.dataset.g]); }
+    else if (b.dataset.map) { if (b.dataset.map !== MAP.id) selectMap(b.dataset.map); }
+    else if (b.dataset.team) document.querySelector(`.team[data-team="${b.dataset.team}"]`).click();
+    renderShowPop();
+  });
+  syncNav();
+}
 function selectMap(id) {
   settings.map = id; store.set('kq_map', id);
   loadMap(id); buildRadarMap(); spawnAll(true);
   document.querySelectorAll('.map').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.map === MAP.id)));
+  buildShowcase();
 }
 function toMenu() {
   game.state = 'menu'; game.paused = false; els.pause.hidden = true; els.over.hidden = true; closeBuy(false); Snd.ambient(0);
   document.body.classList.remove('playing'); TouchUI.reset();
   els.hud.hidden = true; els.touch.hidden = true; els.menu.hidden = false; setSpectate(null);
   if (document.pointerLockElement) document.exitPointerLock();
+  buildShowcase();
 }
 function showMatchEnd() {
   game.state = 'over';
@@ -684,7 +779,8 @@ function showMatchEnd() {
   els.over.hidden = false; if (document.pointerLockElement) document.exitPointerLock();
 }
 function startGame(e) {
-  Snd.init();
+  Snd.init(); clearShowcase();
+  document.getElementById('showPop').hidden = true; document.getElementById('pfCard').hidden = true;
   input.touchMode = (e && e.pointerType === 'touch') || matchMedia('(pointer: coarse)').matches;
   SK = SKILL[settings.diff];
   // phones start on the fast graphics preset unless the player picked one
@@ -724,11 +820,12 @@ function initMenu() {
   modeBtns.forEach(b => b.addEventListener('click', () => { settings.mode = b.dataset.m; store.set('kq_mode', settings.mode); syncMode(); renderMaps(); }));
   syncMode();
   const sp = initSettingsUI();
+  initMainMenu(sp);
   document.getElementById('setBtn').addEventListener('click', () => sp.open());
   document.getElementById('setBtn2').addEventListener('click', () => sp.open());
   document.getElementById('teOpen').addEventListener('click', () => TouchUI.open());
   document.getElementById('teOpen2').addEventListener('click', () => TouchUI.open());
-  document.getElementById('shopBtn').addEventListener('click', () => ShopUI.open());
+  document.getElementById('shopBtn').addEventListener('click', () => ShopUI.open(buildShowcase));
   document.getElementById('overShop').addEventListener('click', () => ShopUI.open());
   ShopUI.money();
   const xh = initCrosshairUI();
@@ -743,7 +840,7 @@ function initMenu() {
     const pool = mapPool(settings.mode), i = pool.indexOf(MAP); selectMap(pool[(i + 1) % pool.length].id);
     startGame({ pointerType: input.touchMode ? 'touch' : 'mouse' });
   });
-  teamBtns.forEach(b => b.addEventListener('click', () => { settings.team = b.dataset.team; store.set('kq_team', settings.team); sync(); }));
+  teamBtns.forEach(b => b.addEventListener('click', () => { settings.team = b.dataset.team; store.set('kq_team', settings.team); sync(); buildShowcase(); }));
   diffBtns.forEach(b => b.addEventListener('click', () => { settings.diff = +b.dataset.d; store.set('kq_diff', settings.diff); sync(); }));
   for (const id of ['sens', 'sens2']) document.getElementById(id).addEventListener('input', e => { settings.sens = +e.target.value; store.set('kq_sens', settings.sens); syncSens(); });
   let startPointer = null;
@@ -868,11 +965,8 @@ function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
   fpsMeter.tick(dt);
   if (game.state === 'menu') {
-    const t = now / 1000 * 0.05;
-    camera.position.set(Math.sin(t) * 40, 17, Math.cos(t) * 40); camera.lookAt(0, 2, 0);
-    if (camera.fov !== settings.fov) { camera.fov = settings.fov; camera.updateProjectionMatrix(); }
-    for (const b of bots) updateBot(b, dt);
-    updateSun(0, 0);
+    if (!show.model) buildShowcase();
+    animateShowcase(dt);
   } else if (!game.paused && game.state !== 'over') update(dt);
   updateWeather(dt);
   if (skyMesh) skyMesh.position.copy(camera.position);
