@@ -74,7 +74,7 @@ const ShopUI = (() => {
       INV.wallet -= c.price; saveInv(); money();
     }
     Snd.init();
-    const win = opt.win || rollCase(c), WIN_AT = 48;
+    const win = opt.win || rollCase(c), WIN_AT = 48, prize = addItem(win); // saved now, so a reload mid-spin loses nothing
     const strip = Array.from({ length: 56 }, (_, i) => i === WIN_AT ? win : rollCase(c));
     const track = document.getElementById('rollTrack'), wrap = track.parentElement, res = document.getElementById('rollResult');
     document.getElementById('rollCase').textContent = c.name;
@@ -90,7 +90,7 @@ const ShopUI = (() => {
     const place = x => { track.style.transform = `translateX(${-x}px)`; };
     const finish = () => {
       if (done || token !== rollToken) return;
-      done = true; place(target); reveal(c, win);
+      done = true; place(target); reveal(c, prize);
     };
     const tick = now => {
       if (done || token !== rollToken) return;
@@ -103,8 +103,8 @@ const ShopUI = (() => {
     requestAnimationFrame(tick);
     setTimeout(finish, ROLL_MS + 600); // background tab: rAF paused, still land on the winner
   }
-  function reveal(c, id) {
-    const it = addItem(id), d = itemDef(id), r = RARITY[d.rarity], res = document.getElementById('rollResult');
+  function reveal(c, it) {
+    const id = it.id, d = itemDef(id), r = RARITY[d.rarity], res = document.getElementById('rollResult');
     if (Snd.ctx) Snd.chime(true);
     res.innerHTML = `<div class="won" style="--rc:${r.color}"><img src="${itemIcon(id)}" alt=""><div>
       <div class="eyebrow" style="color:${r.color}">${r.name}${d.kind === 'skin' ? ' · ' + wearName(it.f) : ''}</div>

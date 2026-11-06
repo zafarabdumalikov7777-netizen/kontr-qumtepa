@@ -135,10 +135,10 @@ function clothMaterial(spec, rough = 0.9) {
 
 // ---------- inventory (kept in this browser) ----------
 const INV = (() => {
-  const s = store.get('kq_inv', null), o = { wallet: 1000, items: [], equip: {}, next: 1, earned: 0, promoDay: {}, vip: false };
+  const s = store.get('kq_inv', null), o = { wallet: 1000, items: [], equip: {}, next: 1, earned: 0, promoDay: {}, promoReset: 1, vip: false };
   if (s && typeof s === 'object') {
     o.wallet = Math.max(0, +s.wallet || 0); o.next = Math.max(1, +s.next || 1); o.earned = +s.earned || 0;
-    if (s.promoDay && typeof s.promoDay === 'object') for (const [k, v] of Object.entries(s.promoDay)) if (typeof v === 'string') o.promoDay[k] = v;
+    if (s.promoReset === 1 && s.promoDay && typeof s.promoDay === 'object') for (const [k, v] of Object.entries(s.promoDay)) if (typeof v === 'string') o.promoDay[k] = v;
     o.vip = s.vip === true; if (o.vip) o.wallet = Infinity; // VIP: endless money (saved as null, restored here)
     o.items = Array.isArray(s.items) ? s.items.filter(it => it && itemDef(it.id)).map(it => ({ uid: +it.uid, id: it.id, f: clamp(+it.f || 0, 0, 1) })) : [];
     if (s.equip && typeof s.equip === 'object') for (const [k, v] of Object.entries(s.equip)) if (o.items.some(it => it.uid === v)) o.equip[k] = v;
