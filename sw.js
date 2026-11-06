@@ -1,4 +1,4 @@
-// Kontr: Qumtepa — offline support. Network first (so updates arrive at once), cache as the fallback.
+// UZB Strike — offline support. Network first (so updates arrive at once), cache as the fallback.
 const CACHE = 'kontr-v1';
 const CORE = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png',
   'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',

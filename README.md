@@ -1,4 +1,4 @@
-# Kontr: Qumtepa
+# UZB Strike
 
 Brauzerda ishlaydigan 3D taktik shooter (Counter-Strike uslubida). O‘rnatish shart emas — havolani oching va o‘ynang.
 
