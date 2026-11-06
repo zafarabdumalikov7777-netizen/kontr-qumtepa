@@ -318,8 +318,9 @@ function updateCamera(dt) {
   const sx = (Math.random() - 0.5) * shake, sy = (Math.random() - 0.5) * shake;
   if (p.alive) {
     camera.position.set(p.pos.x, p.pos.y + eyeH(), p.pos.z);
-    // the crosshair (view) never moves with recoil; the bullets climb the spray pattern instead
-    camera.rotation.set(p.pitch + sy, p.yaw + sx, 0);
+    // CS2: the view follows 45% of the spray plus the shot punch; static: the view never moves
+    const vt = settings.recoilStyle === 'cs2' ? VIEW_TRACKING : 0, kp = settings.recoilStyle === 'cs2' ? 1 : 0;
+    camera.rotation.set(p.pitch + p.vpP * vt + p.kickP * kp + sy, p.yaw + p.vpY * vt + p.kickY * kp + sx, 0);
     if (thirdPerson()) {
       // pull back over the shoulder, closer when a wall is in the way
       _tp.set(settings.hand === 'left' ? -0.75 : 0.75, 0.5, 3.4).applyEuler(camera.rotation);
@@ -340,7 +341,7 @@ function updateCamera(dt) {
     if (b) { camera.position.set(b.pos.x, 1.62, b.pos.z); camera.rotation.set(0, b.yaw + Math.PI, 0); }
   }
   const def = curDef();
-  const fov = p.alive && def.scope && p.scope ? (p.scope === 1 ? 30 : 12) : settings.fov;
+  const fov = p.alive && (def.scope || def.zoom) && p.scope ? (def.zoom ? 45 : p.scope === 1 ? 30 : 12) : settings.fov;
   if (Math.abs(camera.fov - fov) > 0.01) { camera.fov = fov; camera.updateProjectionMatrix(); }
   muzzleLight.intensity *= Math.exp(-dt * 40);
   updateSun(camera.position.x, camera.position.z);
@@ -354,7 +355,7 @@ function updateVM(dt) {
   vm.swing *= Math.exp(-dt * 8); vm.swayX *= Math.exp(-dt * 8); vm.swayY *= Math.exp(-dt * 8);
   vm.kickY = (vm.kickY || 0) * Math.exp(-dt * 12);
   vm.rv += (-vm.rise * 300 - vm.rv * 35) * dt; vm.rise += vm.rv * dt; vm.roll *= Math.exp(-dt * 14); // muzzle climb and roll
-  let y = base[1] - Math.abs(Math.cos(vm.bob)) * 0.01 * amp - vm.swayY + vm.kick * 0.012, rx = vm.kick * 0.2 + vm.rise + p.vpP * 0.5, ry = (base[3] || 0) + vm.kickY, rz = vm.kickY * 0.6 + vm.roll;
+  let y = base[1] - Math.abs(Math.cos(vm.bob)) * 0.01 * amp - vm.swayY + vm.kick * 0.012, rx = vm.kick * 0.2 + vm.rise + p.vpP * (settings.recoilStyle === 'cs2' ? 0.2 : 0.5), ry = (base[3] || 0) + vm.kickY, rz = vm.kickY * 0.6 + vm.roll;
   const x = base[0] + Math.sin(vm.bob) * 0.012 * amp - vm.swayX, z = base[2] + vm.kick * 0.075;
   if (p.reloadT > 0) { const s = Math.sin(clamp(1 - p.reloadT / (def.reload || 2), 0, 1) * Math.PI); rx -= s * 0.55; y -= s * 0.08; rz += s * 0.3; }
   if (p.switchT > 0) { const s = p.switchT / 0.55; y -= s * 0.25; rx -= s * 0.5; }
@@ -426,7 +427,7 @@ function updateHUD(dt) {
   const slotsKey = [1, 2, 3, 4].map(s => (p.inv[s] ? s : '') + (s === p.slot ? '*' : '')).join(',');
   if (cache.slots !== slotsKey) { cache.slots = slotsKey; els.slots.innerHTML = [1, 2, 3, 4].filter(s => p.inv[s]).map(s => `<span class="${s === p.slot ? 'on' : ''}">${s}</span>`).join(''); }
   Xhair.render(0, p.alive && !p.scope && !def.scope); // static, as in CS2
-  els.scope.hidden = !(p.alive && p.scope > 0);
+  els.scope.hidden = !(p.alive && p.scope > 0); els.scope.classList.toggle('zoom', !!def.zoom);
   flashDmg = Math.max(0, flashDmg - dt * 1.4); els.dmg.style.opacity = String(flashDmg);
   if (centerT > 0) { centerT -= dt; if (centerT <= 0) els.center.hidden = true; }
   if (popT > 0) { popT -= dt; if (popT <= 0) els.moneyPop.classList.remove('on'); }

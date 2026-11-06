@@ -7,7 +7,7 @@ const TOUCH_BTNS = [
   { id: 'jump', label: 'SAKRA', x: 0.75, y: 0.8, s: 62, kind: 'hold', key: 'jump' },
   { id: 'crouch', label: 'CHO‘K', x: 0.65, y: 0.88, s: 56, kind: 'toggle', key: 'crouch' },
   { id: 'reload', label: 'O‘Q', x: 0.76, y: 0.42, s: 54, kind: 'tap', act: () => startReload() },
-  { id: 'scope', label: 'OPTIKA', x: 0.95, y: 0.36, s: 54, kind: 'tap', act: () => secondaryAction(), when: () => curDef().scope || curDef().melee },
+  { id: 'scope', label: 'OPTIKA', x: 0.95, y: 0.36, s: 54, kind: 'tap', act: () => secondaryAction(), when: () => curDef().scope || curDef().zoom || curDef().melee },
   { id: 'swap', label: 'QUROL', x: 0.87, y: 0.25, s: 54, kind: 'tap', act: () => cycleWeapon(1) },
   { id: 'nade', label: 'GRANATA', x: 0.65, y: 0.62, s: 50, kind: 'tap', act: () => { if (player.slot === 4) cycleNade(); else switchTo(4); }, when: () => !!player.inv[4] },
   { id: 'use', label: 'OLISH', x: 0.57, y: 0.42, s: 58, kind: 'use', when: () => !!pickTarget || (bomb.state === 'planted' && player.team === 'KT') || canTakeOver() },

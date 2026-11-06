@@ -31,7 +31,9 @@ const settings = {
   fov: clamp(+store.get('kq_fov', 68) || 68, 55, 95),
   volume: clamp(+store.get('kq_volume', 0.8), 0, 1),
   fps: store.get('kq_fps', true) !== false,
-  hand: store.get('kq_hand', 'right') === 'left' ? 'left' : 'right'
+  hand: store.get('kq_hand', 'right') === 'left' ? 'left' : 'right',
+  // 'cs2': the view follows 45% of the spray like CS2 · 'static': the view never moves, only the bullets climb
+  recoilStyle: store.get('kq_recoil', 'cs2') === 'static' ? 'static' : 'cs2'
 };
 const SKILL = [
   { react: 0.75, err: 0.055, head: 0.12, turn: 5, burst: [2, 4], crouch: 0.15 },
@@ -55,8 +57,8 @@ const WEAPONS = {
   fiveseven: { id: 'fiveseven', name: 'Five-SeveN', slot: 2, dmg: 32, rate: 0.15, mag: 20, res: 100, reload: 2.2, spread: 0.008, moveInacc: 0.05, armorPen: 0.91, speed: 1, price: 500, snd: 'usp', kill: 300, model: 'fiveseven', team: 'KT', stat: '20 o‘q, zirhni teshadi' },
   mac10:  { id: 'mac10', name: 'MAC-10', slot: 1, dmg: 29, rate: 0.075, mag: 30, res: 100, reload: 2.6, spread: 0.016, moveInacc: 0.02, auto: true, armorPen: 0.57, speed: 1, price: 1050, snd: 'smg', kill: 600, model: 'mac10', team: 'T', stat: 'Arzon, juda tez' },
   ump45:  { id: 'ump45', name: 'UMP-45', slot: 1, dmg: 35, rate: 0.09, mag: 25, res: 100, reload: 3.5, spread: 0.013, moveInacc: 0.03, auto: true, armorPen: 0.65, speed: 0.98, price: 1200, snd: 'ump', kill: 600, model: 'ump', stat: 'Og‘ir o‘q, yaqin masofada kuchli' },
-  aug:    { id: 'aug', name: 'AUG', slot: 1, dmg: 28, rate: 0.09, mag: 30, res: 90, reload: 3.8, spread: 0.004, moveInacc: 0.1, auto: true, armorPen: 0.9, speed: 0.92, price: 3300, snd: 'm4', kill: 300, model: 'aug', team: 'KT', stat: 'Juda aniq, optikali bullpup' },
-  sg553:  { id: 'sg553', name: 'SG 553', slot: 1, dmg: 30, rate: 0.09, mag: 30, res: 90, reload: 2.8, spread: 0.004, moveInacc: 0.1, auto: true, armorPen: 1, speed: 0.92, price: 3000, snd: 'ak', kill: 300, model: 'sg553', team: 'T', stat: 'Optikali, zirhni to‘liq teshadi' },
+  aug:    { id: 'aug', name: 'AUG', slot: 1, dmg: 28, rate: 0.09, mag: 30, res: 90, reload: 3.8, spread: 0.004, moveInacc: 0.1, auto: true, armorPen: 0.9, speed: 0.92, price: 3300, snd: 'm4', kill: 300, model: 'aug', zoom: true, team: 'KT', stat: 'Juda aniq, optikali bullpup' },
+  sg553:  { id: 'sg553', name: 'SG 553', slot: 1, dmg: 30, rate: 0.09, mag: 30, res: 90, reload: 2.8, spread: 0.004, moveInacc: 0.1, auto: true, armorPen: 1, speed: 0.92, price: 3000, snd: 'ak', kill: 300, model: 'sg553', zoom: true, team: 'T', stat: 'Optikali, zirhni to‘liq teshadi' },
   xm1014: { id: 'xm1014', name: 'XM1014', slot: 1, dmg: 20, rate: 0.35, mag: 7, res: 32, reload: 3.5, spread: 0.01, moveInacc: 0.03, auto: true, armorPen: 0.8, speed: 0.95, price: 2000, snd: 'nova', kill: 900, model: 'xm', pellets: 6, cone: 0.05, falloff: 0.03, stat: 'Avtomat drobovik' },
   negev:  { id: 'negev', name: 'Negev', slot: 1, dmg: 35, rate: 0.075, mag: 150, res: 300, reload: 5.7, spread: 0.02, moveInacc: 0.12, auto: true, armorPen: 0.71, speed: 0.8, price: 1700, snd: 'negev', kill: 300, model: 'negev', stat: 'Pulemyot, 150 o‘q' },
   galil:  { id: 'galil', name: 'Galil AR', slot: 1, dmg: 30, rate: 0.09, mag: 35, res: 90, reload: 3, spread: 0.007, moveInacc: 0.1, auto: true, armorPen: 0.77, speed: 0.93, price: 1800, snd: 'galil', kill: 300, model: 'galil', team: 'T', stat: 'Arzon avtomat, 35 o‘q' },

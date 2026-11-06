@@ -22,7 +22,7 @@ Mahalliy ishga tushirish: `index.html` faylini Chrome yoki Edge’da oching (int
 - Ittifoqchi va raqib botlar soni (har jamoada 10 tagacha), 3 xil qiyinlik; botlar bomba qo‘yadi va zararsizlantiradi
 - Granatalar: HE, flesh (ko‘r qiladi), tutun (ko‘rinishni to‘sadi); defuse kit
 - Qurol olish/almashtirish (E), tashlash (G), qurolni ko‘zdan kechirish (F)
-- Otish CS2 kabi: pritsel umuman qimirlamaydi, o‘qlar qurolning spray naqshi bo‘yicha tepaga ketadi (sichqonchani pastga tortib boshqarasiz); otish tezligi FPS’dan qat’i nazar aniq
+- Otish CS2 kabi: o‘qlar qurolning spray naqshi bo‘yicha ketadi, ekran uning 45% iga ergashadi (CS2 view_recoil_tracking) va har o‘qda kichik tepki beradi; sozlamalarda «Pritsel qimirlamaydi» uslubi ham bor. AUG va SG 553 da qizil nuqtali zoom
 - CS2 uslubidagi spray naqshlari, bunnyhop va air strafe, km/soat va FPS ko‘rsatkichlari
 - Seriya bannerlari (IKKITA!, UCHTA!, ACE!), hisob jadvalida BOSH% va ADR
 - Sozlanadigan pritsel (rang, uzunlik, qalinlik, oraliq, kontur, nuqta, T-shakl, ulashish kodi)

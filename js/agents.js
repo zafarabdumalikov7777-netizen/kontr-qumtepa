@@ -177,11 +177,13 @@ const RECOIL = {
   negev: { kick: 0.0012, side: 0.45, back: 0.9, rise: 0.7, roll: 0.03 }
 };
 const RECOIL_DEF = { kick: 0.002, side: 0.3, back: 0.8, rise: 0.8, roll: 0.02 };
-// The crosshair stays put and the bullets climb the spray pattern above it (AK ≈ 7.5° after 30 bullets)
-const RECOIL_SCALE = 0.8;
+// CS2 style: bullets follow the full pattern (AK ≈ 9.5° after 30 bullets) and the view shows 45% of it;
+// with a crosshair that never moves the climb is kept a little lower
+const recoilScale = () => settings.recoilStyle === 'static' ? 0.8 : 1;
+const VIEW_TRACKING = 0.45; // CS2's view_recoil_tracking
 function sprayAt(def, i) {
   const pat = SPRAY[def.id]; if (!pat) return [0, 0];
-  const k = pat[Math.min(i, pat.length - 1)], s = (SPRAY_SCALE[def.id] || 1.4) * RECOIL_SCALE * Math.PI / 180;
+  const k = pat[Math.min(i, pat.length - 1)], s = (SPRAY_SCALE[def.id] || 1.4) * recoilScale() * Math.PI / 180;
   return [k[0] * s, k[1] * s];
 }
 // a direction inside a cone around d (shotgun pellets)
@@ -227,7 +229,7 @@ function finishReload() {
 }
 function secondaryAction() {
   const p = player, def = curDef(); if (!p.alive) return;
-  if (def.scope && p.reloadT <= 0 && p.switchT <= 0) { p.scope = (p.scope + 1) % 3; p.rescopeT = 0; p.scopeResume = 0; Snd.draw(); }
+  if ((def.scope || def.zoom) && p.reloadT <= 0 && p.switchT <= 0) { p.scope = (p.scope + 1) % (def.zoom ? 2 : 3); p.rescopeT = 0; p.scopeResume = 0; Snd.draw(); }
   else if (def.melee && p.cool <= 0 && p.switchT <= 0) knifeAttack(true);
 }
 function knifeAttack(heavy) {
@@ -248,11 +250,12 @@ function tryFire() {
   p.triggerReleased = false;
   st.mag--; p.cool = (def.auto && p.cool > -0.05 ? p.cool : 0) + def.rate; p.lastShot = game.time;
   if (game.mode === 'practice') st.res = st.def.res; // practice: endless reserve, reloads stay real
-  // CS2: the crosshair never moves — each bullet lands on the weapon's fixed spray pattern above it,
-  // pulling the mouse down compensates; only the gun in your hands kicks
+  // each bullet lands on the weapon's fixed spray pattern (pulling the mouse down compensates); in CS2 style
+  // the view follows 45% of it plus a small punch, in static style the view never moves
   const idx = Math.round(p.shotsF), sp = sprayAt(def, idx);
   p.punchY = -sp[0]; p.punchP = sp[1];
   const rc = RECOIL[def.id] || RECOIL_DEF;
+  if (settings.recoilStyle === 'cs2') { p.kTP += rc.kick * rand(0.9, 1.1); p.kTY += rc.kick * rand(-rc.side, rc.side); } // CS2 view punch
   const tp = thirdPerson(), eye = eyePos();
   let dir = aimDir(currentSpread());
   if (tp) { const t = aimPoint(camera.position, dir); if (t.distanceTo(eye) > 0.6) dir = t.sub(eye).normalize(); }

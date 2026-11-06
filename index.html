@@ -231,6 +231,8 @@ input[type=range]:disabled{opacity:.35}
 #scope::before,#scope::after{content:"";position:absolute;background:#000}
 #scope::before{left:0;right:0;top:50%;height:2px;margin-top:-1px}
 #scope::after{top:0;bottom:0;left:50%;width:2px;margin-left:-1px}
+#scope.zoom{background:radial-gradient(circle at center,#ff3a2a 0,#ff3a2a 2.5px,rgba(255,58,42,.35) 4px,transparent 6px),radial-gradient(circle at center,transparent 0,transparent calc(min(36vh,36vw) - 1px),rgba(0,0,0,.94) min(36vh,36vw))}
+#scope.zoom::before,#scope.zoom::after{display:none}
 #vitals{position:absolute;left:calc(14px + var(--il));bottom:calc(14px + var(--ib));display:flex;gap:6px}
 .v{background:var(--panel);padding:6px 14px 8px;display:flex;align-items:baseline;gap:8px;font-size:32px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
 .v b{color:var(--sand);font-size:20px}
@@ -620,6 +622,10 @@ tr.me td{color:var(--sand);font-weight:600}
     </div>
     <label class="field" for="setFov"><span class="label">Ko‘rish burchagi (FOV) <output id="setFovO"></output></span><input type="range" id="setFov" min="55" max="95" step="1"></label>
     <label class="field" for="setVol"><span class="label">Ovoz balandligi <output id="setVolO"></output></span><input type="range" id="setVol" min="0" max="1" step="0.05"></label>
+    <div class="field"><span class="label">Tepki uslubi</span>
+      <div class="seg seg2" id="setRecoil"><button type="button" data-v="cs2">CS2 (ekran tepadi)</button><button type="button" data-v="static">Pritsel qimirlamaydi</button></div>
+      <small class="note">CS2: ekran spray yo‘lining 45% iga ergashadi, o‘qlar pritseldan biroz tepaga tushadi — xuddi CS2 dagidek.</small>
+    </div>
     <div class="field"><span class="label">Qurol qaysi qo‘lda</span>
       <div class="seg seg2" id="setHand"><button type="button" data-v="right">O‘ng</button><button type="button" data-v="left">Chap</button></div>
     </div>
