@@ -177,5 +177,77 @@ const MAPS = [
       cap: 0x5a3f2a, crate: 'wood', ground: 0x3a362f, far: 0x1d2030, landmark: 'dome',
       windows: 'glass-warm', awnings: [0xb3412e, 0x2f6f8f, 0xd8a73a, 0x6a3a8f], cables: true, lamps: 'many', barrels: 0x6b4a2b, stepF: 900, wind: 0.06
     }
+  },
+  // ---------- Gun Game arenas: small, fast, no bomb sites ----------
+  {
+    id: 'gg_hovli', code: 'gg_hovli', name: 'Hovli', pool: 'gg', blurb: 'Gun Game · to‘rtta uy orasidagi kichik hovli',
+    build(carve, put) {
+      carve(6, 6, 23, 23);
+      carve(10, 10, 12, 12, '#'); carve(17, 10, 19, 12, '#'); carve(10, 17, 12, 19, '#'); carve(17, 17, 19, 19, '#'); carve(14, 14, 15, 15, '#');
+      carve(7, 7, 8, 8, 'S'); carve(21, 21, 22, 22, 'T'); put(14, 8, 'A'); put(15, 21, 'B');
+      [[8,14,'c'],[21,15,'c'],[14,11,'C'],[15,18,'c'],[7,20,'c'],[22,9,'C'],[11,15,'c'],[18,14,'c']].forEach(([x, y, c]) => put(x, y, c));
+    },
+    letters: {}, via: { A: [[14, 7]], B: [[15, 22]] }, mid: [[13, 13], [16, 16]],
+    theme: {
+      sky: [0x4a86cf, 0xdbe6ee, 0xe6d3ae], cloud: 0.3, fog: [0xdccdb0, 60, 260], exposure: 1.0,
+      sunDir: [0.4, 0.8, -0.35], sunCol: 0xfff0d6, sunI: 2.6, hemi: [0xdfe9ff, 0xa8835a, 0.8],
+      floor: { style: 'cobble', base: '#9a8f7e' }, wall: { style: 'stucco', base: '#e0c49a' }, wallH: [4.6, 6.6],
+      cap: 0xa0522d, crate: 'wood', ground: 0x9a8f7e, far: 0xd8c3a2, landmark: 'tower',
+      windows: 'shutter', shutter: '#4f6b3f', awnings: [0xb3412e, 0x2f6f8f, 0xd8a73a], cables: true, barrels: 0x6b4a2b, stepF: 900, wind: 0.1
+    }
+  },
+  {
+    id: 'gg_zal', code: 'gg_sport_zali', name: 'Sport zali', pool: 'gg', blurb: 'Gun Game · yopiq zal, o‘rtada uzun devor',
+    build(carve, put) {
+      carve(3, 9, 26, 20);
+      carve(8, 14, 21, 15, '#'); put(6, 11, '#'); put(23, 18, '#'); put(23, 11, '#'); put(6, 18, '#');
+      carve(4, 10, 5, 11, 'S'); carve(24, 18, 25, 19, 'T'); put(14, 10, 'A'); put(15, 19, 'B');
+      [[11,11,'c'],[18,12,'C'],[11,18,'C'],[18,17,'c'],[3,15,'c'],[26,14,'c'],[14,17,'c'],[15,12,'c']].forEach(([x, y, c]) => put(x, y, c));
+    },
+    letters: {}, roofs: [[3, 9, 26, 20]], via: { A: [[14, 11]], B: [[15, 18]] }, mid: [[4, 14], [25, 15]],
+    theme: {
+      sky: [0x7f97ad, 0xc9d1d6, 0xa9adae], cloud: 0.7, fog: [0xb9c0c5, 45, 220], exposure: 1.15,
+      sunDir: [0.3, 0.8, -0.5], sunCol: 0xeef2ff, sunI: 1.8, hemi: [0xdfe6ee, 0x6a6e70, 1.15],
+      floor: { style: 'slabs', base: '#b08a5a' }, wall: { style: 'concrete', base: '#b8b9b4' }, wallH: [6, 7],
+      cap: 0x6d6f70, crate: 'container', ground: 0x56595b, far: 0x8c9196, landmark: 'cranes',
+      windows: 'glass', awnings: null, cables: false, lamps: 'many', barrels: 0x2f5c8a, stepF: 1400, wind: 0.04
+    }
+  },
+  {
+    id: 'gg_labirint', code: 'gg_qor_labirint', name: 'Qor labirinti', pool: 'gg', blurb: 'Gun Game · tor yo‘laklar va markaziy maydon',
+    build(carve, put) {
+      carve(3, 3, 26, 5); carve(3, 24, 26, 26); carve(3, 3, 5, 26); carve(24, 3, 26, 26);
+      carve(3, 14, 26, 15); carve(14, 3, 15, 26); carve(10, 10, 19, 19);
+      carve(4, 4, 5, 5, 'S'); carve(24, 25, 25, 26, 'T'); put(14, 4, 'A'); put(15, 25, 'B');
+      [[12,12,'C'],[17,17,'C'],[12,17,'c'],[17,12,'c'],[9,4,'c'],[20,25,'c'],[4,20,'c'],[25,9,'c'],[8,15,'c'],[21,14,'c']].forEach(([x, y, c]) => put(x, y, c));
+    },
+    letters: {}, via: { A: [[14, 7]], B: [[15, 22]] }, mid: [[11, 11], [18, 18]],
+    theme: {
+      sky: [0x8aa5c0, 0xe4ebf1, 0xdfe6ec], cloud: 0.75, fog: [0xdde5ec, 35, 170], exposure: 1.0,
+      sunDir: [0.5, 0.55, 0.45], sunCol: 0xfff3e2, sunI: 1.6, hemi: [0xdbe6f2, 0xb9c4cf, 1.05],
+      floor: { style: 'snow', base: '#e6ecf1' }, wall: { style: 'brick', base: '#7a4a3a' }, wallH: [4.4, 6],
+      cap: 0xf2f6f9, crate: 'wood', crateSnow: true, ground: 0xe9eff4, far: 0x6f5a4c, landmark: 'pines',
+      windows: 'glass-warm', awnings: null, cables: true, barrels: 0x7a2e24, snow: true, stepF: 380, wind: 0.2
+    }
+  },
+  // ---------- Modli jang: one map, mods rolled at random ----------
+  {
+    id: 'mod_orol', code: 'mod_sirli_orol', name: 'Sirli orol', pool: 'mod', blurb: 'Modli jang · har 45 soniyada yangi tasodifiy modlar',
+    build(carve, put) {
+      carve(2, 2, 27, 27);
+      carve(6, 6, 9, 9, '#'); carve(20, 6, 23, 9, '#'); carve(6, 20, 9, 23, '#'); carve(20, 20, 23, 23, '#');
+      carve(13, 4, 16, 6, '#'); carve(13, 23, 16, 25, '#'); carve(4, 13, 6, 16, '#'); carve(23, 13, 25, 16, '#');
+      carve(13, 13, 16, 16, '#');
+      carve(3, 3, 4, 4, 'S'); carve(25, 25, 26, 26, 'T'); put(14, 10, 'A'); put(15, 19, 'B');
+      [[11,11,'c'],[18,11,'C'],[11,18,'C'],[18,18,'c'],[14,9,'c'],[15,20,'c'],[9,14,'c'],[20,15,'c'],[3,26,'C'],[26,3,'C']].forEach(([x, y, c]) => put(x, y, c));
+    },
+    letters: {}, via: { A: [[14, 11]], B: [[15, 18]] }, mid: [[10, 10], [19, 19]],
+    theme: {
+      sky: [0x2a1050, 0xff7ab6, 0xffc46b], cloud: 0.4, fog: [0xe8a6c8, 50, 230], exposure: 1.1,
+      sunDir: [-0.6, 0.45, 0.45], sunCol: 0xffc8e0, sunI: 2.2, hemi: [0xffd0f0, 0x6a4a8a, 0.9],
+      floor: { style: 'slabs', base: '#8fd0c4' }, wall: { style: 'plaster', base: '#d9a6c9' }, wallH: [5, 8],
+      cap: 0x6a3a8f, crate: 'container', ground: 0x8fd0c4, far: 0xb88ad0, landmark: 'palms',
+      windows: 'glass-warm', awnings: [0xff5fa2, 0x38e1ff, 0xffd23a, 0x8a6cff], cables: true, lamps: 'many', barrels: 0x8a6cff, stepF: 700, wind: 0.12
+    }
   }
 ];

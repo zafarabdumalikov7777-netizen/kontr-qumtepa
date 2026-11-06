@@ -34,7 +34,7 @@ function pickUp(d) {
 }
 function pickupTarget() { if (pickTarget && player.alive) pickUp(pickTarget); }
 function dropCurrent() {
-  const p = player; if (!p.alive || (p.slot !== 1 && p.slot !== 2) || !p.inv[p.slot]) return;
+  const p = player; if (!p.alive || game.mode === 'gg' || (p.slot !== 1 && p.slot !== 2) || !p.inv[p.slot]) return;
   const f = new V3(-Math.sin(p.yaw) * 3, 0, -Math.cos(p.yaw) * 3);
   dropWeapon(p.inv[p.slot], p.pos, p.yaw, f); p.inv[p.slot] = null;
   const next = p.inv[1] ? 1 : p.inv[2] ? 2 : 3; p.slot = 0; switchTo(next);

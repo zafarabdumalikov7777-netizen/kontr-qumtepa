@@ -88,6 +88,30 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--sand);outline-o
 #speedo b{font-size:28px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;min-width:2.2ch;text-align:right}
 #speedo small{font-size:11px;letter-spacing:.12em;color:var(--muted)}
 #speedo.fast b{color:var(--sand)}
+#ggLvl{position:absolute;top:calc(66px + var(--it));left:50%;transform:translateX(-50%);background:var(--panel);padding:4px 14px;font-family:var(--f-display);font-size:14px;font-weight:600;letter-spacing:.05em;white-space:nowrap;color:var(--sand)}
+.profile{margin-top:18px;border:1px solid var(--line);background:rgba(0,0,0,.28);padding:12px 14px;display:flex;flex-direction:column;gap:8px;max-width:420px}
+.pf-top{display:flex;gap:10px;align-items:center}
+.pf-top input{flex:1;min-width:0;background:transparent;border:0;border-bottom:1px solid var(--line);color:var(--text);font-family:var(--f-display);font-size:20px;font-weight:700;padding:2px 0}
+.pf-top input:focus{outline:0;border-bottom-color:var(--sand)}
+.pf-top b{font-family:var(--f-display);color:var(--sand);font-size:18px}
+.pf-rank{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#pfStats{color:var(--muted)}
+.rk{display:inline-flex;align-items:center;gap:6px;padding:3px 10px 3px 6px;border:1px solid var(--rk);color:var(--rk);font-family:var(--f-display);font-weight:700;font-size:13px;letter-spacing:.04em;background:color-mix(in srgb,var(--rk) 12%,transparent);white-space:nowrap}
+.rk i{width:12px;height:12px;background:var(--rk);clip-path:polygon(50% 0,100% 40%,80% 100%,20% 100%,0 40%)}
+.rk small{color:var(--muted);font-weight:500}
+.prime{display:inline-block;padding:3px 10px;background:linear-gradient(90deg,#e4ae39,#fff1a8);color:#2a1d05;font-family:var(--f-display);font-weight:700;font-size:12px;letter-spacing:.1em}
+.pf-lvl{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
+.pf-lvl .bar{height:5px;background:rgba(255,255,255,.08)}
+.pf-lvl .bar i{display:block;height:100%;background:var(--sand)}
+.rank-card{width:min(100%,560px)}
+.rank-scroll{max-height:50vh;overflow:auto;border:1px solid var(--line)}
+.rank-table{width:100%;border-collapse:collapse;font-size:14px}
+.rank-table th{position:sticky;top:0;z-index:1;background:var(--panel-solid);text-align:left;padding:8px;color:var(--muted);font-size:12px;font-weight:600}
+.rank-table td{text-align:left;padding:6px 8px;border-top:1px solid rgba(255,255,255,.05)}
+.rank-table tr.me td{background:rgba(227,197,142,.16);color:var(--sand);font-weight:700}
+.rank-tiers{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.over-rank{margin:0;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:14px}
+.over-rank .up{color:var(--money)}
 .mods-btn{border-color:#8a6cff;background:linear-gradient(90deg,rgba(138,108,255,.18),rgba(138,108,255,.04))}
 .mods-btn b{color:#b9a8ff;font-size:12px;letter-spacing:.06em}
 .mods-card{width:min(100%,560px)}
@@ -261,6 +285,8 @@ h2{font-family:var(--f-display);font-size:28px;margin:4px 0 0;font-weight:700}
 .check input{accent-color:var(--sand);width:16px;height:16px}
 #vig{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 58%,rgba(0,0,0,.38) 100%)}
 .seg{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line)}
+.mode-seg{grid-template-columns:repeat(auto-fit,minmax(88px,1fr))}
+.mode-seg button{padding:10px 4px;font-size:13px}
 .seg button{background:transparent;border:0;padding:10px;font-family:var(--f-display);font-weight:600;letter-spacing:.06em}
 .seg button[aria-pressed="true"]{background:var(--sand);color:#1a140b}
 input[type=range]{width:100%;accent-color:var(--sand)}
@@ -383,6 +409,7 @@ tr.me td{color:var(--sand);font-weight:600}
     <div id="timer">1:55</div>
     <div class="sc te"><span id="scT">0</span><div class="pips" id="pipT"></div></div>
   </div>
+  <div id="ggLvl" hidden></div>
   <div id="feed"></div>
   <div id="dmg"></div>
   <div id="dirs"></div>
@@ -430,13 +457,20 @@ tr.me td{color:var(--sand);font-weight:600}
       <div class="eyebrow">de_qumtepa · 5 × 5 · 8 g‘alabagacha</div>
       <h1>KONTR<span>QUMTEPA</span></h1>
       <p class="lede">Qumtepa ko‘chalarida raundma-raund jang. Har raund boshida pul bilan qurol va zirh oling. Terroristlar raqibni butunlay yo‘q qilishi kerak, kontr-terroristlar esa vaqt tugaguncha omon qolsa ham yutadi.</p>
+      <div class="profile">
+        <div class="pf-top"><input id="pfName" maxlength="16" aria-label="Ismingiz" spellcheck="false" autocomplete="off"><b id="pfPos">#1</b></div>
+        <div id="pfRank" class="pf-rank"></div>
+        <small id="pfStats"></small>
+        <div class="pf-lvl"><span id="pfLvl"></span><div class="bar"><i id="pfBar"></i></div></div>
+        <button id="pfBoard" class="ghost" type="button">REYTING JADVALI</button>
+      </div>
     </div>
     <div class="setup">
       <div class="field"><span class="label">Xarita</span>
         <div class="maps" id="maps"></div>
       </div>
       <div class="field"><span class="label">Rejim</span>
-        <div class="seg" id="modeSeg"><button data-m="comp" type="button">Raqobat (C4 bomba)</button><button data-m="dm" type="button">Deathmatch</button><button data-m="practice" type="button">Mashq</button></div>
+        <div class="seg mode-seg" id="modeSeg"><button data-m="comp" type="button">Raqobat (C4)</button><button data-m="dm" type="button">Deathmatch</button><button data-m="gg" type="button">Gun Game</button><button data-m="mod" type="button">Modli jang</button><button data-m="practice" type="button">Mashq</button></div>
       </div>
       <div class="field"><span class="label">Jamoa</span>
         <div class="teams">
@@ -455,7 +489,6 @@ tr.me td{color:var(--sand);font-weight:600}
       <div class="pair"><button id="xhBtn" class="ghost" type="button">Pritsel</button><button id="setBtn" class="ghost" type="button">Sozlamalar</button></div>
       <label class="check" for="fsChk"><input type="checkbox" id="fsChk"> To‘liq ekranda o‘ynash (Ctrl+W tabni yopib qo‘ymasligi uchun)</label>
       <button id="shopBtn" class="shop-btn" type="button">KEYSLAR VA INVENTAR <b>$0</b></button>
-      <button id="modsBtn" class="shop-btn mods-btn" type="button">MODLAR <b id="modsSum">o‘chiq</b></button>
       <button id="startBtn" class="primary" type="button">O‘YINGA KIRISH</button>
     </div>
     <div class="keys">
@@ -487,22 +520,17 @@ tr.me td{color:var(--sand);font-weight:600}
     <label class="field" for="sens2"><span class="label">Sichqoncha sezgirligi <output id="sensOut2">1.00</output></span><input type="range" id="sens2" min="0.2" max="3" step="0.05"></label>
     <div class="pair"><button id="xhBtn2" class="ghost" type="button">Pritsel</button><button id="setBtn2" class="ghost" type="button">Sozlamalar</button></div>
     <button id="teOpen2" class="ghost" type="button">Tugmalarni joylashtirish</button>
-    <button id="modsBtn2" class="ghost" type="button">Modlar · <span id="modsSum2">o‘chiq</span></button>
     <div class="row"><button id="resumeBtn" class="primary" type="button">DAVOM ETISH</button><button id="quitBtn" class="ghost" type="button">Bosh menyu</button></div>
   </div>
 </section>
 
-<section id="modsPanel" class="overlay dim" hidden>
-  <div class="card mods-card">
-    <div><div class="eyebrow">Modlar</div><h2>O‘yin modlari</h2></div>
-    <label class="check" for="modWall"><input type="checkbox" id="modWall"> Wallhack — odamlar devor orqasidan ham ko‘rinadi (raqib qizil, sherik ko‘k)</label>
-    <label class="check" for="modBig"><input type="checkbox" id="modBig"> Katta kallalar</label>
-    <label class="check" for="modGrav"><input type="checkbox" id="modGrav"> Oy gravitatsiyasi — juda baland sakraysiz</label>
-    <div class="field"><span class="label">Odamlar kimga aylansin</span>
-      <div class="morph-grid" id="modMorph"></div>
-      <small class="note">Personajlar va katta kallalar yangi o‘yin boshlanganda qo‘llanadi. Wallhack va gravitatsiya darhol ishlaydi.</small>
-    </div>
-    <button id="modsDone" class="primary" type="button">TAYYOR</button>
+<section id="rankPanel" class="overlay dim" hidden>
+  <div class="card rank-card">
+    <div><div class="eyebrow">Reyting</div><h2>Eng kuchli o‘yinchilar</h2>
+      <p class="note">G‘alaba reytingni oshiradi, mag‘lubiyat tushiradi. Jadvalda siz va 40 ta AI raqib bor. Boshqa odamlar bilan onlayn reyting uchun server kerak bo‘ladi.</p></div>
+    <div class="rank-scroll"><table class="rank-table"><thead><tr><th>#</th><th>O‘yinchi</th><th>Rank</th><th>Reyting</th></tr></thead><tbody id="rankList"></tbody></table></div>
+    <details><summary>Barcha ranklar</summary><div id="rankTiers" class="rank-tiers"></div></details>
+    <button id="rankClose" class="primary" type="button">YOPISH</button>
   </div>
 </section>
 
@@ -599,6 +627,7 @@ tr.me td{color:var(--sand);font-weight:600}
     <div><div class="eyebrow" id="overEyebrow">O‘yin tugadi</div><h2 id="overTitle">G‘alaba</h2><p id="overSub" style="margin:6px 0 0;color:var(--muted)"></p></div>
     <div class="stats"><div><b id="stK">0</b><small>Qotillik</small></div><div><b id="stD">0</b><small>O‘lim</small></div><div><b id="stR">0</b><small>K/D</small></div></div>
     <p id="overReward" class="reward" hidden></p>
+    <p id="overRank" class="over-rank" hidden></p>
     <div class="row"><button id="againBtn" class="primary" type="button">QAYTA O‘YNASH</button><button id="nextMapBtn" class="ghost" type="button">Keyingi xarita</button></div>
     <div class="row"><button id="overShop" class="ghost" type="button">Keyslar va inventar</button><button id="menuBtn" class="ghost" type="button">Bosh menyu</button></div>
   </div>
@@ -623,6 +652,7 @@ tr.me td{color:var(--sand);font-weight:600}
 <script src="js/modes.js"></script>
 <script src="js/extras.js"></script>
 <script src="js/mods.js"></script>
+<script src="js/rank.js"></script>
 <script src="js/touch.js"></script>
 <script src="js/game.js"></script>
 </body>

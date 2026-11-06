@@ -1,9 +1,13 @@
 'use strict';
 // ---------- Deathmatch: instant respawns, free weapons, timed match ----------
+// Gun Game and Modli jang use the same respawn rules
 const DM_TIME = 360, DM_RESPAWN = 2.5;
+const isDM = () => game.mode === 'dm' || game.mode === 'gg' || game.mode === 'mod';
+const MODE_TIME = { dm: 360, gg: 480, mod: 360 };
 const dmRifle = team => team === 'T' ? WEAPONS.ak47 : WEAPONS.m4a1;
 let dmCells = null;
 function dmLoadout(a) {
+  if (game.mode === 'gg') { ggLoadout(a); return; }
   a.armor = 100; a.helmet = true;
   if (a.isPlayer) {
     a.inv = { 1: wstate(player.dmPrimary || dmRifle(a.team)), 2: wstate(player.dmPistol || pistolFor(a.team)), 3: { def: WEAPONS.knife }, 4: null, 5: null };
@@ -39,7 +43,7 @@ function dmRespawn(a) {
   dmLoadout(a);
   if (a.isPlayer) {
     Object.assign(a, { pitch: 0, crouch: 0, reloadT: 0, switchT: 0, shots: 0, shotsF: 0, punchP: 0, punchY: 0, vpP: 0, vpY: 0, hops: 0, groundT: 0, scope: 0, scopeResume: 0, rescopeT: 0, cool: 0, deathT: 0, autoReload: false });
-    a.vel.set(0, 0, 0); a.slot = 1; a.prevSlot = 2; vm.set(a.inv[1].def, a.team);
+    a.vel.set(0, 0, 0); a.slot = a.inv[1] ? 1 : a.inv[2] ? 2 : 3; a.prevSlot = 3; vm.set(a.inv[a.slot].def, a.team);
     if (playerBody) { setGhost(playerBody, true); playerBody.fall = 1; playerBody.group.rotation.x = 0; }
     setSpectate(null);
   } else resetBotModel(a);
@@ -97,4 +101,64 @@ function dmTick(dt) {
 function dmKill(v, att) {
   v.respawnT = DM_RESPAWN;
   if (att && att !== v) game.score[att.team]++;
+  if (game.mode === 'gg') ggKill(v, att);
+}
+// ---------- Gun Game: every 2 kills the next weapon; a kill with the knife wins ----------
+const GG_LADDER = ['glock', 'usp', 'deagle', 'mp5', 'm4a1', 'ak47', 'awp', 'knife'], GG_NEED = 2;
+const ggDef = a => WEAPONS[GG_LADDER[Math.min(a.gg || 0, GG_LADDER.length - 1)]];
+const ggSlot = def => def.slot === 1 ? 1 : def.slot === 2 ? 2 : 3;
+function ggLoadout(a) {
+  const def = ggDef(a);
+  a.armor = 100; a.helmet = true;
+  if (a.isPlayer) {
+    a.inv = { 1: def.slot === 1 ? wstate(def) : null, 2: def.slot === 2 ? wstate(def) : null, 3: { def: WEAPONS.knife }, 4: null, 5: null };
+    a.nades = { he: 0, flash: 0, smoke: 0 }; syncNadeSlot();
+  } else {
+    a.primary = def.slot === 1 ? wstate(def) : null;
+    a.pistol = def.slot === 1 ? null : wstate(def);
+  }
+}
+function ggKill(v, att) {
+  if (!att || att === v || att.team === v.team || game.state !== 'live') return;
+  const last = (att.gg || 0) >= GG_LADDER.length - 1;
+  att.ggK = (att.ggK || 0) + 1;
+  if (!last && att.ggK < GG_NEED) return;
+  att.ggK = 0;
+  if (last) { game.ggWinner = att; showMatchEnd(); return; }
+  att.gg = (att.gg || 0) + 1;
+  if (att.alive) {
+    ggLoadout(att);
+    if (att.isPlayer) { att.slot = 0; switchTo(ggSlot(ggDef(att))); att.switchT = 0.25; }
+  }
+  const lastNow = att.gg === GG_LADDER.length - 1;
+  if (att.isPlayer) { showCenter(ggDef(att).name, `Daraja ${att.gg + 1} / ${GG_LADDER.length}${lastNow ? ' · oxirgisi: pichoq bilan o‘ldiring!' : ''}`, '', 1.8); Snd.chime(true); }
+  else if (lastNow) showCenter(`${att.name} pichoqqa yetdi!`, 'Undan ehtiyot bo‘ling', att.team === 'KT' ? 'kt' : 'te', 2);
+}
+// ---------- Modli jang: the map rolls a new set of mods every 45 s ----------
+const MOD_EVERY = 45;
+function modRoll() {
+  Object.assign(MODS, { wall: Math.random() < 0.5, grav: Math.random() < 0.45, big: Math.random() < 0.4, morph: Math.random() < 0.3 ? 'mix' : pick(Object.keys(MORPHS)) });
+  game.modT = MOD_EVERY;
+  const parts = [MODS.morph === 'mix' ? '🎲 Aralash personajlar' : MORPHS[MODS.morph].icon + ' ' + MORPHS[MODS.morph].name];
+  if (MODS.wall) parts.push('Wallhack'); if (MODS.grav) parts.push('Oy gravitatsiyasi'); if (MODS.big) parts.push('Katta kallalar');
+  return parts.join(' · ');
+}
+function rebuildModels() {
+  for (const b of bots) {
+    const old = b.model, looks = Object.values(AGENTS).filter(x => x.team === b.team);
+    const m = makeSoldier(b.team, morphVariant() || (Math.random() < 0.65 ? pick(looks) : b.id));
+    if (MODS.big) bigHead(m);
+    m.hit.forEach(h => { h.userData.agent = b; }); b.hitMeshes = m.hit;
+    m.group.position.copy(old.group.position); m.group.rotation.copy(old.group.rotation); m.group.visible = old.group.visible;
+    m.fall = old.fall; m.marker.visible = old.marker.visible;
+    disposeSoldier(old); b.model = m;
+  }
+  const pb = playerBody;
+  playerBody = makeSoldier(player.team, morphVariant() || equippedAgent(player.team) || 0, true);
+  if (MODS.big) bigHead(playerBody);
+  if (pb) { playerBody.fall = pb.fall; playerBody.group.rotation.copy(pb.group.rotation); disposeSoldier(pb); }
+}
+function modTick(dt) {
+  game.modT -= dt;
+  if (game.modT <= 0) { const t = modRoll(); rebuildModels(); showCenter('Yangi modlar!', t, '', 3); Snd.chime(true); }
 }

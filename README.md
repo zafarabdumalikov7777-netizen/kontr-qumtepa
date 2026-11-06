@@ -10,6 +10,8 @@ Mahalliy ishga tushirish: `index.html` faylini Chrome yoki Edge’da oching (int
 
 - **Raqobat (C4 bomba):** T jamoa bombani A yoki B nuqtasiga qo‘yadi, KT zararsizlantiradi. 8 g‘alabagacha, iqtisod va xarid menyusi bilan.
 - **Deathmatch:** 6 daqiqa, o‘lsangiz 2,5 soniyada qayta tug‘ilasiz, qurollar bepul.
+- **Gun Game:** har 2 qotillikda keyingi qurol (Glock → USP → Deagle → MP5 → M4 → AK → AWP → pichoq), pichoq bilan o‘ldirgan g‘olib. O‘zining 3 ta xaritasi: Hovli, Sport zali, Qor labirinti.
+- **Modli jang:** «Sirli orol» xaritasi, har 45 soniyada tasodifiy modlar: wallhack, Oy gravitatsiyasi, katta kallalar, odamlar robot/zombi/skelet/kosmonavt va boshqalarga aylanadi.
 - **Mashq:** botlarsiz, cheksiz o‘q, devordagi oq nishon taxtasiga spray qilib tepkini nazorat qilishni o‘rganasiz.
 
 ## Imkoniyatlar
@@ -34,9 +36,9 @@ Bosh menyuda **KEYSLAR VA INVENTAR**. Har bir o‘yin oxirida hisobingizga pul t
 - **Inventar:** skinni jihozlash, sotish; **Do‘kon:** har kuni yangilanadigan takliflar.
 - Jihozlangan skin qo‘lingizdagi qurolda, agent esa qo‘l/yeng va soyangizda ko‘rinadi. Botlar ham har xil agent kiyimida.
 
-## Modlar
+## Rank, Prime va reyting
 
-Bosh menyuda **MODLAR** (yoki pauzada): **Wallhack** (devor orqasidagi odamlar ko‘rinadi), **Katta kallalar**, **Oy gravitatsiyasi** va odamlarni **personajlarga aylantirish** — Robot, O‘zga sayyoralik, Skelet, Zombi, Supergeroy, Multfilm qahramoni, Qovoq bosh, Kosmonavt yoki **Aralash**.
+Bosh menyuda ismingiz, rankingiz (Bronza → Kumush → Oltin → Platina → Olmos → Afsona → Qumtepa Qiroli), reytingingiz va darajangiz. G‘alaba reytingni oshiradi, mag‘lubiyat tushiradi. 5-darajada **★ PRIME** ochiladi (o‘yin pullari +20%). **Reyting jadvali**da siz va 40 ta AI raqib.
 
 ## Boshqaruv
 

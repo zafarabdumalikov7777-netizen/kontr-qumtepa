@@ -217,3 +217,25 @@ function markerTex(color) {
   }, { repeat: false });
 }
 const markerTexs = { KT: markerTex('#72b4ff'), T: markerTex('#f2a93b') };
+
+// ---------- detail maps shared by guns, skins and clothing ----------
+// wear: fine grain and scratches, used as roughness + bump on metal and polymer
+const wearTex = canvasTex(256, (g, s) => {
+  g.fillStyle = '#c4c4c4'; g.fillRect(0, 0, s, s);
+  for (let i = 0; i < 2600; i++) { const v = 160 + rnd() * 70 | 0; g.fillStyle = `rgb(${v},${v},${v})`; g.fillRect(rnd() * s, rnd() * s, 1 + rnd() * 2, 1); }
+  g.lineCap = 'round';
+  for (let i = 0; i < 70; i++) {
+    const x = rnd() * s, y = rnd() * s, a = rnd() * Math.PI, l = 6 + rnd() * 30;
+    g.strokeStyle = `rgba(${rnd() < 0.5 ? '90,90,90' : '235,235,235'},${0.25 + rnd() * 0.4})`; g.lineWidth = 0.6 + rnd();
+    g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); g.stroke();
+  }
+}, { srgb: false });
+// weave: canvas-like cloth, used as a bump map on uniforms
+const weaveTex = canvasTex(128, (g, s) => {
+  g.fillStyle = '#808080'; g.fillRect(0, 0, s, s);
+  for (let y = 0; y < s; y += 4) for (let x = 0; x < s; x += 4) {
+    const k = ((x + y) / 4) % 2; g.fillStyle = k ? '#9a9a9a' : '#6a6a6a'; g.fillRect(x, y, 4, 2); g.fillStyle = k ? '#727272' : '#a2a2a2'; g.fillRect(x, y + 2, 4, 2);
+  }
+  for (let i = 0; i < 400; i++) { const v = 90 + rnd() * 80 | 0; g.fillStyle = `rgba(${v},${v},${v},0.5)`; g.fillRect(rnd() * s, rnd() * s, 2, 1); }
+}, { srgb: false });
+weaveTex.repeat.set(6, 6);

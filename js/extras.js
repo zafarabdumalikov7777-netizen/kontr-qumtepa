@@ -18,7 +18,7 @@ let streakTimer = 0;
 function playerKillStreak(hs) {
   const p = player;
   p.roundKills = (p.roundKills || 0) + 1;
-  p.multi = game.mode === 'dm' ? (game.time - (p.lastKillT || -99) < 4 ? (p.multi || 0) + 1 : 1) : p.roundKills;
+  p.multi = isDM() ? (game.time - (p.lastKillT || -99) < 4 ? (p.multi || 0) + 1 : 1) : p.roundKills;
   p.lastKillT = game.time;
   const enemies = agents.filter(a => a.team !== p.team).length;
   let txt = '';

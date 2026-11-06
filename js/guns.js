@@ -49,7 +49,10 @@ const GMAT_DEF = {
   horn: { color: 0xe6d8bb, metalness: 0, roughness: 0.4 }
 };
 const GMAT = {};
-const gmat = n => GMAT[n] || (GMAT[n] = new THREE.MeshStandardMaterial(Object.assign({}, GMAT_DEF[n], { color: lin(GMAT_DEF[n].color), envMap: gunEnv, envMapIntensity: 0.9 })));
+const gunWear = wearTex.clone(); gunWear.needsUpdate = true; gunWear.repeat.set(18, 18);
+const GDETAIL = { steel: 1, park: 1, poly: 0.7, bakelite: 0.5, olive: 0.6, chrome: 0.5, blade: 0.35, brass: 0.7, smokecan: 0.8, flashcan: 0.8 };
+const gmat = n => GMAT[n] || (GMAT[n] = new THREE.MeshStandardMaterial(Object.assign({}, GMAT_DEF[n], { color: lin(GMAT_DEF[n].color), envMap: gunEnv, envMapIntensity: 0.9 },
+  GDETAIL[n] ? { roughnessMap: gunWear, bumpMap: gunWear, bumpScale: 0.0003 * GDETAIL[n] } : {})));
 
 function shapeFrom(cmds) {
   const s = new THREE.Shape();

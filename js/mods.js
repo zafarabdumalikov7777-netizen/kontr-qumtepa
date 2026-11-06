@@ -1,11 +1,7 @@
 'use strict';
-// ---------- Mods: wallhack, characters, big heads, moon gravity ----------
-const MODS = {
-  wall: store.get('kq_mod_wall', false) === true,
-  big: store.get('kq_mod_big', false) === true,
-  grav: store.get('kq_mod_grav', false) === true,
-  morph: store.get('kq_mod_morph', 'off')
-};
+// ---------- Mods for the Modli jang map: wallhack, characters, big heads, moon gravity ----------
+// set by the Modli jang mode (modRoll), off everywhere else
+const MODS = { wall: false, big: false, grav: false, morph: 'off' };
 // Original characters: each dresses the stock soldier in its colours and adds its own head
 const MORPHS = {
   robot: { name: 'Robot', icon: '🤖', look: { top: 0x8c939b, pants: 0x5d636b, vest: 0x3a3f46, skin: 0x9aa3ad, glove: 0x30343a, head: 'none' } },
@@ -115,24 +111,3 @@ function wallhackPass() {
   }
   scene.overrideMaterial = null; camera.layers.set(0); renderer.shadowMap.autoUpdate = auto;
 }
-// ---- menu panel ----
-(() => {
-  const panel = document.getElementById('modsPanel'), grid = document.getElementById('modMorph');
-  const opts = [['off', '🙂', 'Oddiy'], ['mix', '🎲', 'Aralash'], ...Object.entries(MORPHS).map(([id, m]) => [id, m.icon, m.name])];
-  grid.innerHTML = opts.map(([v, ic, n]) => `<button type="button" data-v="${v}"><span>${ic}</span>${n}</button>`).join('');
-  const sum = () => {
-    const n = ['wall', 'big', 'grav'].filter(k => MODS[k]).length + (MODS.morph !== 'off' ? 1 : 0);
-    for (const id of ['modsSum', 'modsSum2']) { const e = document.getElementById(id); if (e) e.textContent = n ? n + ' ta yoqilgan' : 'o‘chiq'; }
-  };
-  const sync = () => {
-    for (const [id, k] of [['modWall', 'wall'], ['modBig', 'big'], ['modGrav', 'grav']]) document.getElementById(id).checked = MODS[k];
-    grid.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === MODS.morph)));
-    sum();
-  };
-  for (const [id, k] of [['modWall', 'wall'], ['modBig', 'big'], ['modGrav', 'grav']])
-    document.getElementById(id).addEventListener('change', e => { MODS[k] = e.target.checked; store.set('kq_mod_' + k, MODS[k]); sum(); });
-  grid.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; MODS.morph = b.dataset.v; store.set('kq_mod_morph', MODS.morph); sync(); });
-  for (const id of ['modsBtn', 'modsBtn2']) document.getElementById(id).addEventListener('click', () => { sync(); panel.hidden = false; });
-  document.getElementById('modsDone').addEventListener('click', () => { panel.hidden = true; });
-  sync();
-})();

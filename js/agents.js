@@ -103,14 +103,14 @@ function kill(v, att, def, hs) {
   if (att && att !== v) {
     att.kills++; if (hs) att.hs = (att.hs || 0) + 1;
     const reward = def.kill || 300; att.money = Math.min(16000, att.money + reward);
-    if (att.isPlayer) { if (game.mode !== 'dm') moneyPop(reward); playerKillStreak(hs); }
+    if (att.isPlayer) { if (!isDM()) moneyPop(reward); playerKillStreak(hs); }
   }
   addFeed(att || v, v, def, hs);
   if (v.isPlayer) playerDied(att, def);
   else { v.model.fall = 0; v.model.marker.visible = false; v.target = null; v.model.flash.visible = false; }
   if (bomb.carrier === v) dropBomb(v);
-  dropOnDeath(v);
-  if (game.mode === 'dm') { dmKill(v, att); updatePips(); return; }
+  if (game.mode !== 'gg') dropOnDeath(v);
+  if (isDM()) { dmKill(v, att); updatePips(); return; }
   checkRoundEnd();
 }
 function alertHearing(src) {
@@ -145,7 +145,14 @@ const SPRAY = (() => {
 })();
 // How far each pattern is stretched (AK tops out near 9° like CS2) and how hard each shot snaps the view (radians)
 const SPRAY_SCALE = { ak47: 1, m4a1: 1, mp5: 1.5, deagle: 1.3, usp: 1.3, glock: 1.3 };
-const KICK = { ak47: 0.0045, m4a1: 0.0034, mp5: 0.0024, awp: 0.03, deagle: 0.028, usp: 0.008, glock: 0.007 };
+// view punch (rad), its sideways spread, and how the weapon moves in the hands: kicked back, muzzle rise, roll
+const RECOIL = {
+  ak47: { kick: 0.0045, side: 0.3, back: 1, rise: 1, roll: 0.02 }, m4a1: { kick: 0.0034, side: 0.25, back: 0.85, rise: 0.8, roll: 0.015 },
+  mp5: { kick: 0.0024, side: 0.4, back: 0.6, rise: 0.6, roll: 0.02 }, awp: { kick: 0.03, side: 0.1, back: 2.2, rise: 2.4, roll: 0.02 },
+  deagle: { kick: 0.028, side: 0.15, back: 2.2, rise: 3, roll: 0.05 }, usp: { kick: 0.008, side: 0.2, back: 1.3, rise: 1.6, roll: 0.03 },
+  glock: { kick: 0.007, side: 0.25, back: 1.2, rise: 1.5, roll: 0.03 }
+};
+const RECOIL_DEF = { kick: 0.004, side: 0.3, back: 0.8, rise: 0.8, roll: 0.02 };
 function sprayAt(def, i) {
   const pat = SPRAY[def.id]; if (!pat) return [0, 0];
   const k = pat[Math.min(i, pat.length - 1)], s = (SPRAY_SCALE[def.id] || 1.4) * Math.PI / 180;
@@ -212,8 +219,8 @@ function tryFire() {
   const idx = Math.round(p.shotsF), sp = sprayAt(def, idx);
   p.punchY = -sp[0]; p.punchP = sp[1];
   // view punch: an instant snap up that eases straight back (no spring, no wobble), like CS2's view punch
-  const kk = KICK[def.id] || 0.004;
-  p.kickP += kk * rand(0.9, 1.1); p.kickY += kk * rand(-0.3, 0.3);
+  const rc = RECOIL[def.id] || RECOIL_DEF;
+  p.kickP += rc.kick * rand(0.9, 1.1); p.kickY += rc.kick * rand(-rc.side, rc.side);
   const tp = thirdPerson(), eye = eyePos();
   let dir = aimDir(currentSpread());
   if (tp) { const t = aimPoint(camera.position, dir); if (t.distanceTo(eye) > 0.6) dir = t.sub(eye).normalize(); }
@@ -221,7 +228,7 @@ function tryFire() {
   const from = tp && playerBody && playerBody.muzzle ? playerBody.muzzle.getWorldPosition(new V3())
     : p.scope ? camera.localToWorld(new V3(0, -0.3, -0.5)) : camera.localToWorld(new V3(0.15, -0.13, -0.7));
   tracer(from, res.point);
-  vm.fire(clamp(kk / 0.0045, 0.6, 2.2)); muzzleLight.position.copy(from); muzzleLight.intensity = 3.2;
+  vm.fire(rc); muzzleLight.position.copy(from); muzzleLight.intensity = 3.2;
   if (!def.melee && !tp) ejectShell(def.slot === 2);
   if (p.shots % 3 === 2) puff(from.x, from.y, from.z, 0.22, 0.7, false); // barrel smoke builds up during a spray
   Snd.shot(def.snd, 0.9, 0.05);
@@ -337,6 +344,10 @@ function findTarget(b) {
 const _o = new V3(), _t = new V3(), _d = new V3(), _r = new V3(), _u = new V3(), _m = new V3(), UP = new V3(0, 1, 0);
 function botFire(b) {
   const st = botWeapon(b), def = st.def, t = b.target;
+  if (def.melee) {
+    b.cool = 0.6; _o.set(b.pos.x, agentEye(b) - 0.3, b.pos.z); _t.set(t.pos.x, agentEye(t) - 0.5, t.pos.z);
+    shootRay(_o.clone(), _d.subVectors(_t, _o).normalize().clone(), b, def, 2.4); Snd.knife(); b.lastShot = game.time; return;
+  }
   st.mag--;
   b.cool = def.id === 'awp' ? def.rate + rand(0.2, 0.6) : def.rate * (def.auto ? 1 : rand(1.2, 2));
   _o.set(b.pos.x, agentEye(b) - 0.15, b.pos.z);
@@ -392,10 +403,12 @@ function updateBot(b, dt) {
       const t = b.target; b.seeT += dt;
       const want = Math.atan2(t.pos.x - b.pos.x, t.pos.z - b.pos.z);
       b.yaw = turnToward(b.yaw, want, SK.turn * dt);
-      if (b.seeT > b.reactT && Math.abs(angDiff(b.yaw, want)) < 0.12 && b.cool <= 0 && b.reloadT <= 0 && st.mag > 0) botFire(b);
+      const melee = st.def.melee, dist = melee ? Math.hypot(t.pos.x - b.pos.x, t.pos.z - b.pos.z) : 0;
+      if (b.seeT > b.reactT && Math.abs(angDiff(b.yaw, want)) < 0.12 && b.cool <= 0 && b.reloadT <= 0 && (melee ? dist < 2 : st.mag > 0)) botFire(b);
+      if (melee && dist > 1.4) { mx = Math.sin(want); mz = Math.cos(want); spd = 5.8; }
       b.strafeT -= dt;
       if (b.strafeT <= 0) { b.strafeT = rand(0.4, 1.3); b.strafe = Math.random() < 0.35 ? 0 : (Math.random() < 0.5 ? -1 : 1); }
-      if (b.strafe && !b.wantCrouch && b.burst === 0 && b.cool > 0.08) { mx = Math.cos(b.yaw) * b.strafe; mz = -Math.sin(b.yaw) * b.strafe; spd = 3; }
+      if (!melee && b.strafe && !b.wantCrouch && b.burst === 0 && b.cool > 0.08) { mx = Math.cos(b.yaw) * b.strafe; mz = -Math.sin(b.yaw) * b.strafe; spd = 3; }
     } else if (game.state === 'live') {
       b.target = null;
       if (b.lastSeenT > 0) {

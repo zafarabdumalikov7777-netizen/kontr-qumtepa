@@ -4,12 +4,15 @@
 const SGEO = {
   thigh: new THREE.CylinderGeometry(0.09, 0.075, 0.46, 10), shin: new THREE.CylinderGeometry(0.07, 0.055, 0.46, 10),
   boot: new THREE.BoxGeometry(0.13, 0.11, 0.29), pelvis: new THREE.BoxGeometry(0.34, 0.18, 0.22),
-  torso: new THREE.CylinderGeometry(0.19, 0.16, 0.56, 12), vest: new THREE.BoxGeometry(0.42, 0.44, 0.3),
+  torso: new THREE.LatheGeometry([[0, -0.28], [0.15, -0.28], [0.165, -0.18], [0.172, -0.05], [0.19, 0.1], [0.2, 0.2], [0.175, 0.265], [0.1, 0.29], [0, 0.29]].map(([r, y]) => new THREE.Vector2(r, y)), 14),
+  vest: new THREE.BoxGeometry(0.42, 0.44, 0.3),
   pouch: new THREE.BoxGeometry(0.1, 0.12, 0.06), pack: new THREE.BoxGeometry(0.3, 0.38, 0.16),
   neck: new THREE.CylinderGeometry(0.055, 0.06, 0.12, 8), head: new THREE.SphereGeometry(0.118, 16, 12),
   helmet: new THREE.SphereGeometry(0.138, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), beanie: new THREE.SphereGeometry(0.125, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2),
   visor: new THREE.BoxGeometry(0.2, 0.025, 0.1), goggles: new THREE.BoxGeometry(0.19, 0.05, 0.04), eyes: new THREE.BoxGeometry(0.15, 0.035, 0.03),
   limbU: new THREE.CylinderGeometry(0.058, 0.05, 1, 8), limbL: new THREE.CylinderGeometry(0.05, 0.042, 1, 8), hand: new THREE.SphereGeometry(0.048, 8, 6),
+  joint: new THREE.SphereGeometry(1, 10, 8), belt: new THREE.BoxGeometry(0.35, 0.06, 0.25), pad: new THREE.BoxGeometry(0.11, 0.12, 0.05), sole: new THREE.BoxGeometry(0.14, 0.035, 0.31),
+  nose: new THREE.BoxGeometry(0.028, 0.045, 0.04), collar: new THREE.TorusGeometry(0.07, 0.022, 6, 14),
   gun: new THREE.BoxGeometry(0.06, 0.1, 0.5), barrel: new THREE.CylinderGeometry(0.014, 0.014, 0.34, 8), mag: new THREE.BoxGeometry(0.045, 0.16, 0.07), stock: new THREE.BoxGeometry(0.05, 0.09, 0.22)
 };
 const OUTFITS = {
@@ -25,6 +28,33 @@ const OUTFITS = {
   ]
 };
 const _ya = new V3(0, 1, 0), _dv = new V3();
+// A face painted on the head sphere (u = 0.25 faces +z). Balaclavas show only the eyes.
+const faceCache = {};
+function faceTex(skin, cover) {
+  const key = skin + '_' + cover; if (faceCache[key]) return faceCache[key];
+  const sc = '#' + new THREE.Color(skin).getHexString();
+  return (faceCache[key] = canvasTex(256, (g, s) => {
+    g.fillStyle = cover ? '#1f1d1b' : sc; g.fillRect(0, 0, s, s);
+    const cx = s * 0.25;
+    g.save(); g.translate(cx, 0); g.scale(0.5, 1); // the sphere stretches u twice as much as v
+    if (cover) { g.fillStyle = sc; g.beginPath(); g.ellipse(0, s * 0.44, 62, 16, 0, 0, 7); g.fill(); }
+    else {
+      const sh = g.createRadialGradient(0, s * 0.5, 20, 0, s * 0.5, 130); sh.addColorStop(0, 'rgba(0,0,0,0)'); sh.addColorStop(1, 'rgba(60,30,15,0.25)');
+      g.fillStyle = sh; g.fillRect(-140, 0, 280, s);
+      g.fillStyle = 'rgba(60,40,30,0.22)'; g.beginPath(); g.ellipse(0, s * 0.68, 50, 26, 0, 0, Math.PI); g.fill(); // stubble
+      g.fillStyle = 'rgba(190,90,70,0.18)'; for (const x of [-38, 38]) { g.beginPath(); g.ellipse(x, s * 0.56, 14, 8, 0, 0, 7); g.fill(); }
+      g.strokeStyle = '#2a1a12'; g.lineWidth = 4; g.lineCap = 'round';
+      for (const x of [-30, 30]) { g.beginPath(); g.moveTo(x - 14, s * 0.39); g.quadraticCurveTo(x, s * 0.37, x + 14 * Math.sign(x), s * 0.395); g.stroke(); } // brows
+      g.strokeStyle = 'rgba(110,40,35,0.85)'; g.lineWidth = 3; g.beginPath(); g.moveTo(-16, s * 0.635); g.quadraticCurveTo(0, s * 0.645, 16, s * 0.635); g.stroke(); // mouth
+    }
+    for (const x of [-30, 30]) { // eyes
+      g.fillStyle = '#efe9e0'; g.beginPath(); g.ellipse(x, s * 0.44, 12, 5.5, 0, 0, 7); g.fill();
+      g.fillStyle = '#3a2a1c'; g.beginPath(); g.ellipse(x, s * 0.44, 5, 5, 0, 0, 7); g.fill();
+      g.fillStyle = '#0b0806'; g.beginPath(); g.ellipse(x, s * 0.44, 2.4, 2.4, 0, 0, 7); g.fill();
+    }
+    g.restore();
+  }));
+}
 // `variant` is an index into the stock outfits or an agent (whose `look` dresses the soldier)
 function makeSoldier(team, variant, ghost) {
   const o = typeof variant === 'object' && variant ? variant.look : OUTFITS[team][variant % OUTFITS[team].length];
@@ -33,7 +63,7 @@ function makeSoldier(team, variant, ghost) {
   const mats = [], hit = [], cache = {};
   const M = (c, rough = 0.85, metal = 0) => {
     const k = (typeof c === 'object' ? JSON.stringify(c) : c) + '_' + rough; if (cache[k]) return cache[k];
-    const m = typeof c === 'object' ? clothMaterial(c, rough) : std({ color: lin(c), roughness: rough, metalness: metal });
+    const m = typeof c === 'object' ? clothMaterial(c, rough) : std(Object.assign({ color: lin(c), roughness: rough, metalness: metal }, rough >= 0.75 && !metal ? { bumpMap: weaveTex, bumpScale: 0.003 } : {}));
     mats.push(m); cache[k] = m; return m;
   };
   const mesh = (geo, mat, parent, x, y, z, part) => {
@@ -54,17 +84,28 @@ function makeSoldier(team, variant, ghost) {
     const knee = new THREE.Group(); knee.position.y = -0.46; hip.add(knee);
     mesh(SGEO.shin, M(o.pants), knee, 0, -0.23, 0, 'legs');
     mesh(SGEO.boot, M(boot, 0.6), knee, 0, -0.44, 0.04);
+    mesh(SGEO.sole, M(0x0d0c0b, 0.9), knee, 0, -0.5, 0.045);
+    mesh(SGEO.pad, M(0x1c1d1e, 0.7), knee, 0, -0.03, 0.075);
     legs.push({ hip, knee });
   }
   mesh(SGEO.pelvis, M(o.pants), upper, 0, 1.0, 0);
   mesh(SGEO.torso, M(o.top), upper, 0, 1.3, 0, 'body').scale.z = 0.72;
   mesh(SGEO.vest, M(o.vest, 0.7), upper, 0, 1.32, 0);
+  mesh(SGEO.belt, M(0x1a1916, 0.6), upper, 0, 1.08, 0); mesh(SGEO.nose, M(0x8a8f94, 0.3, 0.8), upper, 0, 1.08, 0.13).scale.set(1.8, 0.8, 0.3);
   for (const x of [-0.12, 0, 0.12]) mesh(SGEO.pouch, M(o.vest, 0.7), upper, x, 1.2, 0.17);
   if (o.pack) mesh(SGEO.pack, M(team === 'T' ? 0x4a3f2c : 0x2a3340), upper, 0, 1.33, -0.22);
   mesh(SGEO.neck, M(skin, 0.6), upper, 0, 1.6, 0);
-  const headMat = o.head === 'balaclava' ? M(0x1f1d1b) : M(skin, 0.6);
+  mesh(SGEO.collar, M(o.top), upper, 0, 1.555, 0).rotation.x = Math.PI / 2;
+  // real faces for human heads; masks, hoods and characters bring their own
+  const face = !o.morph && o.head !== 'mask' && o.head !== 'hood';
+  let headMat = o.head === 'balaclava' ? M(0x1f1d1b) : M(skin, 0.6);
+  if (face) { headMat = std({ map: faceTex(skin, o.head === 'balaclava'), roughness: 0.62 }); mats.push(headMat); }
   const headMesh = mesh(SGEO.head, headMat, upper, 0, 1.72, 0.01, 'head');
-  if (o.head === 'balaclava') mesh(SGEO.eyes, M(skin, 0.6), upper, 0, 1.74, 0.11);
+  if (face) {
+    headMesh.scale.set(0.94, 1.06, 1);
+    mesh(SGEO.nose, o.head === 'balaclava' ? M(0x1f1d1b) : M(skin, 0.6), upper, 0, 1.712, 0.118);
+    if (o.head !== 'balaclava') for (const x of [-0.112, 0.112]) mesh(SGEO.joint, M(skin, 0.6), upper, x, 1.72, 0).scale.set(0.012, 0.03, 0.022);
+  }
   if (o.head === 'helmet') { mesh(SGEO.helmet, M(o.helmetCol || 0x2e3a2c, 0.7), upper, 0, 1.75, 0); mesh(SGEO.goggles, M(0x101214, 0.3, 0.4), upper, 0, 1.76, 0.115); }
   if (o.head === 'beanie') mesh(SGEO.beanie, M(o.headCol || 0x2a2622), upper, 0, 1.75, 0);
   if (o.head === 'cap') { mesh(SGEO.beanie, M(o.headCol || (team === 'T' ? 0x3a3428 : 0x232c38)), upper, 0, 1.74, 0).scale.y = 0.6; mesh(SGEO.visor, M(0x1d1c1a), upper, 0, 1.76, 0.13); }
@@ -84,6 +125,8 @@ function makeSoldier(team, variant, ghost) {
   const shL = [-0.21, 1.5, 0], elL = [-0.21, 1.3, 0.3], haL = [-0.01, 1.37, 0.56];
   limb(SGEO.limbU, top, shR, elR, 'body'); limb(SGEO.limbL, top, elR, haR, 'body');
   limb(SGEO.limbU, top, shL, elL, 'body'); limb(SGEO.limbL, top, elL, haL, 'body');
+  for (const p of [shR, shL]) mesh(SGEO.joint, top, upper, ...p).scale.setScalar(0.072);
+  for (const p of [elR, elL]) mesh(SGEO.joint, top, upper, ...p).scale.setScalar(0.052);
   mesh(SGEO.hand, gl, upper, ...haR); mesh(SGEO.hand, gl, upper, ...haL);
   let flash = null, marker = null;
   if (!ghost) {

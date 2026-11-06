@@ -4,7 +4,7 @@ const game = { state: 'menu', round: 0, score: { KT: 0, T: 0 }, timer: 0, loss: 
 const ROUND_TIME = 115;
 const TEAM_NAME = { KT: 'Kontr-terroristlar', T: 'Terroristlar' };
 const els = {};
-['hud', 'moneyV', 'moneyPop', 'scKT', 'scT', 'pipKT', 'pipT', 'timer', 'feed', 'dmg', 'dirs', 'scope', 'hitmark', 'pick', 'speedo', 'spdV', 'prog', 'progF', 'progL', 'flashO', 'center', 'centerH', 'centerP', 'hint', 'spec',
+['hud', 'moneyV', 'moneyPop', 'scKT', 'scT', 'pipKT', 'pipT', 'timer', 'feed', 'dmg', 'dirs', 'scope', 'hitmark', 'pick', 'speedo', 'spdV', 'prog', 'progF', 'progL', 'flashO', 'center', 'centerH', 'centerP', 'hint', 'spec', 'ggLvl',
  'hpV', 'hpBox', 'arV', 'wName', 'magV', 'resV', 'slots', 'menu', 'pause', 'buy', 'buyGrid', 'buyMoney', 'buyTime', 'board', 'boardCard', 'over', 'touch'].forEach(id => els[id] = document.getElementById(id));
 const input = { keys: {}, mouseDown: false, locked: false, fallback: false, touchMode: false, buyOpen: false, boardOpen: false };
 const touch = { mx: 0, my: 0, fire: false, jump: false, crouch: false, use: false, auto: false };
@@ -43,7 +43,7 @@ function spawnAll(first) {
       Object.assign(a, { yaw: a.team === 'KT' ? Math.PI : 0, pitch: 0, crouch: 0, reloadT: 0, switchT: 0, shots: 0, shotsF: 0, punchP: 0, punchY: 0, vpP: 0, vpY: 0, hops: 0, groundT: 0, scope: 0, scopeResume: 0, rescopeT: 0, cool: 0, deathT: 0, autoReload: false });
       for (const s of [1, 2]) if (a.inv[s]) { a.inv[s].mag = a.inv[s].def.mag; a.inv[s].res = a.inv[s].def.res; } // full ammo every round
       a.inv[5] = null; syncNadeSlot();
-      a.vel.set(0, 0, 0); a.slot = a.inv[1] ? 1 : 2; a.prevSlot = 3; vm.set(a.inv[a.slot].def, a.team);
+      a.vel.set(0, 0, 0); a.slot = a.inv[1] ? 1 : a.inv[2] ? 2 : 3; a.prevSlot = 3; vm.set(a.inv[a.slot].def, a.team);
       if (playerBody) { setGhost(playerBody, true); playerBody.fall = 1; playerBody.group.rotation.x = 0; }
     } else {
       const m = a.model;
@@ -54,8 +54,12 @@ function spawnAll(first) {
   }
 }
 function newMatch() {
+  // mods only exist on the Modli map, where they are rolled at random
+  Object.assign(MODS, { wall: false, big: false, grav: false, morph: 'off' });
+  const modIntro = settings.mode === 'mod' ? modRoll() : '';
   setupTeams(settings.team);
-  game.mode = settings.mode; dmCells = null;
+  game.mode = settings.mode; dmCells = null; game.ggWinner = null; game.modIntro = modIntro;
+  for (const a of [player, ...bots]) { a.gg = 0; a.ggK = 0; }
   game.score = { KT: 0, T: 0 }; game.loss = { KT: 0, T: 0 }; game.round = 0; game.over = false; game.time = 0;
   for (const a of agents) { a.money = 800; a.kills = 0; a.deaths = 0; a.dmg = 0; a.hs = 0; }
   player.dmPrimary = null; player.dmPistol = null;
@@ -72,13 +76,16 @@ function startRound(first) {
     player.inv[1] = wstate(player.team === 'T' ? WEAPONS.ak47 : WEAPONS.m4a1); player.slot = 0; switchTo(1); player.switchT = 0;
     player.armor = 100; player.helmet = true; setupPractice();
     showCenter('Mashq', 'Cheksiz o‘q · devorga spray qilib tepkini o‘rganing · B — bepul qurollar', '', 4);
-  } else if (game.mode === 'dm') {
+  } else if (isDM()) {
     removePracticeBoard();
     game.timer = 3;
     for (const a of agents) dmLoadout(a);
-    player.slot = 1; vm.set(player.inv[1].def, player.team);
+    player.slot = player.inv[1] ? 1 : player.inv[2] ? 2 : 3; vm.set(player.inv[player.slot].def, player.team);
     bombReset();
-    showCenter('Deathmatch', `${DM_TIME / 60} daqiqa · o‘lsangiz qayta tug‘ilasiz · B — bepul qurollar`, '', 3);
+    const mins = MODE_TIME[game.mode] / 60;
+    if (game.mode === 'gg') showCenter('Gun Game', `Har ${GG_NEED} qotillikda yangi qurol · oxirida pichoq · ${mins} daqiqa`, '', 3.5);
+    else if (game.mode === 'mod') showCenter('Modli jang', game.modIntro + ' · har 45 soniyada yangi modlar', '', 4);
+    else showCenter('Deathmatch', `${mins} daqiqa · o‘lsangiz qayta tug‘ilasiz · B — bepul qurollar`, '', 3);
   } else {
     removePracticeBoard();
     for (const b of bots) { botBuy(b); planBot(b); }
@@ -112,12 +119,12 @@ function checkRoundEnd() {
 function updateRound(dt) {
   if (game.mode === 'practice') return; // no clock, no rounds
   game.timer -= dt;
-  if (game.state === 'freeze' && game.timer <= 0) { game.state = 'live'; game.timer = game.mode === 'dm' ? DM_TIME : ROUND_TIME; showCenter('Oldinga!', '', '', 1); }
-  else if (game.state === 'live' && game.mode === 'dm') { dmTick(dt); if (game.timer <= 0) { game.timer = 0; showMatchEnd(); } }
+  if (game.state === 'freeze' && game.timer <= 0) { game.state = 'live'; game.timer = isDM() ? MODE_TIME[game.mode] : ROUND_TIME; showCenter('Oldinga!', '', '', 1); }
+  else if (game.state === 'live' && isDM()) { dmTick(dt); if (game.mode === 'mod') modTick(dt); if (game.timer <= 0) { game.timer = 0; showMatchEnd(); } }
   else if (game.state === 'live' && game.timer <= 0 && bomb.state !== 'planted') { game.timer = 0; endRound('KT', 'time'); }
   else if (game.state === 'end' && game.timer <= 0) { if (game.over) showMatchEnd(); else startRound(false); }
 }
-const canBuy = () => player.alive && (game.mode !== 'comp' || game.state === 'freeze' || (game.state === 'live' && ROUND_TIME - game.timer < game.buyWindow));
+const canBuy = () => player.alive && game.mode !== 'gg' && (game.mode !== 'comp' || game.state === 'freeze' || (game.state === 'live' && ROUND_TIME - game.timer < game.buyWindow));
 
 // ---------- Player ----------
 function updatePlayer(dt) {
@@ -273,7 +280,8 @@ function updateVM(dt) {
   vm.kv += (-vm.kick * 420 - vm.kv * 41) * dt; vm.kick += vm.kv * dt; // critically damped: snaps back without bouncing
   vm.swing *= Math.exp(-dt * 8); vm.swayX *= Math.exp(-dt * 8); vm.swayY *= Math.exp(-dt * 8);
   vm.kickY = (vm.kickY || 0) * Math.exp(-dt * 12);
-  let y = base[1] - Math.abs(Math.cos(vm.bob)) * 0.01 * amp - vm.swayY + vm.kick * 0.012, rx = vm.kick * 0.2 + p.vpP * 0.9, ry = (base[3] || 0) + vm.kickY, rz = vm.kickY * 0.6;
+  vm.rv += (-vm.rise * 300 - vm.rv * 35) * dt; vm.rise += vm.rv * dt; vm.roll *= Math.exp(-dt * 14); // muzzle climb and roll
+  let y = base[1] - Math.abs(Math.cos(vm.bob)) * 0.01 * amp - vm.swayY + vm.kick * 0.012, rx = vm.kick * 0.2 + vm.rise + p.vpP * 0.9, ry = (base[3] || 0) + vm.kickY, rz = vm.kickY * 0.6 + vm.roll;
   const x = base[0] + Math.sin(vm.bob) * 0.012 * amp - vm.swayX, z = base[2] + vm.kick * 0.075;
   if (p.reloadT > 0) { const s = Math.sin(clamp(1 - p.reloadT / (def.reload || 2), 0, 1) * Math.PI); rx -= s * 0.55; y -= s * 0.08; rz += s * 0.3; }
   if (p.switchT > 0) { const s = p.switchT / 0.55; y -= s * 0.25; rx -= s * 0.5; }
@@ -322,6 +330,8 @@ function updatePips() {
 }
 function updateHUD(dt) {
   const p = player;
+  const ggOn = game.mode === 'gg'; els.ggLvl.hidden = !ggOn;
+  if (ggOn) setT('ggLvl', `${ggDef(p).name} · daraja ${(p.gg || 0) + 1}/${GG_LADDER.length} · ${p.gg >= GG_LADDER.length - 1 ? 'pichoq bilan o‘ldiring' : (p.ggK || 0) + '/' + GG_NEED}`);
   setT('hpV', String(p.hp)); setT('arV', String(p.armor)); setT('moneyV', String(p.money));
   els.hpBox.classList.toggle('low', p.hp <= 25);
   setT('scKT', String(game.score.KT)); setT('scT', String(game.score.T));
@@ -332,7 +342,7 @@ function updateHUD(dt) {
   const pr = bombHud();
   els.prog.hidden = !pr;
   if (pr) { setT('progL', pr.label); els.progF.style.width = `${Math.round(clamp(pr.k, 0, 1) * 100)}%`; }
-  if (game.mode === 'dm' && !p.alive && p.respawnT > 0) showCenter('Qayta tug‘ilish', `${Math.ceil(p.respawnT)} soniyadan keyin`, '', 0.2);
+  if (isDM() && !p.alive && p.respawnT > 0) showCenter('Qayta tug‘ilish', `${Math.ceil(p.respawnT)} soniyadan keyin`, '', 0.2);
   const st = curState() || p.inv[3], def = st.def;
   setT('wName', def.name);
   const wsk = equippedSkin(def.id), wkey = def.model + (wsk || '');
@@ -482,11 +492,11 @@ function renderBoard() {
     const rows = agents.filter(a => a.team === t).sort((a, b) => b.kills - a.kills || a.deaths - b.deaths)
       .map(a => {
         const hsp = a.kills ? Math.round(100 * (a.hs || 0) / a.kills) + '%' : '—';
-        const adr = game.mode === 'dm' ? Math.round(a.dmg || 0) : Math.round((a.dmg || 0) / Math.max(1, game.round - (game.state === 'live' || game.state === 'freeze' ? 1 : 0)));
+        const adr = isDM() ? Math.round(a.dmg || 0) : Math.round((a.dmg || 0) / Math.max(1, game.round - (game.state === 'live' || game.state === 'freeze' ? 1 : 0)));
         const tag = (bomb.carrier === a && a.team === player.team ? ' <b class="c4tag">C4</b>' : '') + (a.kit && a.team === player.team ? ' <b class="kittag">KIT</b>' : '');
         return `<tr class="${a.alive ? '' : 'dead'} ${a.isPlayer ? 'me' : ''}"><td>${a.name}${tag}</td><td>${a.kills}</td><td>${a.deaths}</td><td>${hsp}</td><td>${adr}</td><td>${a.team === player.team && game.mode !== 'dm' ? '$' + a.money : '—'}</td></tr>`;
       }).join('');
-    return `<div><h4 class="${t === 'KT' ? 'c-kt' : 'c-te'}"><span>${TEAM_NAME[t]}</span><span>${game.score[t]}</span></h4><table><thead><tr><th>O‘yinchi</th><th>Q</th><th>O‘</th><th>BOSH%</th><th>${game.mode === 'dm' ? 'ZARAR' : 'ADR'}</th><th>Pul</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    return `<div><h4 class="${t === 'KT' ? 'c-kt' : 'c-te'}"><span>${TEAM_NAME[t]}</span><span>${game.score[t]}</span></h4><table><thead><tr><th>O‘yinchi</th><th>Q</th><th>O‘</th><th>BOSH%</th><th>${isDM() ? 'ZARAR' : 'ADR'}</th><th>Pul</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   };
   els.boardCard.innerHTML = table('KT') + table('T');
 }
@@ -524,6 +534,14 @@ function tryFullscreen() {
     if (r && r.then) r.then(lockKeys).catch(() => {});
   } catch (e) {}
 }
+// Gun Game and Modli jang have maps of their own; the other modes share the regular ones
+const mapPool = mode => MAPS.filter(m => (m.pool || '') === (mode === 'gg' || mode === 'mod' ? mode : ''));
+function renderMaps() {
+  const pool = mapPool(settings.mode);
+  document.getElementById('maps').innerHTML = pool.map(m => `<button class="map" data-map="${m.id}" type="button"><b>${m.name}</b><small>${m.blurb}</small></button>`).join('');
+  if (!pool.includes(MAP)) selectMap(pool[0].id);
+  document.querySelectorAll('.map').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.map === MAP.id)));
+}
 function selectMap(id) {
   settings.map = id; store.set('kq_map', id);
   loadMap(id); buildRadarMap(); spawnAll(true);
@@ -537,18 +555,28 @@ function toMenu() {
 }
 function showMatchEnd() {
   game.state = 'over';
-  const dm = game.mode === 'dm', tie = dm && game.score.KT === game.score.T;
-  const win = dm ? (game.score.KT > game.score.T ? 'KT' : 'T') : game.score.KT >= game.winTo ? 'KT' : 'T', me = win === player.team;
-  document.getElementById('overEyebrow').textContent = `${dm ? 'Deathmatch · ' : ''}Hisob ${game.score.KT} : ${game.score.T}`;
+  const dm = isDM(), gg = game.mode === 'gg';
+  // Gun Game: the knife kill ends it; if the clock runs out the furthest up the ladder wins
+  const ggTop = gg ? (game.ggWinner || [...agents].sort((a, b) => (b.gg || 0) - (a.gg || 0) || (b.ggK || 0) - (a.ggK || 0) || b.kills - a.kills)[0]) : null;
+  const tie = dm && !gg && game.score.KT === game.score.T;
+  const win = gg ? ggTop.team : dm ? (game.score.KT > game.score.T ? 'KT' : 'T') : game.score.KT >= game.winTo ? 'KT' : 'T';
+  const me = gg ? ggTop === player : win === player.team;
+  game.matchWon = tie ? null : me;
+  const modeName = { dm: 'Deathmatch · ', gg: 'Gun Game · ', mod: 'Modli jang · ' }[game.mode] || '';
+  document.getElementById('overEyebrow').textContent = `${modeName}Hisob ${game.score.KT} : ${game.score.T}`;
   document.getElementById('overTitle').textContent = tie ? 'Durang' : me ? 'G‘alaba!' : 'Mag‘lubiyat';
-  document.getElementById('overSub').textContent = tie ? 'Ikki jamoa teng qotillik qildi.' : dm ? `${TEAM_NAME[win]} ko‘proq raqibni yo‘q qildi.` : `${TEAM_NAME[win]} ${game.winTo} raundda birinchi bo‘lib g‘olib chiqdi.`;
+  document.getElementById('overSub').textContent = gg ? (me ? 'Siz birinchi bo‘lib hamma qurollardan o‘tdingiz!' : `${ggTop.name} birinchi bo‘lib hamma qurollardan o‘tdi.`)
+    : tie ? 'Ikki jamoa teng qotillik qildi.' : dm ? `${TEAM_NAME[win]} ko‘proq raqibni yo‘q qildi.` : `${TEAM_NAME[win]} ${game.winTo} raundda birinchi bo‘lib g‘olib chiqdi.`;
   document.getElementById('stK').textContent = player.kills; document.getElementById('stD').textContent = player.deaths;
   document.getElementById('stR').textContent = (player.kills / Math.max(1, player.deaths)).toFixed(2);
   // pay the match reward into the wallet used for cases and skins
-  const reward = matchReward();
+  const reward = Math.round(matchReward() * (isPrime() ? 1.2 : 1)); // Prime: +20%
   INV.wallet += reward; INV.earned += reward; saveInv();
   const rw = document.getElementById('overReward');
-  rw.hidden = !reward; rw.innerHTML = `<b>+${usd(reward)}</b> hisobingizga qo‘shildi · hisob: <b>${usd(INV.wallet)}</b>`;
+  rw.hidden = !reward; rw.innerHTML = `<b>+${usd(reward)}</b> hisobingizga qo‘shildi${isPrime() ? ' (Prime +20%)' : ''} · hisob: <b>${usd(INV.wallet)}</b>`;
+  const rr = applyMatchResult(game.matchWon === undefined ? null : game.matchWon, player.kills, player.deaths), ro = document.getElementById('overRank');
+  ro.hidden = !rr;
+  if (rr) ro.innerHTML = `${rankBadge(rr.after)} Reyting <b>${rr.after}</b> (${rr.delta >= 0 ? '+' : ''}${rr.delta})${rr.rankUp ? ' · <b class="up">Rank oshdi!</b>' : rr.rankDown ? ' · rank tushdi' : ''} · +${rr.xp} XP${rr.primeNew ? ' <span class="prime">★ PRIME ochildi!</span>' : ''}`;
   els.over.hidden = false; if (document.pointerLockElement) document.exitPointerLock();
 }
 function startGame(e) {
@@ -589,7 +617,7 @@ function initMenu() {
   }
   const modeBtns = document.querySelectorAll('#modeSeg button');
   const syncMode = () => modeBtns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.m === settings.mode)));
-  modeBtns.forEach(b => b.addEventListener('click', () => { settings.mode = b.dataset.m; store.set('kq_mode', settings.mode); syncMode(); }));
+  modeBtns.forEach(b => b.addEventListener('click', () => { settings.mode = b.dataset.m; store.set('kq_mode', settings.mode); syncMode(); renderMaps(); }));
   syncMode();
   const sp = initSettingsUI();
   document.getElementById('setBtn').addEventListener('click', () => sp.open());
@@ -603,13 +631,12 @@ function initMenu() {
   document.getElementById('xhBtn').addEventListener('click', () => xh.open());
   document.getElementById('xhBtn2').addEventListener('click', () => xh.open());
   const mapsEl = document.getElementById('maps');
-  mapsEl.innerHTML = MAPS.map(m => `<button class="map" data-map="${m.id}" type="button"><b>${m.name}</b><small>${m.blurb}</small></button>`).join('');
+  renderMaps();
   mapsEl.addEventListener('click', e => { const b = e.target.closest('[data-map]'); if (b && b.dataset.map !== MAP.id) selectMap(b.dataset.map); });
-  document.querySelectorAll('.map').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.map === MAP.id)));
   const fs = document.getElementById('fsChk');
   fs.checked = settings.fullscreen; fs.addEventListener('change', () => { settings.fullscreen = fs.checked; store.set('kq_fs', fs.checked); });
   document.getElementById('nextMapBtn').addEventListener('click', () => {
-    const i = MAPS.findIndex(m => m.id === MAP.id); selectMap(MAPS[(i + 1) % MAPS.length].id);
+    const pool = mapPool(settings.mode), i = pool.indexOf(MAP); selectMap(pool[(i + 1) % pool.length].id);
     startGame({ pointerType: input.touchMode ? 'touch' : 'mouse' });
   });
   teamBtns.forEach(b => b.addEventListener('click', () => { settings.team = b.dataset.team; store.set('kq_team', settings.team); sync(); }));

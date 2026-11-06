@@ -135,13 +135,23 @@ function patternTex(pat) {
 const skinMatCache = {};
 function skinMaterial(skinId) {
   if (skinMatCache[skinId]) return skinMatCache[skinId];
-  const sk = SKINS[skinId], tex = patternTex(sk.pat).clone(); tex.needsUpdate = true; tex.repeat.set(6, 6);
-  return (skinMatCache[skinId] = new THREE.MeshStandardMaterial({ map: tex, metalness: sk.metal, roughness: sk.rough, envMap: gunEnv, envMapIntensity: 1 }));
+  const sk = SKINS[skinId], src = patternTex(sk.pat).image;
+  // chips and fine scratches show bare metal through the paint
+  const tex = canvasTex(src.width, (g, s) => {
+    g.drawImage(src, 0, 0, s, s);
+    seed = 99 + skinId.length * 7;
+    for (let i = 0; i < 26; i++) { g.fillStyle = `rgba(185,188,192,${0.3 + rnd() * 0.4})`; const r = 1 + rnd() * 3; g.beginPath(); g.ellipse(rnd() * s, rnd() * s, r * 1.6, r, rnd() * 3, 0, 7); g.fill(); }
+    g.lineWidth = 0.7;
+    for (let i = 0; i < 30; i++) { g.strokeStyle = `rgba(220,222,225,${0.12 + rnd() * 0.22})`; const x = rnd() * s, y = rnd() * s, a = rnd() * 3; g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * 14, y + Math.sin(a) * 14); g.stroke(); }
+  });
+  tex.repeat.set(6, 6);
+  return (skinMatCache[skinId] = new THREE.MeshPhysicalMaterial({ map: tex, metalness: sk.metal, roughness: sk.rough, envMap: gunEnv, envMapIntensity: 1.1,
+    clearcoat: sk.metal > 0.7 ? 0.3 : 0.75, clearcoatRoughness: 0.18, roughnessMap: gunWear, bumpMap: gunWear, bumpScale: 0.00025 }));
 }
 function clothMaterial(spec, rough = 0.9) {
-  if (typeof spec === 'string') return std({ color: lin(spec), roughness: rough });
+  if (typeof spec === 'string') return std({ color: lin(spec), roughness: rough, bumpMap: weaveTex, bumpScale: 0.003 });
   const tex = patternTex({ p: spec.p, c: spec.c }).clone(); tex.needsUpdate = true; tex.repeat.set(2, 2);
-  return std({ map: tex, roughness: rough });
+  return std({ map: tex, roughness: rough, bumpMap: weaveTex, bumpScale: 0.003 });
 }
 
 // ---------- inventory (kept in this browser) ----------
@@ -221,5 +231,6 @@ function rollCase(c) {
 function matchReward() {
   if (game.mode === 'practice') return 0;
   const p = player, won = game.score[p.team] > game.score[p.team === 'KT' ? 'T' : 'KT'];
-  return game.mode === 'dm' ? 100 + p.kills * 10 : (won ? 400 : 150) + p.kills * 15 + game.score[p.team] * 10;
+  if (game.mode === 'gg') return (game.ggWinner === p ? 500 : 150) + p.kills * 10;
+  return isDM() ? 100 + p.kills * 10 : (won ? 400 : 150) + p.kills * 15 + game.score[p.team] * 10;
 }

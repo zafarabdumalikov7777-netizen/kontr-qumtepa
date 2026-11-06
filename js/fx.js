@@ -239,7 +239,7 @@ const VM_KIND = { ak: 'rifle', m4: 'rifle', awp: 'rifle', smg: 'rifle', pistol: 
 const flashMat = new THREE.SpriteMaterial({ map: texFlash, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true });
 const vmFlash = new THREE.Sprite(flashMat); vmFlash.scale.set(0.22, 0.22, 0.22); vmFlash.visible = false;
 const vm = {
-  root: new THREE.Group(), cur: null, kind: 'pistol', cache: {}, kick: 0, kv: 0, bob: 0, swayX: 0, swayY: 0, swing: 0, flashT: 0,
+  root: new THREE.Group(), cur: null, kind: 'pistol', cache: {}, kick: 0, kv: 0, rise: 0, rv: 0, roll: 0, rollSign: 1, bob: 0, swayX: 0, swayY: 0, swing: 0, flashT: 0,
   set(def, team) {
     const skin = equippedSkin(def.id), agent = equippedAgent(team);
     const key = def.model + '_' + team + '_' + (skin || '') + '_' + (agent ? agent.id : '');
@@ -249,6 +249,9 @@ const vm = {
     this.cur = m; this.root.add(m); m.userData.muzzle.add(vmFlash); this.kind = VM_KIND[model] || 'rifle';
   },
   // the weapon is kicked back like a stiff spring and returns without bouncing
-  fire(power = 1) { this.kv += 30 * power; this.kickY = (Math.random() - 0.5) * 0.025 * power; vmFlash.visible = this.kind !== 'knife' && this.kind !== 'he'; vmFlash.material.rotation = Math.random() * 6; this.flashT = 0.045; }
+  fire(rc = RECOIL_DEF) {
+    this.kv += 30 * rc.back; this.rv += 2 * rc.rise; this.rollSign = -this.rollSign; this.roll += this.rollSign * rc.roll; this.kickY = (Math.random() - 0.5) * 0.025 * rc.back;
+    vmFlash.visible = this.kind !== 'knife' && this.kind !== 'he'; vmFlash.material.rotation = Math.random() * 6; this.flashT = 0.045;
+  }
 };
 vScene.add(vm.root);
