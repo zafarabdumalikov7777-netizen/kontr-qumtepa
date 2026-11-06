@@ -179,12 +179,13 @@ const RECOIL = {
 const RECOIL_DEF = { kick: 0.002, side: 0.3, back: 0.8, rise: 0.8, roll: 0.02 };
 // CS2 style: bullets follow the full pattern (AK ≈ 9.5° after 30 bullets) and the view shows 45% of it;
 // with a crosshair that never moves the climb is kept a little lower
-const recoilScale = () => settings.recoilStyle === 'static' ? 0.8 : 1;
+const recoilScale = () => settings.recoilStyle === 'static' ? 0.8 : settings.recoilStyle === 'modern' ? 0.42 : 1;
+const recoilSide = () => settings.recoilStyle === 'modern' ? 0.3 / 0.42 : 1; // modern: mostly straight up, little sideways wander
 const VIEW_TRACKING = 0.45; // CS2's view_recoil_tracking
 function sprayAt(def, i) {
   const pat = SPRAY[def.id]; if (!pat) return [0, 0];
   const k = pat[Math.min(i, pat.length - 1)], s = (SPRAY_SCALE[def.id] || 1.4) * recoilScale() * Math.PI / 180;
-  return [k[0] * s, k[1] * s];
+  return [k[0] * s * recoilSide(), k[1] * s];
 }
 // a direction inside a cone around d (shotgun pellets)
 const _cr = new V3(), _cu = new V3();
@@ -194,7 +195,9 @@ function coneDir(d, cone) {
   return d.clone().addScaledVector(_cr, Math.cos(th) * r).addScaledVector(_cu, Math.sin(th) * r).normalize();
 }
 function aimDir(spread) {
-  const p = player; let yaw = p.yaw + p.punchY, pit = p.pitch + p.punchP; // the crosshair plus the spray offset of this bullet
+  const p = player, mod = settings.recoilStyle === 'modern';
+  // modern: the bullet goes exactly where the crosshair is now; otherwise the crosshair plus this bullet's spray offset
+  let yaw = p.yaw + (mod ? p.vpY + p.kickY : p.punchY), pit = p.pitch + (mod ? p.vpP + p.kickP : p.punchP);
   if (spread > 0) { const r = spread * Math.sqrt(Math.random()), th = Math.random() * Math.PI * 2; yaw += Math.cos(th) * r; pit += Math.sin(th) * r; }
   const cp = Math.cos(pit);
   return new V3(-Math.sin(yaw) * cp, Math.sin(pit), -Math.cos(yaw) * cp);
@@ -258,6 +261,8 @@ function tryFire() {
   if (settings.recoilStyle === 'cs2') { p.kTP += rc.kick * rand(0.9, 1.1); p.kTY += rc.kick * rand(-rc.side, rc.side); } // CS2 view punch
   const tp = thirdPerson(), eye = eyePos();
   let dir = aimDir(currentSpread());
+  // modern: this bullet already left on the crosshair; now the view kicks (a punch that springs back) and shakes a touch
+  if (settings.recoilStyle === 'modern') { p.kTP += rc.kick * 0.6 * rand(0.9, 1.1); p.kTY += rc.kick * 0.6 * rand(-rc.side, rc.side); p.kRoll = (p.kRoll || 0) + rand(-1, 1) * Math.min(0.012, rc.kick * 1.5); }
   if (tp) { const t = aimPoint(camera.position, dir); if (t.distanceTo(eye) > 0.6) dir = t.sub(eye).normalize(); }
   const res = shootRay(eye, dir, p, def);
   const from = tp && playerBody && playerBody.muzzle ? playerBody.muzzle.getWorldPosition(new V3())

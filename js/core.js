@@ -33,7 +33,9 @@ const settings = {
   fps: store.get('kq_fps', true) !== false,
   hand: store.get('kq_hand', 'right') === 'left' ? 'left' : 'right',
   // 'cs2': the view follows 45% of the spray like CS2 · 'static': the view never moves, only the bullets climb
-  recoilStyle: store.get('kq_recoil', 'cs2') === 'static' ? 'static' : 'cs2'
+  // 'modern': bullets go exactly where the crosshair is and the view kicks (CoD / Valorant feel) ·
+  // 'cs2': the view follows 45% of the spray · 'static': the view never moves, only the bullets climb
+  recoilStyle: ['modern', 'cs2', 'static'].includes(store.get('kq_recoil2', 'modern')) ? store.get('kq_recoil2', 'modern') : 'modern'
 };
 const SKILL = [
   { react: 0.75, err: 0.055, head: 0.12, turn: 5, burst: [2, 4], crouch: 0.15 },

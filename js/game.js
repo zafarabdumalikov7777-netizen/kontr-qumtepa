@@ -198,7 +198,7 @@ function updatePlayer(dt) {
   if (game.time - p.lastShot > Math.max(0.12, (def.rate || 0.2) * 1.25)) {
     p.shotsF = Math.max(0, p.shotsF - dt * 14);
     // CS2-style recovery: exponential plus a steady ≈18°/s pull back to the crosshair
-    const keep = Math.exp(-dt * 8), lin = dt * 0.31, back = v => Math.sign(v) * Math.max(0, Math.abs(v) * keep - lin);
+    const mod = settings.recoilStyle === 'modern', keep = Math.exp(-dt * (mod ? 7 : 8)), lin = dt * (mod ? 0.12 : 0.31), back = v => Math.sign(v) * Math.max(0, Math.abs(v) * keep - lin);
     p.punchP = back(p.punchP); p.punchY = back(p.punchY);
   }
   p.shots = Math.round(p.shotsF);
@@ -207,6 +207,7 @@ function updatePlayer(dt) {
   // per-shot kick: a little bump that rises and settles smoothly — no snapping, no shaking
   const kd = Math.exp(-dt * 14), kf = 1 - Math.exp(-dt * 40);
   p.kTP *= kd; p.kTY *= kd; p.kickP += (p.kTP - p.kickP) * kf; p.kickY += (p.kTY - p.kickY) * kf;
+  p.kRoll = (p.kRoll || 0) * Math.exp(-dt * 12);
 }
 const BHOP_MAX = 12.5; // ≈45 km/h
 function groundFriction(p, dt) {
@@ -319,8 +320,9 @@ function updateCamera(dt) {
   if (p.alive) {
     camera.position.set(p.pos.x, p.pos.y + eyeH(), p.pos.z);
     // CS2: the view follows 45% of the spray plus the shot punch; static: the view never moves
-    const vt = settings.recoilStyle === 'cs2' ? VIEW_TRACKING : 0, kp = settings.recoilStyle === 'cs2' ? 1 : 0;
-    camera.rotation.set(p.pitch + p.vpP * vt + p.kickP * kp + sy, p.yaw + p.vpY * vt + p.kickY * kp + sx, 0);
+    // modern: the view carries all of the recoil and the bullets go to the crosshair
+    const rs = settings.recoilStyle, vt = rs === 'modern' ? 1 : rs === 'cs2' ? VIEW_TRACKING : 0, kp = rs === 'static' ? 0 : 1;
+    camera.rotation.set(p.pitch + p.vpP * vt + p.kickP * kp + sy, p.yaw + p.vpY * vt + p.kickY * kp + sx, rs === 'modern' ? p.kRoll || 0 : 0);
     if (thirdPerson()) {
       // pull back over the shoulder, closer when a wall is in the way
       _tp.set(settings.hand === 'left' ? -0.75 : 0.75, 0.5, 3.4).applyEuler(camera.rotation);
@@ -355,7 +357,7 @@ function updateVM(dt) {
   vm.swing *= Math.exp(-dt * 8); vm.swayX *= Math.exp(-dt * 8); vm.swayY *= Math.exp(-dt * 8);
   vm.kickY = (vm.kickY || 0) * Math.exp(-dt * 12);
   vm.rv += (-vm.rise * 300 - vm.rv * 35) * dt; vm.rise += vm.rv * dt; vm.roll *= Math.exp(-dt * 14); // muzzle climb and roll
-  let y = base[1] - Math.abs(Math.cos(vm.bob)) * 0.01 * amp - vm.swayY + vm.kick * 0.012, rx = vm.kick * 0.2 + vm.rise + p.vpP * (settings.recoilStyle === 'cs2' ? 0.2 : 0.5), ry = (base[3] || 0) + vm.kickY, rz = vm.kickY * 0.6 + vm.roll;
+  let y = base[1] - Math.abs(Math.cos(vm.bob)) * 0.01 * amp - vm.swayY + vm.kick * 0.012, rx = vm.kick * 0.2 + vm.rise + p.vpP * (settings.recoilStyle === 'static' ? 0.5 : 0.2), ry = (base[3] || 0) + vm.kickY, rz = vm.kickY * 0.6 + vm.roll;
   const x = base[0] + Math.sin(vm.bob) * 0.012 * amp - vm.swayX, z = base[2] + vm.kick * 0.075;
   if (p.reloadT > 0) { const s = Math.sin(clamp(1 - p.reloadT / (def.reload || 2), 0, 1) * Math.PI); rx -= s * 0.55; y -= s * 0.08; rz += s * 0.3; }
   if (p.switchT > 0) { const s = p.switchT / 0.55; y -= s * 0.25; rx -= s * 0.5; }

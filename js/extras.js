@@ -69,7 +69,7 @@ function initSettingsUI(onClose) {
   const syncs = [
     seg('setQuality', 'quality', 'kq_quality', v => +v, applyQuality),
     seg('setHand', 'hand', 'kq_hand', v => v),
-    seg('setRecoil', 'recoilStyle', 'kq_recoil', v => v),
+    seg('setRecoil', 'recoilStyle', 'kq_recoil2', v => v),
     range('setFov', 'fov', 'kq_fov', v => v + '°'),
     range('setVol', 'volume', 'kq_volume', v => Math.round(v * 100) + '%', applyVolume),
     check('setFps', 'fps', 'kq_fps'),
