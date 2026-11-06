@@ -53,8 +53,23 @@ const GMAT_DEF = {
 const GMAT = {};
 const gunWear = wearTex.clone(); gunWear.needsUpdate = true; gunWear.repeat.set(18, 18);
 const GDETAIL = { steel: 1, park: 1, poly: 0.7, bakelite: 0.5, olive: 0.6, chrome: 0.5, blade: 0.35, brass: 0.7, smokecan: 0.8, flashcan: 0.8 };
-const gmat = n => GMAT[n] || (GMAT[n] = new THREE.MeshStandardMaterial(Object.assign({}, GMAT_DEF[n], { color: lin(GMAT_DEF[n].color), envMap: gunEnv, envMapIntensity: 0.9 },
-  GDETAIL[n] ? { roughnessMap: gunWear, bumpMap: gunWear, bumpScale: 0.0003 * GDETAIL[n] } : {})));
+// surface finish: phosphate mottling on parkerized steel, brushed bright steel, stippled polymer; varnish on wood and bakelite
+const finishTex = draw => { const t = canvasTex(256, draw); t.repeat.set(36, 36); return t; }; // one tile ≈ 3 cm
+const GFINISH = {
+  park: finishTex((g, s) => { g.fillStyle = '#d2d2d2'; g.fillRect(0, 0, s, s); blotches(g, s, 90, 'rgba(50,50,55,0.06)', 'rgba(255,255,255,0.04)', 3, 14); speckle(g, s, 9000, 0.08, '40,40,40', '255,255,255'); }),
+  steel: finishTex((g, s) => { g.fillStyle = '#dcdcdc'; g.fillRect(0, 0, s, s); for (let y = 0; y < s; y++) { const v = 190 + rnd() * 65 | 0; g.fillStyle = `rgba(${v},${v},${v},0.55)`; g.fillRect(0, y, s, 1); } }),
+  poly: finishTex((g, s) => { g.fillStyle = '#d4d4d4'; g.fillRect(0, 0, s, s); for (let i = 0; i < 16000; i++) { const v = 165 + rnd() * 90 | 0; g.fillStyle = `rgb(${v},${v},${v})`; g.fillRect(rnd() * s, rnd() * s, 1.5, 1.5); } })
+};
+GFINISH.olive = GFINISH.smokecan = GFINISH.flashcan = GFINISH.park;
+const GCOAT = { wood: 0.6, bakelite: 0.7, chrome: 0.3, glass: 1 };
+function gmat(n) {
+  if (GMAT[n]) return GMAT[n];
+  const d = GMAT_DEF[n], fin = GFINISH[n];
+  const o = Object.assign({}, d, { color: lin(d.color), envMap: gunEnv, envMapIntensity: d.metalness > 0.5 ? 1.2 : 0.9 });
+  if (fin) o.map = fin;
+  if (GDETAIL[n]) Object.assign(o, { roughnessMap: gunWear, bumpMap: n === 'poly' ? fin : gunWear, bumpScale: (n === 'poly' ? 0.0004 : 0.0003) * GDETAIL[n] });
+  return (GMAT[n] = GCOAT[n] ? new THREE.MeshPhysicalMaterial(Object.assign(o, { clearcoat: GCOAT[n], clearcoatRoughness: 0.22 })) : new THREE.MeshStandardMaterial(o));
+}
 
 function shapeFrom(cmds) {
   const s = new THREE.Shape();
@@ -68,8 +83,8 @@ function shapeFrom(cmds) {
 // Extruded profile, centred on the bore plane; `side` shifts it right (+) or left (-)
 function slab(g, mat, cmds, thick, side = 0, holes) {
   const s = shapeFrom(cmds); if (holes) holes.forEach(h => s.holes.push(shapeFrom(h)));
-  const bev = Math.min(0.004, thick * 0.18);
-  const geo = new THREE.ExtrudeGeometry(s, { depth: thick - bev * 2, bevelEnabled: true, bevelThickness: bev, bevelSize: bev * 0.8, bevelSegments: 2, curveSegments: 10 });
+  const bev = Math.min(0.006, thick * 0.22); // rounded edges catch the light like machined parts
+  const geo = new THREE.ExtrudeGeometry(s, { depth: thick - bev * 2, bevelEnabled: true, bevelThickness: bev, bevelSize: bev * 0.8, bevelSegments: GUN_LITE ? 1 : 3, curveSegments: GUN_LITE ? 6 : 12 });
   geo.translate(0, 0, -(thick - bev * 2) / 2); geo.rotateY(Math.PI / 2);
   const m = new THREE.Mesh(geo, mat); m.position.x = side; g.add(m); return m;
 }
@@ -239,6 +254,156 @@ const GUNS = {
     for (const x of [-0.04, -0.07, -0.1]) slab(g, bk, [[x, 0.0125], [x + 0.006, 0.0125], [x + 0.006, -0.0275], [x, -0.027]], 0.0256);
     for (const x of [-0.055, -0.085]) tiny(g, br, 0.0262, 0.006, 0.006, x, -0.008);
     return { mz: 0.24, knife: true };
+  },
+  // P250: slide with front and rear serrations, squared trigger guard, ribbed grip
+  p250(g) {
+    const sl = gmat('park'), pl = gmat('poly'), st = gmat('steel'), bore = gmat('bore');
+    slab(g, sl, [[-0.05, 0], [0.155, 0], [0.155, 0.024], ['q', 0.155, 0.032, 0.145, 0.032], [-0.04, 0.032], ['q', -0.05, 0.032, -0.05, 0.022]], 0.027);
+    for (let x = -0.045; x < -0.012; x += 0.006) tiny(g, st, 0.029, 0.02, 0.002, x, 0.016);
+    for (let x = 0.112; x < 0.148; x += 0.006) tiny(g, st, 0.029, 0.016, 0.002, x, 0.016);
+    tiny(g, bore, 0.012, 0.004, 0.028, 0.055, 0.032);
+    slab(g, pl, [[-0.04, 0], [0.15, 0], [0.15, -0.014], [0.07, -0.016], [0.07, -0.046], [0.012, -0.046], ['q', 0.006, -0.085, 0.002, -0.124], ['q', -0.022, -0.132, -0.05, -0.124], ['q', -0.044, -0.06, -0.04, 0]], 0.028, 0,
+      [[[0.016, -0.018], [0.062, -0.018], [0.062, -0.04], [0.016, -0.04]]]);
+    for (let k = 0; k < 6; k++) tiny(g, pl, 0.031, 0.004, 0.012, -0.02 - k * 0.002, -0.06 - k * 0.011);
+    slab(g, st, [[0.03, -0.018], [0.036, -0.018], [0.034, -0.036], [0.028, -0.036]], 0.006);
+    for (let x = 0.09; x < 0.145; x += 0.01) tiny(g, pl, 0.024, 0.004, 0.004, x, -0.016);
+    tiny(g, st, 0.004, 0.008, 0.006, 0.145, 0.035); tiny(g, st, 0.016, 0.008, 0.006, -0.035, 0.035);
+    tube(g, bore, 0.006, 0.006, 0.151, 0.156, 0.013);
+    return { mz: 0.156, mzY: 0.013, pistol: true };
+  },
+  // Five-SeveN: long slim polymer slide, accessory rail under the barrel
+  fiveseven(g) {
+    const pl = gmat('poly'), st = gmat('steel'), bore = gmat('bore');
+    slab(g, pl, [[-0.05, 0], [0.17, 0], [0.172, 0.022], [0.16, 0.03], [-0.045, 0.03], [-0.05, 0.02]], 0.024);
+    for (let x = -0.045; x < -0.015; x += 0.005) tiny(g, st, 0.026, 0.018, 0.0018, x, 0.015);
+    tiny(g, bore, 0.011, 0.004, 0.03, 0.06, 0.03);
+    slab(g, pl, [[-0.04, 0], [0.165, 0], [0.165, -0.012], [0.075, -0.014], [0.072, -0.046], [0.014, -0.046], ['q', 0.008, -0.09, 0.006, -0.13], ['q', -0.02, -0.138, -0.048, -0.13], ['q', -0.044, -0.07, -0.04, 0]], 0.026, 0,
+      [[[0.018, -0.016], [0.066, -0.016], [0.064, -0.04], [0.018, -0.04]]]);
+    for (let x = 0.095; x < 0.16; x += 0.009) tiny(g, st, 0.02, 0.004, 0.004, x, -0.015);
+    slab(g, st, [[0.032, -0.016], [0.038, -0.016], [0.036, -0.036], [0.03, -0.036]], 0.006);
+    tiny(g, st, 0.004, 0.007, 0.006, 0.165, 0.033); tiny(g, st, 0.014, 0.007, 0.006, -0.04, 0.033);
+    tube(g, bore, 0.0055, 0.0055, 0.168, 0.173, 0.012);
+    return { mz: 0.174, mzY: 0.012, pistol: true };
+  },
+  // Tec-9: boxy upper, ventilated barrel shroud, long magazine ahead of the trigger
+  tec9(g) {
+    const pk = gmat('park'), pl = gmat('poly'), st = gmat('steel'), bore = gmat('bore');
+    slab(g, pk, [[-0.07, -0.005], [0.12, -0.005], [0.12, 0.03], [-0.06, 0.03], [-0.07, 0.02]], 0.03);
+    lathe(g, pk, [[0, 0.12], [0.017, 0.12], [0.017, 0.24], [0.012, 0.25], [0, 0.25]], 0.013);
+    for (let x = 0.135; x < 0.235; x += 0.02) tube(g, bore, 0.0174, 0.0174, x, x + 0.008, 0.013);
+    tube(g, st, 0.007, 0.007, 0.24, 0.27, 0.013);
+    slab(g, pl, [[-0.04, -0.005], [0.1, -0.005], [0.1, -0.02], [0.05, -0.025], ['q', 0.045, -0.05, 0.03, -0.052], [0.012, -0.052], ['q', 0.005, -0.09, 0, -0.13], ['q', -0.025, -0.14, -0.05, -0.128], ['q', -0.045, -0.06, -0.04, -0.005]], 0.03, 0,
+      [[[0.016, -0.026], [0.042, -0.026], ['q', 0.04, -0.044, 0.028, -0.046], [0.016, -0.046]]]);
+    slab(g, pk, [[0.07, -0.02], [0.1, -0.02], [0.1, -0.2], [0.07, -0.2]], 0.024);
+    for (let y = -0.05; y > -0.19; y -= 0.03) tiny(g, st, 0.026, 0.003, 0.025, 0.085, y);
+    slab(g, st, [[-0.05, 0.03], [-0.03, 0.03], [-0.03, 0.045], [-0.05, 0.045]], 0.012);
+    slab(g, st, [[0.02, 0.03], [0.05, 0.03], [0.05, 0.038], [0.02, 0.038]], 0.008);
+    return { mz: 0.27, mzY: 0.013, pistol: true };
+  },
+  // MAC-10: stamped box receiver, magazine in the grip, folded wire stock
+  mac10(g) {
+    const pk = gmat('park'), st = gmat('steel'), pl = gmat('poly');
+    slab(g, pk, [[-0.09, -0.04], [0.11, -0.04], [0.11, 0.03], [-0.08, 0.03], [-0.09, 0.02]], 0.05);
+    for (const x of [-0.07, 0.0, 0.09]) for (const y of [-0.025, 0.015]) tiny(g, st, 0.052, 0.006, 0.006, x, y);
+    slab(g, st, [[-0.04, 0.03], [0.02, 0.03], [0.02, 0.042], [-0.04, 0.042]], 0.012);
+    tiny(g, st, 0.016, 0.012, 0.012, -0.01, 0.048);
+    tube(g, st, 0.008, 0.008, 0.11, 0.17, 0);
+    lathe(g, pk, [[0, 0.16], [0.013, 0.16], [0.013, 0.18], [0, 0.18]], 0);
+    slab(g, pl, [[-0.03, -0.04], [0.02, -0.04], [0.016, -0.17], [-0.03, -0.17]], 0.034);
+    for (let k = 0; k < 7; k++) tiny(g, pl, 0.036, 0.004, 0.012, -0.03, -0.06 - k * 0.015);
+    slab(g, pk, [[-0.028, -0.17], [0.016, -0.17], [0.016, -0.2], [-0.028, -0.2]], 0.03);
+    ring(g, st, 0.022, 0.003, 0.045, -0.04, Math.PI);
+    for (const s of [-0.03, 0.03]) tube(g, st, 0.004, 0.004, -0.2, 0.08, -0.03, s);
+    slab(g, st, [[-0.2, -0.02], [-0.19, -0.02], [-0.19, -0.05], [-0.2, -0.05]], 0.07);
+    slab(g, pl, [[0.07, -0.04], [0.1, -0.04], [0.1, -0.075], [0.07, -0.075]], 0.04);
+    return { mz: 0.18, mzY: 0, fore: 0.085, foreY: -0.06 };
+  },
+  // UMP-45: polymer receiver with a rail, vented handguard, straight magazine, side-folding stock
+  ump(g) {
+    const pl = gmat('poly'), st = gmat('steel'), bore = gmat('bore');
+    slab(g, pl, [[-0.12, -0.035], [0.26, -0.035], [0.26, 0.02], ['q', 0.255, 0.032, 0.24, 0.032], [-0.1, 0.032], ['q', -0.12, 0.03, -0.12, 0.01]], 0.046);
+    for (let x = -0.08; x < 0.25; x += 0.0105) tiny(g, st, 0.02, 0.005, 0.005, x, 0.035);
+    slab(g, pl, [[0.12, -0.035], [0.26, -0.035], [0.26, -0.06], [0.12, -0.055]], 0.05);
+    for (let x = 0.14; x < 0.25; x += 0.025) slab(g, bore, [[x, -0.015], [x + 0.012, -0.015], [x + 0.012, -0.002], [x, -0.002]], 0.048);
+    tube(g, st, 0.009, 0.009, 0.26, 0.33, 0);
+    lathe(g, st, [[0, 0.32], [0.012, 0.32], [0.013, 0.345], [0, 0.345]], 0);
+    slab(g, pl, [[0.05, -0.035], [0.1, -0.035], [0.11, -0.2], [0.065, -0.205]], 0.03);
+    for (let y = -0.06; y > -0.19; y -= 0.025) tiny(g, pl, 0.032, 0.003, 0.04, 0.08, y);
+    slab(g, pl, [[-0.03, -0.035], [0.012, -0.035], ['q', 0, -0.1, -0.01, -0.13], ['q', -0.035, -0.14, -0.055, -0.125], ['q', -0.045, -0.07, -0.03, -0.035]], 0.032);
+    ring(g, st, 0.02, 0.003, 0.027, -0.035, Math.PI);
+    slab(g, pl, [[-0.12, 0.02], [-0.36, 0.01], [-0.37, -0.1], [-0.34, -0.105], [-0.33, -0.03], [-0.12, -0.02]], 0.03, 0, [[[-0.32, -0.005], [-0.15, 0], [-0.15, -0.012], [-0.32, -0.02]]]);
+    slab(g, st, [[-0.09, 0.032], [-0.06, 0.032], [-0.065, 0.055], [-0.085, 0.055]], 0.016);
+    slab(g, st, [[0.23, 0.032], [0.25, 0.032], [0.247, 0.06], [0.236, 0.06]], 0.012);
+    return { mz: 0.345, mzY: 0, fore: 0.2, foreY: -0.055 };
+  },
+  // AUG: olive bullpup with an integrated scope, translucent magazine and a vertical foregrip
+  aug(g) {
+    const ol = gmat('olive'), pl = gmat('poly'), st = gmat('steel'), lens = gmat('lens');
+    slab(g, ol, [[-0.5, 0.02], [0.09, 0.02], [0.11, -0.005], [0.09, -0.06], [-0.24, -0.065], ['q', -0.4, -0.08, -0.5, -0.06]], 0.06);
+    slab(g, pl, [[-0.5, 0.02], [-0.48, 0.02], [-0.48, -0.06], [-0.5, -0.06]], 0.064);
+    slab(g, ol, [[-0.03, -0.055], [0.015, -0.055], ['q', 0.004, -0.1, -0.008, -0.14], ['q', -0.034, -0.15, -0.052, -0.132], ['q', -0.042, -0.09, -0.03, -0.055]], 0.034);
+    slab(g, ol, [[-0.05, -0.06], [0.16, -0.06], [0.16, -0.075], [-0.05, -0.075]], 0.03);
+    slab(g, lens, [[-0.2, -0.065], [-0.13, -0.065], [-0.11, -0.2], [-0.18, -0.205]], 0.028);
+    tube(g, st, 0.011, 0.011, 0.09, 0.36, -0.01);
+    lathe(g, st, [[0, 0.34], [0.014, 0.34], [0.016, 0.375], [0.012, 0.385], [0, 0.385]], -0.01);
+    slab(g, ol, [[0.17, -0.02], [0.21, -0.02], [0.205, -0.11], [0.175, -0.11]], 0.03);
+    slab(g, ol, [[-0.08, 0.02], [0.12, 0.02], [0.12, 0.045], [-0.08, 0.045]], 0.026);
+    lathe(g, gmat('park'), [[0, -0.06], [0.017, -0.06], [0.019, -0.05], [0.014, -0.035], [0.014, 0.09], [0.019, 0.105], [0.02, 0.125], [0, 0.125]], 0.064);
+    const fl = new THREE.Mesh(new THREE.CircleGeometry(0.018, 20), lens); fl.position.set(0, 0.064, -0.1255); fl.rotation.y = Math.PI; g.add(fl);
+    return { mz: 0.385, mzY: -0.01, fore: 0.19, foreY: -0.07 };
+  },
+  // SG 553: AK-style receiver, railed handguard, scope on a mount, curved magazine, skeleton stock
+  sg553(g) {
+    const pk = gmat('park'), pl = gmat('poly'), st = gmat('steel'), lens = gmat('lens');
+    slab(g, pk, [[-0.1, -0.045], [0.2, -0.045], [0.2, -0.004], [0.185, 0.016], [-0.06, 0.018], ['q', -0.095, 0.02, -0.1, 0]], 0.034);
+    slab(g, pl, [[0.2, -0.04], [0.42, -0.036], ['q', 0.44, -0.012, 0.42, 0.018], [0.2, 0.02]], 0.044);
+    for (let x = 0.22; x < 0.41; x += 0.011) tiny(g, st, 0.02, 0.005, 0.005, x, 0.022);
+    tube(g, st, 0.0095, 0.0095, 0.42, 0.58, 0);
+    lathe(g, st, [[0, 0.57], [0.014, 0.57], [0.016, 0.61], [0.012, 0.62], [0, 0.62]]);
+    slab(g, st, [[-0.04, 0.018], [0.12, 0.018], [0.12, 0.04], [-0.04, 0.04]], 0.016);
+    lathe(g, pl, [[0, -0.07], [0.02, -0.07], [0.022, -0.06], [0.015, -0.04], [0.015, 0.09], [0.022, 0.11], [0.024, 0.13], [0, 0.13]], 0.06);
+    const fl = new THREE.Mesh(new THREE.CircleGeometry(0.022, 20), lens); fl.position.set(0, 0.06, -0.1305); fl.rotation.y = Math.PI; g.add(fl);
+    slab(g, pl, [[0.07, -0.044], [0.15, -0.044], ['q', 0.19, -0.15, 0.24, -0.24], [0.18, -0.265], ['q', 0.13, -0.16, 0.07, -0.044]], 0.03);
+    slab(g, pl, [[-0.03, -0.044], [0.01, -0.044], ['q', 0, -0.1, -0.012, -0.136], ['q', -0.04, -0.146, -0.06, -0.128], ['q', -0.046, -0.08, -0.03, -0.044]], 0.03);
+    ring(g, st, 0.02, 0.003, 0.025, -0.044, Math.PI);
+    slab(g, pl, [[-0.1, 0.01], [-0.36, 0], [-0.37, -0.11], [-0.34, -0.115], [-0.33, -0.03], [-0.12, -0.03]], 0.03, 0, [[[-0.31, -0.008], [-0.16, -0.006], [-0.16, -0.02], [-0.31, -0.024]]]);
+    return { mz: 0.62, mzY: 0, fore: 0.31, foreY: -0.04 };
+  },
+  // XM1014: semi-auto shotgun — receiver with an ejection port, tube magazine, smooth forend, pistol-grip stock
+  xm(g) {
+    const pk = gmat('park'), pl = gmat('poly'), st = gmat('steel'), bore = gmat('bore');
+    slab(g, pk, [[-0.1, -0.042], [0.17, -0.042], [0.17, 0.024], [-0.08, 0.026], ['q', -0.1, 0.022, -0.1, 0]], 0.042);
+    tiny(g, bore, 0.044, 0.016, 0.06, 0.06, 0.005);
+    tube(g, st, 0.012, 0.012, 0.17, 0.68, 0.01);
+    tube(g, pk, 0.012, 0.012, 0.17, 0.6, -0.022);
+    lathe(g, st, [[0, 0.59], [0.016, 0.59], [0.016, 0.61], [0, 0.61]], -0.022);
+    lathe(g, st, [[0, 0.668], [0.0145, 0.668], [0.0145, 0.68], [0, 0.68]], 0.01);
+    slab(g, pl, [[0.2, -0.045], [0.4, -0.045], ['q', 0.41, -0.02, 0.4, 0.004], [0.2, 0.004], ['q', 0.19, -0.02, 0.2, -0.045]], 0.052);
+    slab(g, pl, [[-0.03, -0.042], [0.01, -0.042], ['q', 0, -0.1, -0.012, -0.136], ['q', -0.04, -0.146, -0.06, -0.128], ['q', -0.046, -0.08, -0.03, -0.042]], 0.032);
+    ring(g, st, 0.02, 0.003, 0.03, -0.042, Math.PI);
+    slab(g, pl, [[-0.1, 0.024], [-0.42, 0.01], [-0.43, -0.12], [-0.4, -0.126], ['q', -0.26, -0.07, -0.1, -0.042]], 0.042);
+    slab(g, pl, [[-0.43, 0.012], [-0.41, 0.012], [-0.41, -0.122], [-0.43, -0.12]], 0.046);
+    slab(g, st, [[-0.06, 0.024], [-0.03, 0.024], [-0.03, 0.05], [-0.06, 0.05]], 0.02, 0, [[[-0.052, 0.032], [-0.038, 0.032], [-0.038, 0.044], [-0.052, 0.044]]]);
+    tiny(g, st, 0.004, 0.01, 0.006, 0.66, 0.026);
+    return { mz: 0.68, mzY: 0.01, fore: 0.3, foreY: -0.03 };
+  },
+  // Negev: long receiver with a carry handle, perforated barrel shroud, belt box, bipod folded under
+  negev(g) {
+    const pk = gmat('park'), pl = gmat('poly'), st = gmat('steel'), bore = gmat('bore');
+    slab(g, pk, [[-0.12, -0.05], [0.24, -0.05], [0.24, 0.035], [-0.1, 0.035], ['q', -0.12, 0.03, -0.12, 0.01]], 0.06);
+    slab(g, pk, [[-0.06, 0.035], [0.18, 0.035], [0.18, 0.05], [-0.06, 0.05]], 0.05);
+    slab(g, st, [[0.0, 0.05], [0.12, 0.05], ['q', 0.12, 0.1, 0.06, 0.1], ['q', 0.0, 0.1, 0.0, 0.05]], 0.012, 0, [[[0.015, 0.06], [0.105, 0.06], ['q', 0.105, 0.088, 0.06, 0.088], ['q', 0.015, 0.088, 0.015, 0.06]]]);
+    lathe(g, pk, [[0, 0.24], [0.028, 0.24], [0.028, 0.6], [0.02, 0.62], [0, 0.62]], 0.005);
+    for (let x = 0.27; x < 0.58; x += 0.03) for (const a of [0.022, -0.012]) tiny(g, bore, 0.058, 0.01, 0.014, x, a);
+    tube(g, st, 0.011, 0.011, 0.62, 0.74, 0.005);
+    lathe(g, st, [[0, 0.72], [0.017, 0.72], [0.018, 0.765], [0, 0.765]], 0.005);
+    slab(g, pl, [[0.02, -0.05], [0.16, -0.05], [0.16, -0.17], ['q', 0.09, -0.18, 0.02, -0.17]], 0.07);
+    slab(g, pl, [[-0.03, -0.05], [0.01, -0.05], ['q', 0, -0.1, -0.012, -0.14], ['q', -0.04, -0.15, -0.06, -0.132], ['q', -0.046, -0.085, -0.03, -0.05]], 0.034);
+    ring(g, st, 0.022, 0.003, 0.03, -0.05, Math.PI);
+    slab(g, pl, [[-0.12, 0.03], [-0.42, 0.015], [-0.43, -0.12], [-0.4, -0.126], ['q', -0.26, -0.07, -0.12, -0.05]], 0.046);
+    for (const s of [-0.012, 0.012]) tube(g, st, 0.005, 0.005, 0.3, 0.55, -0.04, s);
+    slab(g, pl, [[0.32, -0.03], [0.4, -0.03], [0.4, -0.08], [0.32, -0.08]], 0.05);
+    return { mz: 0.765, mzY: 0.005, fore: 0.36, foreY: -0.06 };
   },
   // Galil AR: AK-style receiver, ribbed polymer handguard, skeleton stock, curved magazine
   galil(g) {

@@ -488,12 +488,14 @@ function drawRadar() {
 // ---------- Buy menu ----------
 const BUY = [
   { k: '1', id: 'deagle' }, { k: '2', id: 'mp5' }, { k: '3', id: 'rifle' }, { k: '4', id: 'awp' }, { k: 'y', id: 'rifle2' }, { k: 'u', id: 'ssg08' }, { k: 'p', id: 'p90' }, { k: 'n', id: 'nova' },
+  { k: 'j', id: 'p250' }, { k: 'k', id: 'pistol2' }, { k: 'l', id: 'mac10', team: 'T' }, { k: 'm', id: 'ump45' }, { k: 'i', id: 'rifle3' }, { k: 'o', id: 'xm1014' }, { k: 't', id: 'negev' },
   { k: '5', id: 'kevlar', name: 'Kevlar zirh', price: 650, stat: '100 zirh, tanani himoya qiladi' },
   { k: '6', id: 'kevlarh', name: 'Zirh + dubulg‘a', price: 1000, stat: 'Boshga tekkan o‘qni ham yumshatadi' },
   { k: '7', id: 'he' }, { k: '8', id: 'flash' }, { k: '9', id: 'smoke' }, { k: '-', id: 'molotov' },
   { k: '0', id: 'kit', name: 'Defuse kit', price: 400, stat: 'Bombani 5 soniyada zararsizlantiradi', team: 'KT' }
 ];
-const buyDef = it => it.id === 'rifle' ? (player.team === 'T' ? WEAPONS.ak47 : WEAPONS.m4a1) : it.id === 'rifle2' ? (player.team === 'T' ? WEAPONS.galil : WEAPONS.famas) : WEAPONS[it.id];
+const buyDef = it => it.id === 'rifle' ? (player.team === 'T' ? WEAPONS.ak47 : WEAPONS.m4a1) : it.id === 'rifle2' ? (player.team === 'T' ? WEAPONS.galil : WEAPONS.famas)
+  : it.id === 'rifle3' ? (player.team === 'T' ? WEAPONS.sg553 : WEAPONS.aug) : it.id === 'pistol2' ? (player.team === 'T' ? WEAPONS.tec9 : WEAPONS.fiveseven) : WEAPONS[it.id];
 function priceOf(it) {
   if (game.mode !== 'comp') return 0;
   if (it.id === 'kevlarh') return player.armor >= 100 && !player.helmet ? 350 : 1000;
@@ -507,7 +509,7 @@ function owned(it) {
   return !!d && Object.values(p.inv).some(s => s && s.def === d);
 }
 const BUY_CATS = [
-  ['To‘pponchalar', ['deagle']], ['O‘rta qurollar', ['nova', 'mp5', 'p90']], ['Avtomatlar', ['rifle2', 'rifle', 'ssg08', 'awp']],
+  ['To‘pponchalar', ['p250', 'pistol2', 'deagle']], ['O‘rta qurollar', ['nova', 'xm1014', 'mac10', 'mp5', 'ump45', 'p90', 'negev']], ['Avtomatlar', ['rifle2', 'rifle', 'rifle3', 'ssg08', 'awp']],
   ['Jihozlar', ['kevlar', 'kevlarh', 'kit']], ['Granatalar', ['he', 'flash', 'smoke', 'molotov']]
 ];
 function renderBuy() {
@@ -642,7 +644,7 @@ function renderMaps() {
   document.querySelectorAll('.map').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.map === MAP.id)));
 }
 // ---------- Main menu: your agent stands in the selected map holding the chosen weapon ----------
-const SHOW_GUNS = ['ak47', 'm4a1', 'galil', 'famas', 'awp', 'ssg08', 'p90', 'mp5', 'nova', 'deagle', 'usp', 'glock', 'knife'];
+const SHOW_GUNS = ['ak47', 'm4a1', 'aug', 'sg553', 'galil', 'famas', 'awp', 'ssg08', 'p90', 'ump45', 'mac10', 'mp5', 'nova', 'xm1014', 'negev', 'deagle', 'p250', 'tec9', 'fiveseven', 'usp', 'glock', 'knife'];
 const show = { model: null, t: 0, pos: new V3(), look: new V3() };
 const showGunDef = () => { const id = store.get('kq_showgun', ''); return WEAPONS[SHOW_GUNS.includes(id) ? id : settings.team === 'T' ? 'ak47' : 'm4a1']; };
 // the same gun a soldier carries, but with the equipped skin painted on

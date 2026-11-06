@@ -33,9 +33,9 @@ Mahalliy ishga tushirish: `index.html` faylini Chrome yoki Edge’da oching (int
 Bosh menyuda **KEYSLAR VA INVENTAR**. Har bir o‘yin oxirida hisobingizga pul tushadi (g‘alaba, qotillik, yutilgan raundlar uchun), boshlanishiga $1000 sovg‘a.
 
 - **5 ta keys:** Qumtepa, Registon, Ipak yo‘li, Qish va Agentlar keysi. CS’dagidek ruletka va noyoblik darajalari: Harbiy, Cheklangan, Maxfiy, Yashirin, ★ Nodir pichoq.
-- Qurollar: AK-47, M4A1-S, **Galil AR**, **FAMAS**, AWP, **SSG 08**, MP5-SD, **P90**, **Nova** (drobovik), Deagle, USP-S, Glock-18; botlar granata tashlaydi va radio orqali xabar beradi
+- 21 ta qurol: AK-47, M4A1-S, **AUG**, **SG 553**, Galil AR, FAMAS, AWP, SSG 08, **UMP-45**, **MAC-10**, MP5-SD, P90, Nova, **XM1014**, **Negev**, Deagle, **P250**, **Tec-9**, **Five-SeveN**, USP-S, Glock-18 — fosfatlangan po‘lat, donador plastmassa va lakli yog‘och yuzalari bilan; botlar granata tashlaydi va radio orqali xabar beradi
 - **8 xil pichoq** (Karambit, Babochka, Stilet, Kogot, Nayza, Bowie, Chust pichog‘i, oddiy pichoq); ruletkada pichoq faqat yutganingizda chiqadi; **Tez ochish** va **O‘tkazib yuborish**.
-- **78 ta qurol skini** (8 ta keys) (atlas, suzani, koshin naqshlari ham bor) va **12 ta agent** (personaj kiyimi).
+- **97 ta qurol skini** (9 ta keys) (atlas, suzani, koshin naqshlari ham bor) va **12 ta agent** (personaj kiyimi).
 - **Inventar:** skinni jihozlash, sotish; **Do‘kon:** har kuni yangilanadigan takliflar.
 - Jihozlangan skin qo‘lingizdagi qurolda, agent esa qo‘l/yeng va soyangizda ko‘rinadi. Botlar ham har xil agent kiyimida.
 

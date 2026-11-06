@@ -104,6 +104,27 @@ const SKIN_ROWS = {
     ['ak_qoplon', 'ak47', 'Oltin qoplon', 'red', 'leopard', ['#e2b04a', '#2a1a08', '#8a5a12'], 0.6, 0.3],
     ['knife_qoplon', 'knife', 'Pichoq | Qoplon', 'gold', 'leopard', ['#e2b04a', '#2a1a08', '#8a5a12'], 0.7, 0.25],
     ['knife_burgut', 'knife', 'Pichoq | Burgut', 'gold', 'waves', ['#d8c8a8', '#6b4a2a', '#2a1a0a'], 0.6, 0.3]
+  ],
+  usta: [
+    ['p250_damask', 'p250', 'Damask', 'blue', 'marble', ['#9aa0a6', '#4a4e54', '#d0d4d8'], 0.7, 0.3],
+    ['tec9_shahar', 'tec9', 'Shahar', 'blue', 'digital', ['#5a5f66', '#3a3e44', '#8a9098', '#2a2d31']],
+    ['five_moviy', 'fiveseven', 'Moviy po‘lat', 'blue', 'fade', ['#1d2b48', '#3a6ba8', '#9fc8ff'], 0.7, 0.25],
+    ['mac10_neon', 'mac10', 'Neon', 'blue', 'neon', ['#101015', '#ff2fd0', '#38e1ff']],
+    ['ump_harbiy', 'ump45', 'Harbiy', 'blue', 'camo', ['#4b5a39', '#2f3a25', '#6b7350', '#1f261a']],
+    ['xm_qora', 'xm1014', 'Qora oltin', 'purple', 'gold', ['#1a1a1a', '#c9a24a', '#0a0a0a'], 0.8, 0.3],
+    ['negev_qum', 'negev', 'Qum dovuli', 'purple', 'camo', ['#c9a66b', '#9c7a47', '#6e5634', '#e0caa0']],
+    ['aug_akvamarin', 'aug', 'Akvamarin', 'purple', 'fade', ['#0f4c5c', '#3fd0c8', '#e0fff8'], 0.5, 0.3],
+    ['sg_chaqmoq', 'sg553', 'Qizil chaqmoq', 'purple', 'stripes', ['#1a1a1a', '#d8262a', '#ffd23a']],
+    ['tec9_ilon', 'tec9', 'Ilon', 'purple', 'hex', ['#0e1a0e', '#8ad13a', '#05080a']],
+    ['p250_oltin', 'p250', 'Oltin naqsh', 'pink', 'suzani', ['#1a1408', '#c9a24a', '#7a1c1c', '#1f5f4a']],
+    ['aug_ajdar', 'aug', 'Ajdar ko‘zi', 'pink', 'hex', ['#0a1a0a', '#3ad17a', '#ffd23a'], 0.5, 0.3],
+    ['ump_atlas', 'ump45', 'Atlas', 'pink', 'ikat', ['#e62e6b', '#ffcf3a', '#18a0d8', '#3a1250']],
+    ['five_karbon', 'fiveseven', 'Karbon', 'pink', 'carbon', ['#121315', '#3a3f46']],
+    ['sg_kometa', 'sg553', 'Kometa', 'red', 'galaxy', ['#05030f', '#ff6a2a', '#ffd8a8'], 0.4, 0.3],
+    ['negev_jahannam', 'negev', 'Jahannam', 'red', 'flames', ['#100604', '#ff3a0a', '#ffd23a'], 0.4, 0.3],
+    ['mac10_tiger', 'mac10', 'Yo‘lbars', 'red', 'tiger', ['#f39c32', '#120c06']],
+    ['knife_damask', 'knife', 'Pichoq | Damask', 'gold', 'marble', ['#b8bcc2', '#5a5e64', '#e8ecf0'], 1, 0.2],
+    ['knife_usta', 'knife', 'Pichoq | Usta', 'gold', 'gold', ['#fff1a8', '#e2b13c', '#8a5a12'], 1, 0.12]
   ]
 };
 // Agents: whole outfits. top/pants are a colour or a pattern {p, c}
@@ -130,7 +151,8 @@ const CASES = [
   { id: 'agent', name: 'Agentlar keysi', price: 400, color: '#56663f', items: [] },
   { id: 'olov', name: 'Olov keysi', price: 300, color: '#d2482a', items: [] },
   { id: 'kosmos', name: 'Kosmos keysi', price: 350, color: '#4a3aa8', items: [] },
-  { id: 'yovvoyi', name: 'Yovvoyi tabiat keysi', price: 300, color: '#a8782a', items: [] }
+  { id: 'yovvoyi', name: 'Yovvoyi tabiat keysi', price: 300, color: '#a8782a', items: [] },
+  { id: 'usta', name: 'Usta keysi', price: 400, color: '#6b6f78', items: [] }
 ];
 for (const [caseId, rows] of Object.entries(SKIN_ROWS)) for (const [id, weapon, name, rarity, pat, c, metal, rough] of rows) {
   SKINS[id] = { id, kind: 'skin', weapon, name, rarity, pat: { p: pat, c }, metal: metal ?? 0.25, rough: rough ?? 0.5, caseId };
@@ -141,7 +163,7 @@ for (const [id, team, name, rarity, look] of AGENT_ROWS) { AGENTS[id] = { id, ki
 const KNIVES = { knife: 'Pichoq', karambit: 'Karambit', butterfly: 'Babochka', stiletto: 'Stilet', talon: 'Kogot', bayonet: 'Nayza pichoq', bowie: 'Bowie pichog‘i', chust: 'Chust pichog‘i' };
 const KNIFE_OF = { knife_quyosh: 'karambit', knife_yolbars: 'bayonet', knife_sahro: 'bowie', knife_koshin: 'chust', knife_lazurit: 'butterfly', knife_samarqand: 'bayonet',
   knife_atlas: 'chust', knife_oltin: 'bowie', knife_suzani: 'karambit', knife_qirov: 'butterfly', knife_muz: 'karambit', knife_qorboron: 'bowie',
-  knife_alanga: 'stiletto', knife_komir: 'talon', knife_galaktika: 'butterfly', knife_kiber: 'stiletto', knife_qoplon: 'talon', knife_burgut: 'karambit' };
+  knife_alanga: 'stiletto', knife_komir: 'talon', knife_galaktika: 'butterfly', knife_kiber: 'stiletto', knife_qoplon: 'talon', knife_burgut: 'karambit', knife_damask: 'talon', knife_usta: 'butterfly' };
 for (const [id, k] of Object.entries(KNIFE_OF)) SKINS[id].knife = k;
 const skinModel = (model, skinId) => (skinId && SKINS[skinId] && SKINS[skinId].knife) || model;
 const weaponName = d => d.knife ? KNIVES[d.knife] : WEAPONS[d.weapon].name;

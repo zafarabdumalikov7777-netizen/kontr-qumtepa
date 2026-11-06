@@ -14,7 +14,7 @@ function dmLoadout(a) {
     a.nades = { he: 1, flash: 1, smoke: 0, molotov: 0 }; syncNadeSlot();
   } else {
     const r = Math.random();
-    a.primary = wstate(r < 0.1 ? WEAPONS.awp : r < 0.18 ? WEAPONS.ssg08 : r < 0.3 ? pick([WEAPONS.mp5, WEAPONS.p90, WEAPONS.nova]) : r < 0.45 ? (a.team === 'T' ? WEAPONS.galil : WEAPONS.famas) : dmRifle(a.team));
+    a.primary = wstate(r < 0.1 ? WEAPONS.awp : r < 0.18 ? WEAPONS.ssg08 : r < 0.3 ? pick([WEAPONS.mp5, WEAPONS.p90, WEAPONS.nova, WEAPONS.ump45, WEAPONS.xm1014, WEAPONS.negev]) : r < 0.45 ? (a.team === 'T' ? WEAPONS.galil : WEAPONS.famas) : r < 0.58 ? (a.team === 'T' ? WEAPONS.sg553 : WEAPONS.aug) : dmRifle(a.team));
     giveBotNade(a, 0.3);
     a.pistol = wstate(Math.random() < 0.3 ? WEAPONS.deagle : pistolFor(a.team));
   }

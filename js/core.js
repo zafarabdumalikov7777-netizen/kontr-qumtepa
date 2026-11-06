@@ -50,6 +50,15 @@ const WEAPONS = {
   ak47:   { id: 'ak47', name: 'AK-47', slot: 1, dmg: 36, rate: 0.1, mag: 30, res: 90, reload: 2.5, spread: 0.006, moveInacc: 0.09, recoil: 0.022, auto: true, armorPen: 0.77, speed: 0.92, price: 2700, snd: 'ak', kill: 300, model: 'ak', stat: 'Boshga bitta o‘q yetadi' },
   m4a1:   { id: 'm4a1', name: 'M4A1-S', slot: 1, dmg: 33, rate: 0.09, mag: 25, res: 75, reload: 3.1, spread: 0.005, moveInacc: 0.08, recoil: 0.018, auto: true, armorPen: 0.7, speed: 0.94, price: 2900, snd: 'm4', kill: 300, model: 'm4', stat: 'Aniq, tepkisi kam' },
   awp:    { id: 'awp', name: 'AWP', slot: 1, dmg: 115, rate: 1.45, mag: 5, res: 30, reload: 3.6, spread: 0.0008, unscoped: 0.09, moveInacc: 0.25, recoil: 0.09, armorPen: 0.97, speed: 0.84, price: 4750, snd: 'awp', kill: 100, model: 'awp', scope: true, stat: 'Snayper, tanaga ham bir o‘q' },
+  p250:   { id: 'p250', name: 'P250', slot: 2, dmg: 38, rate: 0.15, mag: 13, res: 26, reload: 2.2, spread: 0.008, moveInacc: 0.05, armorPen: 0.64, speed: 1, price: 300, snd: 'pistol', kill: 300, model: 'p250', stat: 'Arzon, kuchli to‘pponcha' },
+  tec9:   { id: 'tec9', name: 'Tec-9', slot: 2, dmg: 33, rate: 0.12, mag: 18, res: 90, reload: 2.5, spread: 0.01, moveInacc: 0.04, armorPen: 0.9, speed: 1, price: 500, snd: 'pistol', kill: 300, model: 'tec9', team: 'T', stat: 'Tez otadi, zirhni teshadi' },
+  fiveseven: { id: 'fiveseven', name: 'Five-SeveN', slot: 2, dmg: 32, rate: 0.15, mag: 20, res: 100, reload: 2.2, spread: 0.008, moveInacc: 0.05, armorPen: 0.91, speed: 1, price: 500, snd: 'usp', kill: 300, model: 'fiveseven', team: 'KT', stat: '20 o‘q, zirhni teshadi' },
+  mac10:  { id: 'mac10', name: 'MAC-10', slot: 1, dmg: 29, rate: 0.075, mag: 30, res: 100, reload: 2.6, spread: 0.016, moveInacc: 0.02, auto: true, armorPen: 0.57, speed: 1, price: 1050, snd: 'smg', kill: 600, model: 'mac10', team: 'T', stat: 'Arzon, juda tez' },
+  ump45:  { id: 'ump45', name: 'UMP-45', slot: 1, dmg: 35, rate: 0.09, mag: 25, res: 100, reload: 3.5, spread: 0.013, moveInacc: 0.03, auto: true, armorPen: 0.65, speed: 0.98, price: 1200, snd: 'ump', kill: 600, model: 'ump', stat: 'Og‘ir o‘q, yaqin masofada kuchli' },
+  aug:    { id: 'aug', name: 'AUG', slot: 1, dmg: 28, rate: 0.09, mag: 30, res: 90, reload: 3.8, spread: 0.004, moveInacc: 0.1, auto: true, armorPen: 0.9, speed: 0.92, price: 3300, snd: 'm4', kill: 300, model: 'aug', team: 'KT', stat: 'Juda aniq, optikali bullpup' },
+  sg553:  { id: 'sg553', name: 'SG 553', slot: 1, dmg: 30, rate: 0.09, mag: 30, res: 90, reload: 2.8, spread: 0.004, moveInacc: 0.1, auto: true, armorPen: 1, speed: 0.92, price: 3000, snd: 'ak', kill: 300, model: 'sg553', team: 'T', stat: 'Optikali, zirhni to‘liq teshadi' },
+  xm1014: { id: 'xm1014', name: 'XM1014', slot: 1, dmg: 20, rate: 0.35, mag: 7, res: 32, reload: 3.5, spread: 0.01, moveInacc: 0.03, auto: true, armorPen: 0.8, speed: 0.95, price: 2000, snd: 'nova', kill: 900, model: 'xm', pellets: 6, cone: 0.05, falloff: 0.03, stat: 'Avtomat drobovik' },
+  negev:  { id: 'negev', name: 'Negev', slot: 1, dmg: 35, rate: 0.075, mag: 150, res: 300, reload: 5.7, spread: 0.02, moveInacc: 0.12, auto: true, armorPen: 0.71, speed: 0.8, price: 1700, snd: 'negev', kill: 300, model: 'negev', stat: 'Pulemyot, 150 o‘q' },
   galil:  { id: 'galil', name: 'Galil AR', slot: 1, dmg: 30, rate: 0.09, mag: 35, res: 90, reload: 3, spread: 0.007, moveInacc: 0.1, auto: true, armorPen: 0.77, speed: 0.93, price: 1800, snd: 'galil', kill: 300, model: 'galil', team: 'T', stat: 'Arzon avtomat, 35 o‘q' },
   famas:  { id: 'famas', name: 'FAMAS', slot: 1, dmg: 30, rate: 0.09, mag: 25, res: 90, reload: 3.3, spread: 0.007, moveInacc: 0.1, auto: true, armorPen: 0.7, speed: 0.93, price: 2050, snd: 'famas', kill: 300, model: 'famas', team: 'KT', stat: 'Arzon avtomat, aniq' },
   ssg08:  { id: 'ssg08', name: 'SSG 08', slot: 1, dmg: 88, rate: 1.25, mag: 10, res: 90, reload: 3.7, spread: 0.001, unscoped: 0.05, moveInacc: 0.1, armorPen: 0.85, speed: 0.98, price: 1700, snd: 'scout', kill: 300, model: 'scout', scope: true, stat: 'Yengil snayper, boshga bir o‘q' },
@@ -73,7 +82,9 @@ const SHOT = {
   galil:  { f: 2100, d: 0.17, th: 105, tv: 0.8 },
   famas:  { f: 2000, d: 0.14, th: 110, tv: 0.7 },
   scout:  { f: 1900, d: 0.4, th: 85, tv: 1 },
-  nova:   { f: 1300, d: 0.3, th: 70, tv: 1.1 }
+  nova:   { f: 1300, d: 0.3, th: 70, tv: 1.1 },
+  ump:    { f: 1700, d: 0.1, th: 115, tv: 0.4 },
+  negev:  { f: 2200, d: 0.15, th: 95, tv: 0.8 }
 };
 
 // ---------- Map state (filled by setGrid from a MAPS entry) ----------
@@ -115,6 +126,7 @@ const vScene = new THREE.Scene();
 const vCam = new THREE.PerspectiveCamera(62, innerWidth / innerHeight, 0.01, 10);
 const vHemi = new THREE.HemisphereLight(0xffffff, 0x6b5a45, 0.9); vScene.add(vHemi);
 const vSun = new THREE.DirectionalLight(0xfff1d8, 1.6); vSun.position.set(1, 2, 1.5); vScene.add(vSun);
+const vRim = new THREE.DirectionalLight(0xbfd4ff, 0.9); vRim.position.set(-1.5, 0.8, -2); vScene.add(vRim); // cool back light outlines the weapon
 
 const hemi = new THREE.HemisphereLight(0xdfe9ff, 0x9a7a50, 0.6); scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xfff0d6, 2);

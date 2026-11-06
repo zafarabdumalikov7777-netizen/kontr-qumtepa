@@ -109,7 +109,7 @@ function iconFor(key) {
 }
 // Render everything up front (on match start) so nothing stalls mid-fight
 function warmIcons() {
-  for (const k of ['usp', 'pistol', 'deagle', 'smg', 'ak', 'm4', 'awp', 'galil', 'famas', 'scout', 'p90', 'nova', 'knife', 'he', 'flash', 'smoke', 'molotov', 'c4', 'kevlar', 'kevlarh', 'kit']) {
+  for (const k of ['usp', 'pistol', 'deagle', 'smg', 'ak', 'm4', 'awp', 'galil', 'famas', 'scout', 'p90', 'nova', 'p250', 'tec9', 'fiveseven', 'mac10', 'ump', 'aug', 'sg553', 'xm', 'negev', 'knife', 'he', 'flash', 'smoke', 'molotov', 'c4', 'kevlar', 'kevlarh', 'kit']) {
     try { iconFor(k); } catch (e) { iconCache[k] = ''; }
   }
 }

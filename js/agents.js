@@ -62,7 +62,7 @@ function aimPoint(origin, dir, range = 220) {
   return h ? h.point.clone() : origin.clone().addScaledVector(dir, range);
 }
 // how much damage survives a crate
-const PEN = { ak47: 0.6, m4a1: 0.55, galil: 0.55, famas: 0.5, awp: 0.8, ssg08: 0.75, deagle: 0.5, mp5: 0.35, p90: 0.3, nova: 0.15, usp: 0.3, glock: 0.25 };
+const PEN = { p250: 0.35, tec9: 0.45, fiveseven: 0.45, mac10: 0.3, ump45: 0.35, aug: 0.65, sg553: 0.7, xm1014: 0.15, negev: 0.55, ak47: 0.6, m4a1: 0.55, galil: 0.55, famas: 0.5, awp: 0.8, ssg08: 0.75, deagle: 0.5, mp5: 0.35, p90: 0.3, nova: 0.15, usp: 0.3, glock: 0.25 };
 function shootRay(origin, dir, shooter, def, range) {
   range = range || 220; raycaster.set(origin, dir); raycaster.far = range;
   _list.length = 0;
@@ -154,10 +154,13 @@ const SPRAY = (() => {
   const semi = k => Array.from({ length: 12 }, (_, i) => [(i % 2 ? 1 : -1) * 0.08 * i, k * Math.min(i, 6)]);
   const p90 = Array.from({ length: 50 }, (_, i) => [0.45 * Math.sin(i / 4) * Math.min(1, i / 10), 2 * (1 - Math.exp(-i / 7))]);
   return { ak47: ak, m4a1: m4, mp5, usp: semi(0.45), glock: semi(0.4), deagle: semi(1.5), awp: [[0, 0], [0, 2.5]],
-    galil: fromDeltas(AK_DELTAS, 0.044), famas: fromDeltas(M4_DELTAS, 0.046), p90, ssg08: [[0, 0], [0, 1.8]], nova: [[0, 0], [0, 2.4]] };
+    galil: fromDeltas(AK_DELTAS, 0.044), famas: fromDeltas(M4_DELTAS, 0.046), p90, ssg08: [[0, 0], [0, 1.8]], nova: [[0, 0], [0, 2.4]],
+    p250: semi(0.5), tec9: semi(0.35), fiveseven: semi(0.4), mac10: mp5.map(([x, y]) => [x * 1.4, y * 1.1]), ump45: mp5.map(([x, y]) => [x * 0.8, y * 1.25]),
+    aug: fromDeltas(M4_DELTAS, 0.04), sg553: fromDeltas(AK_DELTAS, 0.042), xm1014: [[0, 0], [0, 1.6]],
+    negev: Array.from({ length: 150 }, (_, i) => [0.8 * Math.sin(i / 5) * Math.min(1, i / 12), 3.2 * (1 - Math.exp(-i / 6)) - 1.4 * clamp((i - 12) / 20, 0, 1)]) };
 })();
 // How far each pattern is stretched (AK tops out near 9° like CS2) and how hard each shot snaps the view (radians)
-const SPRAY_SCALE = { ak47: 1, m4a1: 1, galil: 1, famas: 1, mp5: 1.5, p90: 1.4, deagle: 1.3, usp: 1.3, glock: 1.3, ssg08: 1, nova: 1, awp: 1 };
+const SPRAY_SCALE = { p250: 1.3, tec9: 1.3, fiveseven: 1.3, mac10: 1.5, ump45: 1.4, aug: 1, sg553: 1, xm1014: 1, negev: 1, ak47: 1, m4a1: 1, galil: 1, famas: 1, mp5: 1.5, p90: 1.4, deagle: 1.3, usp: 1.3, glock: 1.3, ssg08: 1, nova: 1, awp: 1 };
 // view punch (rad), its sideways spread, and how the weapon moves in the hands: kicked back, muzzle rise, roll
 const RECOIL = {
   ak47: { kick: 0.0014, side: 0.3, back: 1, rise: 1, roll: 0.02 }, m4a1: { kick: 0.0011, side: 0.25, back: 0.85, rise: 0.8, roll: 0.015 },
@@ -166,7 +169,12 @@ const RECOIL = {
   glock: { kick: 0.0045, side: 0.25, back: 1.2, rise: 1.5, roll: 0.03 },
   galil: { kick: 0.0013, side: 0.3, back: 0.95, rise: 0.95, roll: 0.02 }, famas: { kick: 0.0011, side: 0.25, back: 0.85, rise: 0.8, roll: 0.015 },
   p90: { kick: 0.0008, side: 0.4, back: 0.55, rise: 0.5, roll: 0.02 }, ssg08: { kick: 0.012, side: 0.1, back: 1.8, rise: 2, roll: 0.02 },
-  nova: { kick: 0.02, side: 0.15, back: 2.4, rise: 2.6, roll: 0.03 }
+  nova: { kick: 0.02, side: 0.15, back: 2.4, rise: 2.6, roll: 0.03 },
+  p250: { kick: 0.006, side: 0.2, back: 1.3, rise: 1.6, roll: 0.03 }, tec9: { kick: 0.005, side: 0.3, back: 1.1, rise: 1.3, roll: 0.03 },
+  fiveseven: { kick: 0.005, side: 0.2, back: 1.2, rise: 1.4, roll: 0.03 }, mac10: { kick: 0.0009, side: 0.5, back: 0.55, rise: 0.5, roll: 0.025 },
+  ump45: { kick: 0.001, side: 0.35, back: 0.7, rise: 0.65, roll: 0.02 }, aug: { kick: 0.001, side: 0.2, back: 0.8, rise: 0.75, roll: 0.012 },
+  sg553: { kick: 0.0012, side: 0.25, back: 0.85, rise: 0.8, roll: 0.015 }, xm1014: { kick: 0.012, side: 0.2, back: 1.8, rise: 1.8, roll: 0.03 },
+  negev: { kick: 0.0012, side: 0.45, back: 0.9, rise: 0.7, roll: 0.03 }
 };
 const RECOIL_DEF = { kick: 0.002, side: 0.3, back: 0.8, rise: 0.8, roll: 0.02 };
 // The crosshair stays put and the bullets climb the spray pattern above it (AK ≈ 7.5° after 30 bullets)
@@ -531,13 +539,15 @@ function radio(b, text) {
 function botBuy(b) {
   const rifle = b.team === 'T' ? WEAPONS.ak47 : WEAPONS.m4a1;
   if (!b.primary) {
-    const cheap = b.team === 'T' ? WEAPONS.galil : WEAPONS.famas, light = pick([WEAPONS.mp5, WEAPONS.p90, WEAPONS.nova]);
+    const cheap = b.team === 'T' ? WEAPONS.galil : WEAPONS.famas, scoped = b.team === 'T' ? WEAPONS.sg553 : WEAPONS.aug;
+    const light = pick([WEAPONS.mp5, WEAPONS.p90, WEAPONS.nova, WEAPONS.ump45, WEAPONS.xm1014, WEAPONS.negev, b.team === 'T' ? WEAPONS.mac10 : WEAPONS.mp5]);
     if (b.money >= 5750 && Math.random() < 0.18) { b.primary = wstate(WEAPONS.awp); b.money -= 4750; }
+    else if (b.money >= scoped.price + 650 && Math.random() < 0.2) { b.primary = wstate(scoped); b.money -= scoped.price; }
     else if (b.money >= rifle.price + 650 && Math.random() < 0.8) { b.primary = wstate(rifle); b.money -= rifle.price; }
     else if (b.money >= 2400 && Math.random() < 0.18) { b.primary = wstate(WEAPONS.ssg08); b.money -= 1700; }
     else if (b.money >= cheap.price + 650) { b.primary = wstate(cheap); b.money -= cheap.price; }
     else if (b.money >= light.price + 650 && Math.random() < 0.6) { b.primary = wstate(light); b.money -= light.price; }
-    else if (b.money >= 700 && b.pistol.def.id !== 'deagle' && Math.random() < 0.35) { b.pistol = wstate(WEAPONS.deagle); b.money -= 700; }
+    else if (b.money >= 700 && b.pistol.def.id !== 'deagle' && Math.random() < 0.35) { const pd = pick([WEAPONS.deagle, WEAPONS.p250, b.team === 'T' ? WEAPONS.tec9 : WEAPONS.fiveseven]); b.pistol = wstate(pd); b.money -= pd.price; }
   }
   if (b.armor < 100 && b.money >= 1000) { b.armor = 100; b.helmet = true; b.money -= 1000; }
   else if (b.armor < 100 && b.money >= 650) { b.armor = 100; b.money -= 650; }
