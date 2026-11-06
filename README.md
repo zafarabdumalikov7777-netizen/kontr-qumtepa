@@ -30,6 +30,10 @@ Mahalliy ishga tushirish: `index.html` faylini Chrome yoki Edge’da oching (int
 
 ## Keyslar, skinlar va agentlar
 
+Bosh menyuda agentingiz qo‘lidagi qurolni turiga qarab ushlab turadi: miltiqni pastga qaratib, snayperni yanada pastroq, pulemyotni bel balandligida, pistoletni ikki qo‘llab, pichoqni yonida. Vaqti-vaqti bilan qurolini ko‘zdan kechiradi. **👁** tugmasi qurolni 3D ko‘rish oynasida ochadi.
+
+**👁 KO‘RISH:** inventar, do‘kon, keys ichidagi buyumlar va yutgan narsangizni 3D ko‘rishda aylantirib, yaqinlashtirib ko‘rasiz (sichqoncha yoki barmoq). O‘yinda **F** CS2 dagidek qurolni bir yonidan, keyin ikkinchi yonidan ko‘rsatadi, pichoq esa aylantiriladi.
+
 Bosh menyuda **KEYSLAR VA INVENTAR**. Har bir o‘yin oxirida hisobingizga pul tushadi (g‘alaba, qotillik, yutilgan raundlar uchun), boshlanishiga $1000 sovg‘a.
 
 - **5 ta keys:** Qumtepa, Registon, Ipak yo‘li, Qish va Agentlar keysi. CS’dagidek ruletka va noyoblik darajalari: Harbiy, Cheklangan, Maxfiy, Yashirin, ★ Nodir pichoq.

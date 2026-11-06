@@ -618,7 +618,7 @@ function worldGun(kind) {
     const inner = new THREE.Group(), info = (GUNS[kind] || GUNS.ak)(inner); finishGun(inner, info);
     GUN_LITE = false;
     inner.rotation.y = Math.PI; inner.traverse(o => { if (o.isMesh) o.castShadow = true; });
-    const outer = new THREE.Group(); outer.add(inner); gunProtos[kind] = outer;
+    const outer = new THREE.Group(); outer.add(inner); outer.userData.info = info; gunProtos[kind] = outer;
   }
   return gunProtos[kind].clone(true);
 }

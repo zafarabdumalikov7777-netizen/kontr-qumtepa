@@ -119,15 +119,14 @@ function makeSoldier(team, variant, ghost) {
     mesh(SGEO.beanie, M(o.headCol || 0x1b1d20), upper, 0, 1.74, -0.01).scale.set(1.05, 0.9, 1.05);
   }
   if (o.morph) dressMorph(o.morph, { mesh, M, mats, upper, head: headMesh });
-  // arms holding the rifle
+  // arms: shoulder → elbow → hand, re-posed by setArmPose for each weapon (rifle, pistol, knife, grenade…)
   const top = M(o.top), gl = M(glove, 0.7);
-  const shR = [0.21, 1.5, -0.01], elR = [0.25, 1.27, 0.15], haR = [0.08, 1.33, 0.33];
-  const shL = [-0.21, 1.5, 0], elL = [-0.21, 1.3, 0.3], haL = [-0.01, 1.37, 0.56];
-  limb(SGEO.limbU, top, shR, elR, 'body'); limb(SGEO.limbL, top, elR, haR, 'body');
-  limb(SGEO.limbU, top, shL, elL, 'body'); limb(SGEO.limbL, top, elL, haL, 'body');
-  for (const p of [shR, shL]) mesh(SGEO.joint, top, upper, ...p).scale.setScalar(0.072);
-  for (const p of [elR, elL]) mesh(SGEO.joint, top, upper, ...p).scale.setScalar(0.052);
-  mesh(SGEO.hand, gl, upper, ...haR); mesh(SGEO.hand, gl, upper, ...haL);
+  const arm = () => {
+    const a = { u: mesh(SGEO.limbU, top, upper, 0, 0, 0, 'body'), l: mesh(SGEO.limbL, top, upper, 0, 0, 0, 'body'),
+      js: mesh(SGEO.joint, top, upper, 0, 0, 0), je: mesh(SGEO.joint, top, upper, 0, 0, 0), h: mesh(SGEO.hand, gl, upper, 0, 0, 0) };
+    a.js.scale.setScalar(0.072); a.je.scale.setScalar(0.052); return a;
+  };
+  const arms = { R: arm(), L: arm() };
   let flash = null, marker = null;
   if (!ghost) {
     flash = new THREE.Sprite(flashMat); flash.scale.set(0.6, 0.6, 0.6); flash.visible = false;
@@ -135,21 +134,84 @@ function makeSoldier(team, variant, ghost) {
     marker.scale.set(0.35, 0.35, 0.35); marker.position.set(0, 2.2, 0); marker.renderOrder = 10; g.add(marker);
   }
   scene.add(g);
-  const m = { group: g, upper, legs, hit, mats, muzzle: null, flash, marker, flashT: 0, fall: 1, gun: null, gunKind: '', ghostModel: !!ghost };
+  const m = { group: g, upper, legs, hit, mats, muzzle: null, flash, marker, flashT: 0, fall: 1, gun: null, gunKind: '', ghostModel: !!ghost, arms };
   setGhost(m, !!ghost);
   setSoldierGun(m, team === 'T' ? 'ak' : 'm4');
   return m;
 }
-// The gun the soldier carries matches its current weapon; the grip sits in the right hand.
+// The gun the soldier carries matches its current weapon; the arms take the hold that fits it.
 const ghostGunMat = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false });
 function setSoldierGun(m, kind) {
   if (m.gunKind === kind) return;
   if (m.gun) m.upper.remove(m.gun);
-  const g = worldGun(kind); g.position.set(0.075, 1.395, 0.33);
+  const g = worldGun(kind);
   if (m.ghostModel) g.traverse(o => { if (o.isMesh) { o.userData.mat = o.material; if (m.ghost) o.material = ghostGunMat; } });
   m.upper.add(g); m.gun = g; m.gunKind = kind;
   m.muzzle = g.getObjectByName('muzzle');
   if (m.flash) m.muzzle.add(m.flash);
+  const info = g.userData.info || {};
+  setArmPose(m, info.knife ? 'knife' : info.he ? 'he' : info.pistol ? 'pistol' : 'rifle', info);
+}
+// ---------- Arm poses ----------
+// A pose places the gun (origin = top of the grip) and the left hand; the right hand takes the grip and
+// both elbows are solved (two-bone IK), so any weapon can be held any way.
+const ARM_SH = { R: new V3(0.21, 1.5, -0.01), L: new V3(-0.21, 1.5, 0) }, ARM_U = 0.33, ARM_L = 0.32;
+const ARM_POSES = {
+  // in a fight
+  rifle: { g: [0.075, 1.395, 0.33], r: [0, 0, 0], L: 'fore' },
+  pistol: { g: [0.035, 1.45, 0.47], r: [0, 0, 0], L: 'cup' },
+  knife: { g: [0.17, 1.24, 0.4], r: [-0.25, 0, 0], L: [-0.13, 1.3, 0.3] },
+  he: { g: [0.17, 1.44, 0.28], r: [0, 0, 0], L: [-0.13, 1.3, 0.3] },
+  // main menu: the relaxed holds agents stand with in the CS2 lobby
+  lowRifle: { g: [0.11, 1.28, 0.2], r: [0.5, -0.32, 0.14], L: 'fore' },
+  lowSniper: { g: [0.11, 1.31, 0.16], r: [0.74, -0.26, 0.1], L: 'fore' },
+  lowSmg: { g: [0.1, 1.31, 0.25], r: [0.38, -0.38, 0.16], L: 'fore' },
+  hip: { g: [0.14, 1.15, 0.2], r: [0.12, -0.2, 0.04], L: 'fore' },
+  lowPistol: { g: [0.05, 1.2, 0.33], r: [0.9, -0.14, 0], L: 'cup' },
+  sideKnife: { g: [0.27, 1.02, 0.2], r: [0.6, 0.1, -0.08], L: [-0.27, 1.0, 0.06] },
+  chestNade: { g: [0.07, 1.33, 0.3], r: [0, 0, 0], L: 'cup' }
+};
+const _ikD = new V3(), _ikP = new V3(), _ikE = new V3(), _ikH = new V3(), _hR = new V3(), _hL = new V3(), _eu = new THREE.Euler();
+function placeLimb(m, a, b) {
+  m.position.addVectors(a, b).multiplyScalar(0.5);
+  _dv.subVectors(b, a); m.scale.y = _dv.length(); m.quaternion.setFromUnitVectors(_ya, _dv.normalize());
+}
+function solveArm(A, S, H, side) {
+  const d = _ikD.subVectors(H, S), len = clamp(d.length(), 0.12, ARM_U + ARM_L - 0.004); d.normalize();
+  const hand = _ikH.copy(S).addScaledVector(d, len);
+  const a = (ARM_U * ARM_U - ARM_L * ARM_L + len * len) / (2 * len), h = Math.sqrt(Math.max(0, ARM_U * ARM_U - a * a));
+  const p = _ikP.set(0.75 * side, -0.65, -0.15); p.addScaledVector(d, -p.dot(d)).normalize(); // elbows out and down
+  const e = _ikE.copy(S).addScaledVector(d, a).addScaledVector(p, h);
+  placeLimb(A.u, S, e); placeLimb(A.l, e, hand);
+  A.js.position.copy(S); A.je.position.copy(e); A.h.position.copy(hand);
+}
+// pose: a name from ARM_POSES or a pose object; info: the gun's info (fore grip, pistol, knife…)
+function setArmPose(m, pose, info) {
+  const P = typeof pose === 'string' ? ARM_POSES[pose] || ARM_POSES.rifle : pose; info = info || {};
+  if (typeof pose === 'string') m.armPose = pose;
+  const gp = m.gun ? m.gun.position : _ikH, gr = m.gun ? m.gun.rotation : _eu;
+  gp.fromArray(P.g); gr.set(P.r[0], P.r[1], P.r[2]);
+  const pt = (x, y, z, out) => out.set(x, y, z).applyEuler(gr).add(gp);
+  if (info.knife) pt(0, -0.008, -0.06, _hR); else if (info.he) pt(-0.005, -0.075, 0.035, _hR); else pt(0.005, -0.065, 0, _hR);
+  if (Array.isArray(P.L)) _hL.fromArray(P.L);
+  else if (P.L === 'fore' && info.fore) pt(0.004, (info.foreY || 0) - 0.045, Math.min(info.fore, 0.27), _hL);
+  else _hL.set(_hR.x - 0.048, _hR.y - 0.012, _hR.z - 0.005);
+  solveArm(m.arms.R, ARM_SH.R, _hR, 1); solveArm(m.arms.L, ARM_SH.L, _hL, -1);
+}
+// the lobby hold for a weapon
+function menuPose(def, info) {
+  if (def.melee) return 'sideKnife';
+  if (info.he || def.slot === 4) return 'chestNade';
+  if (info.pistol) return 'lowPistol';
+  if (def.id === 'negev') return 'hip';
+  if (def.scope) return 'lowSniper';
+  if (['mp5', 'p90', 'mac10', 'ump45'].includes(def.id)) return 'lowSmg';
+  return 'lowRifle';
+}
+// blend two poses (for the lobby's smooth weapon change and idle breathing)
+function mixPose(A, B, t) {
+  const l = (a, b) => a.map((v, i) => v + (b[i] - v) * t);
+  return { g: l(A.g, B.g), r: l(A.r, B.r), L: Array.isArray(A.L) && Array.isArray(B.L) ? l(A.L, B.L) : t < 0.5 ? A.L : B.L };
 }
 // A ghost body is invisible to the camera but still casts a shadow (the shadow pass ignores colorWrite).
 function setGhost(m, on) {

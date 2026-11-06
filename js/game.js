@@ -363,12 +363,24 @@ function updateVM(dt) {
   // F: inspect — turn the weapon to show its side, cancelled by any action
   if (p.cool > 0 || p.reloadT > 0 || p.switchT > 0) vm.inspect = 0;
   let ix = 0;
-  if (vm.inspect > 0) { vm.inspect -= dt; const s = Math.sin(clamp(1 - vm.inspect / 2.4, 0, 1) * Math.PI); ry += s * 1.15; rz += s * 0.4; rx += s * 0.15; ix = -s * 0.06; y += s * 0.04; }
+  if (vm.inspect > 0) {
+    vm.inspect -= dt;
+    const u = clamp(1 - vm.inspect / INSPECT_T, 0, 1), k = inspectKey(u);
+    ry += k[0]; rz += k[1]; rx += k[2]; ix = k[3]; y += k[4];
+    if (vm.kind === 'knife') { const t = clamp((u - 0.45) / 0.17, 0, 1); rz += t * t * (3 - 2 * t) * Math.PI * 2; }
+  }
   const left = settings.hand === 'left';
   vm.root.scale.x = left ? -1 : 1;
   vm.root.position.set(left ? -(x + ix) : x + ix, y, z); vm.root.rotation.set(rx, left ? -ry : ry, left ? -rz : rz);
   vm.root.visible = p.alive && !p.scope && !thirdPerson();
   if (vm.flashT > 0) { vm.flashT -= dt; if (vm.flashT <= 0) vmFlash.visible = false; }
+}
+// inspect keyframes: [u, yaw, roll, pitch, x, y]
+const INSPECT_T = 4.2, INSPECT_KEYS = [[0, 0, 0, 0, 0, 0], [0.18, 1.15, 0.45, 0.15, -0.06, 0.04], [0.45, 1.25, 0.5, 0.1, -0.07, 0.045], [0.62, 0.5, -1, -0.15, -0.04, 0.05], [0.82, 0.45, -1.05, -0.2, -0.04, 0.05], [1, 0, 0, 0, 0, 0]];
+function inspectKey(u) {
+  let i = 1; while (i < INSPECT_KEYS.length - 1 && INSPECT_KEYS[i][0] < u) i++;
+  const A = INSPECT_KEYS[i - 1], B = INSPECT_KEYS[i], t = clamp((u - A[0]) / (B[0] - A[0]), 0, 1), s = t * t * (3 - 2 * t);
+  return [1, 2, 3, 4, 5].map(j => A[j] + (B[j] - A[j]) * s);
 }
 let spotT = 0;
 function spotTick(dt) {
@@ -646,7 +658,7 @@ function renderMaps() {
 }
 // ---------- Main menu: your agent stands in the selected map holding the chosen weapon ----------
 const SHOW_GUNS = ['ak47', 'm4a1', 'aug', 'sg553', 'galil', 'famas', 'awp', 'ssg08', 'p90', 'ump45', 'mac10', 'mp5', 'nova', 'xm1014', 'negev', 'deagle', 'p250', 'tec9', 'fiveseven', 'usp', 'glock', 'knife'];
-const show = { model: null, t: 0, pos: new V3(), look: new V3() };
+const show = { model: null, t: 0, pos: new V3(), look: new V3(), from: null, to: null, cur: null, blend: 1 };
 const showGunDef = () => { const id = store.get('kq_showgun', ''); return WEAPONS[SHOW_GUNS.includes(id) ? id : settings.team === 'T' ? 'ak47' : 'm4a1']; };
 // the same gun a soldier carries, but with the equipped skin painted on
 function showcaseGun(m, def) {
@@ -654,13 +666,18 @@ function showcaseGun(m, def) {
   if (m.gun) { m.upper.remove(m.gun); m.gun.traverse(o => { if (o.geometry) o.geometry.dispose(); }); }
   const { g, info } = gunModel(kind, skin); finishGun(g, info); g.rotation.y = Math.PI;
   g.traverse(o => { if (o.isMesh) o.castShadow = true; });
-  const outer = new THREE.Group(); outer.add(g); outer.position.set(0.075, 1.395, 0.33);
-  m.upper.add(outer); m.gun = outer; m.gunKind = kind;
+  const outer = new THREE.Group(); outer.add(g);
+  m.upper.add(outer); m.gun = outer; m.gunKind = kind; m.gunInfo = info;
+  // the agent changes hold to suit the weapon (rifle low-ready, pistol in both hands, knife at the side…)
+  const to = ARM_POSES[menuPose(def, info)];
+  show.from = show.cur || to; show.to = to; show.blend = show.cur ? 0 : 1;
+  setArmPose(m, show.blend < 1 ? show.from : to, info);
   document.getElementById('showName').textContent = skin ? itemTitle(SKINS[skin]) : def.name;
 }
 function buildShowcase() {
   if (game.state !== 'menu') return;
   if (show.model) { disposeSoldier(show.model); show.model = null; }
+  show.cur = null;
   for (const b of bots) b.model.group.visible = false;
   if (playerBody) playerBody.group.visible = false;
   // stand at the team's spawn and look down the longest open line, so the map fills the background
@@ -691,6 +708,14 @@ function animateShowcase(dt) {
   show.t += dt;
   m.upper.position.y = Math.sin(show.t * 1.7) * 0.006;            // breathing
   m.group.rotation.y = m.baseYaw + Math.sin(show.t * 0.35) * 0.06; // a slow shift of weight
+  if (show.to) {
+    if (show.blend < 1) show.blend = Math.min(1, show.blend + dt * 2.4);
+    const b = show.blend, k = b * b * (3 - 2 * b), P = b < 1 ? mixPose(show.from, show.to, k) : show.to;
+    const dip = Math.sin(b * Math.PI) * 0.1, br = Math.sin(show.t * 1.7);   // lower one weapon, raise the next; breathe
+    const c = show.t % 12, ins = c > 8.6 ? Math.sin((c - 8.6) / 3.4 * Math.PI) : 0; // now and then the agent looks the weapon over
+    show.cur = { g: [P.g[0] - ins * 0.04, P.g[1] - dip + br * 0.004 + ins * 0.1, P.g[2] + ins * 0.03], r: [P.r[0] + dip * 1.4 + br * 0.012 - ins * 0.35, P.r[1] - ins * 0.25, P.r[2] + ins * 0.75], L: P.L };
+    setArmPose(m, show.cur, m.gunInfo);
+  }
   if (camera.fov !== 50) { camera.fov = 50; camera.updateProjectionMatrix(); }
 }
 function clearShowcase() { if (show.model) { disposeSoldier(show.model); show.model = null; } }
@@ -727,6 +752,7 @@ function initMainMenu(sp) {
   pin.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') redeem(); });
   document.getElementById('pmClose').addEventListener('click', () => { promo.hidden = true; });
   document.getElementById('pfChip').addEventListener('click', () => { card.hidden = !card.hidden; });
+  document.getElementById('showEye').addEventListener('click', () => { const d = showGunDef(), sk = equippedSkin(d.id); pop.hidden = true; Inspect.open(sk ? { skin: sk } : { weapon: d.id }); });
   sbtn.addEventListener('click', () => { pop.hidden = !pop.hidden; sbtn.setAttribute('aria-expanded', String(!pop.hidden)); if (!pop.hidden) renderShowPop(); });
   pop.addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
@@ -872,7 +898,7 @@ addEventListener('keydown', e => {
     case 'Digit5': switchTo(5); break;
     case 'KeyV': toggleView(); break;
     case 'KeyZ': callBoost(); break;
-    case 'KeyF': if (player.alive && player.cool <= 0 && player.reloadT <= 0) vm.inspect = 2.4; break;
+    case 'KeyF': if (player.alive && player.cool <= 0 && player.reloadT <= 0) vm.inspect = INSPECT_T; break;
     case 'KeyQ': switchTo(player.prevSlot); break;
     case 'KeyR': startReload(); break;
     case 'KeyB': openBuy(); break;
@@ -962,6 +988,7 @@ function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
   fpsMeter.tick(dt);
+  if (Inspect.on) { Inspect.frame(dt); return; }
   if (game.state === 'menu') {
     if (!show.model) buildShowcase();
     animateShowcase(dt);

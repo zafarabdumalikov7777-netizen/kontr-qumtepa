@@ -25,7 +25,7 @@ function itemCard(id, opts = {}) {
   const top = d.kind === 'agent' ? d.name : weaponName(d), sub = d.kind === 'agent' ? (d.team === 'KT' ? 'KT agenti' : 'T agenti') : d.name.replace(/^Pichoq \| /, '');
   return `<div class="icard ${opts.cls || ''}" style="--rc:${r.color}" ${opts.attr || ''}>` +
     (hide ? goldCard + '<span class="iname">★ Nodir pichoq</span><span class="isub">Juda kam uchraydi</span>' :
-      `<img src="${itemIcon(id)}" alt=""><span class="iname">${top}</span><span class="isub">${sub}</span>`) + (opts.extra || '') + '</div>';
+      `<img src="${itemIcon(id)}" alt=""><span class="iname">${top}</span><span class="isub">${sub}</span>`) + (opts.eye ? `<button class="eyeb" type="button" data-eye="${id}" aria-label="Ko‘rish: ${itemTitle(d)}" title="3D ko‘rish">👁</button>` : '') + (opts.extra || '') + '</div>';
 }
 
 const ShopUI = (() => {
@@ -59,7 +59,7 @@ const ShopUI = (() => {
       <div class="row"><button class="primary" id="caseOpen" type="button" ${INV.wallet < c.price ? 'disabled' : ''}>OCHISH · $${c.price}</button><button class="ghost" id="caseBack" type="button">Orqaga</button></div>
       ${INV.wallet < c.price ? `<p class="shop-warn">Pul yetmaydi: yana $${c.price - INV.wallet} kerak. O‘yin o‘ynab pul yig‘ing.</p>` : ''}</div></div>
       <div class="odds">${RARITY_ORDER.filter(r => c.items.some(i => itemDef(i).rarity === r)).map(r => `<span style="--rc:${RARITY[r].color}">${RARITY[r].name}</span>`).join('')}</div>
-      <div class="item-grid">${items.map(i => itemCard(i, { hideGold: true })).join('')}</div>`;
+      <div class="item-grid">${items.map(i => itemCard(i, { hideGold: true, eye: itemDef(i).rarity !== 'gold' })).join('')}</div>`;
     document.getElementById('caseOpen').onclick = () => openCase(c);
     document.getElementById('caseBack').onclick = () => render();
   }
@@ -116,7 +116,7 @@ const ShopUI = (() => {
     res.innerHTML = `<div class="won" style="--rc:${r.color}"><img src="${itemIcon(id)}" alt=""><div>
       <div class="eyebrow" style="color:${r.color}">${r.name}${d.kind === 'skin' ? ' · ' + wearName(it.f) : ''}</div>
       <h3>${itemTitle(d)}</h3><p>Qiymati: $${itemValue(it)}</p>
-      <div class="row"><button class="primary" id="wonEquip" type="button">JIHOZLASH</button><button class="ghost" id="wonSell" type="button">Sotish · $${itemValue(it)}</button></div>
+      <div class="row"><button class="primary" id="wonEquip" type="button">JIHOZLASH</button><button class="ghost" id="wonEye" type="button">👁 KO‘RISH</button><button class="ghost" id="wonSell" type="button">Sotish · $${itemValue(it)}</button></div>
       <div class="row"><button class="ghost" id="wonAgain" type="button" ${INV.wallet < c.price ? 'disabled' : ''}>Yana ochish · $${c.price}</button><button class="ghost" id="wonClose" type="button">Yopish</button></div></div></div>`;
     res.hidden = false;
     const close = () => { roll.hidden = true; showCase(c.id); };
@@ -124,6 +124,7 @@ const ShopUI = (() => {
     document.getElementById('wonSell').onclick = () => { sellItem(it.uid); money(); close(); };
     document.getElementById('wonAgain').onclick = () => { roll.hidden = true; openCase(c); };
     document.getElementById('wonClose').onclick = close;
+    document.getElementById('wonEye').onclick = () => Inspect.open(d.kind === 'agent' ? { agent: id } : { skin: id, f: it.f });
   }
   // ---- inventory ----
   function renderInv() {
@@ -142,10 +143,11 @@ const ShopUI = (() => {
     body.innerHTML = `<div class="won" style="--rc:${r.color}"><img src="${itemIcon(it.id)}" alt=""><div>
       <div class="eyebrow" style="color:${r.color}">${r.name}${d.kind === 'skin' ? ' · ' + wearName(it.f) + ' · ' + it.f.toFixed(3) : ''}</div>
       <h3>${itemTitle(d)}</h3><p>${d.kind === 'agent' ? `Jihozlansa, ${d.team} jamoasida o‘ynaganingizda shu kiyimda bo‘lasiz (qo‘llaringiz va soyangiz).` : `Jihozlansa, ${d.knife ? 'pichog‘ingiz ' + KNIVES[d.knife] + 'ga aylanadi' : WEAPONS[d.weapon].name + ' shu skin bilan ko‘rinadi'}.`}</p>
-      <div class="row"><button class="primary" id="dEquip" type="button">${on ? 'YECHISH' : 'JIHOZLASH'}</button><button class="ghost" id="dSell" type="button">Sotish · $${itemValue(it)}</button><button class="ghost" id="dBack" type="button">Orqaga</button></div></div></div>`;
+      <div class="row"><button class="primary" id="dEquip" type="button">${on ? 'YECHISH' : 'JIHOZLASH'}</button><button class="ghost" id="dEye" type="button">👁 KO‘RISH</button><button class="ghost" id="dSell" type="button">Sotish · $${itemValue(it)}</button><button class="ghost" id="dBack" type="button">Orqaga</button></div></div></div>`;
     document.getElementById('dEquip').onclick = () => { toggleEquip(uid); renderInv(); };
     document.getElementById('dSell').onclick = () => { sellItem(uid); renderInv(); money(); };
     document.getElementById('dBack').onclick = renderInv;
+    document.getElementById('dEye').onclick = () => Inspect.open(d.kind === 'agent' ? { agent: it.id } : { skin: it.id, f: it.f });
   }
   // ---- market: a daily set of skins and agents to buy outright ----
   function offers() {
@@ -183,7 +185,7 @@ const ShopUI = (() => {
       name: (a, b) => itemTitle(itemDef(a)).localeCompare(itemTitle(itemDef(b))) }[mk.sort];
     return list.sort((a, b) => by(a, b) || itemTitle(itemDef(a)).localeCompare(itemTitle(itemDef(b))));
   }
-  const buyCard = (id, price) => itemCard(id, { extra: `<button class="buyb" data-mk="${id}" data-p="${price}" type="button" ${INV.wallet < price ? 'disabled' : ''}>${price < priceFor(id) ? `<s>$${priceFor(id)}</s> ` : ''}$${price}</button>` });
+  const buyCard = (id, price) => itemCard(id, { eye: true, extra: `<button class="buyb" data-mk="${id}" data-p="${price}" type="button" ${INV.wallet < price ? 'disabled' : ''}>${price < priceFor(id) ? `<s>$${priceFor(id)}</s> ` : ''}$${price}</button>` });
   function renderMarketResults() {
     const res = document.getElementById('mkRes'), filtered = mk.q.trim() || mk.w !== 'all' || mk.look !== 'all' || mk.rar !== 'all', list = marketList();
     res.innerHTML = (filtered ? '' : `<h4 class="mk-h">Bugungi chegirma −25% <small>har kuni yangilanadi</small></h4><div class="item-grid">${offers().map(id => buyCard(id, salePrice(id))).join('')}</div>`) +
@@ -220,7 +222,11 @@ const ShopUI = (() => {
     };
     renderMarketResults();
   }
-  body.addEventListener('click', e => { const c = e.target.closest('[data-case]'); if (c) showCase(c.dataset.case); });
+  body.addEventListener('click', e => {
+    const eye = e.target.closest('[data-eye]');
+    if (eye) { e.stopPropagation(); const id = eye.dataset.eye; Inspect.open(AGENTS[id] ? { agent: id } : { skin: id }); return; }
+    const c = e.target.closest('[data-case]'); if (c) showCase(c.dataset.case);
+  }, true);
   document.querySelectorAll('#shopTabs button').forEach(b => b.onclick = () => setTab(b.dataset.t));
   document.getElementById('shopClose').onclick = () => { el.hidden = true; vm.cache = {}; if (onClose) onClose(); };
   return {
