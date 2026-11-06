@@ -22,7 +22,7 @@ Mahalliy ishga tushirish: `index.html` faylini Chrome yoki Edge’da oching (int
 - Ittifoqchi va raqib botlar soni (har jamoada 10 tagacha), 3 xil qiyinlik; botlar bomba qo‘yadi va zararsizlantiradi
 - Granatalar: HE, flesh (ko‘r qiladi), tutun (ko‘rinishni to‘sadi); defuse kit
 - Qurol olish/almashtirish (E), tashlash (G), qurolni ko‘zdan kechirish (F)
-- Otish: o‘q aynan pritsel turgan joyga ketadi, keyin kamera qurolning spray naqshi (CS jadvali asosida) bo‘ylab silliq ko‘tariladi; har qurolning o‘z tepkisi; otish tezligi FPS’dan qat’i nazar aniq
+- Otish CS2 kabi: pritsel umuman qimirlamaydi, o‘qlar qurolning spray naqshi bo‘yicha tepaga ketadi (sichqonchani pastga tortib boshqarasiz); otish tezligi FPS’dan qat’i nazar aniq
 - CS2 uslubidagi spray naqshlari, bunnyhop va air strafe, km/soat va FPS ko‘rsatkichlari
 - Seriya bannerlari (IKKITA!, UCHTA!, ACE!), hisob jadvalida BOSH% va ADR
 - Sozlanadigan pritsel (rang, uzunlik, qalinlik, oraliq, kontur, nuqta, T-shakl, ulashish kodi)
@@ -33,8 +33,9 @@ Mahalliy ishga tushirish: `index.html` faylini Chrome yoki Edge’da oching (int
 Bosh menyuda **KEYSLAR VA INVENTAR**. Har bir o‘yin oxirida hisobingizga pul tushadi (g‘alaba, qotillik, yutilgan raundlar uchun), boshlanishiga $1000 sovg‘a.
 
 - **5 ta keys:** Qumtepa, Registon, Ipak yo‘li, Qish va Agentlar keysi. CS’dagidek ruletka va noyoblik darajalari: Harbiy, Cheklangan, Maxfiy, Yashirin, ★ Nodir pichoq.
-- **6 xil pichoq** (Karambit, Kapalak, Nayza, Bowie, Chust pichog‘i va oddiy pichoq), keys ochishda **Tez ochish** va **O‘tkazib yuborish**.
-- **40 ta qurol skini** (atlas, suzani, koshin naqshlari ham bor) va **12 ta agent** (personaj kiyimi).
+- Qurollar: AK-47, M4A1-S, **Galil AR**, **FAMAS**, AWP, **SSG 08**, MP5-SD, **P90**, **Nova** (drobovik), Deagle, USP-S, Glock-18; botlar granata tashlaydi va radio orqali xabar beradi
+- **8 xil pichoq** (Karambit, Babochka, Stilet, Kogot, Nayza, Bowie, Chust pichog‘i, oddiy pichoq); ruletkada pichoq faqat yutganingizda chiqadi; **Tez ochish** va **O‘tkazib yuborish**.
+- **78 ta qurol skini** (8 ta keys) (atlas, suzani, koshin naqshlari ham bor) va **12 ta agent** (personaj kiyimi).
 - **Inventar:** skinni jihozlash, sotish; **Do‘kon:** har kuni yangilanadigan takliflar.
 - Jihozlangan skin qo‘lingizdagi qurolda, agent esa qo‘l/yeng va soyangizda ko‘rinadi. Botlar ham har xil agent kiyimida.
 

@@ -88,6 +88,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--sand);outline-o
 #speedo b{font-size:28px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;min-width:2.2ch;text-align:right}
 #speedo small{font-size:11px;letter-spacing:.12em;color:var(--muted)}
 #speedo.fast b{color:var(--sand)}
+#radio{position:absolute;left:calc(16px + var(--il));top:calc(250px + var(--it));display:flex;flex-direction:column;gap:4px;max-width:340px;pointer-events:none}
+#radio .rd{background:rgba(10,12,15,.72);border-left:3px solid var(--sand);padding:4px 10px;font-size:13px;animation:fade 4.5s ease-in forwards}
+#radio .rd b{color:var(--kt)}
 #dmgRep{position:absolute;left:16px;bottom:calc(96px + var(--ib));background:var(--panel);padding:10px 12px;min-width:230px;font-size:13px;display:flex;flex-direction:column;gap:3px}
 #dmgRep[hidden]{display:none}
 #dmgRep h5{margin:0 0 4px;font-family:var(--f-display);letter-spacing:.1em;font-size:12px;color:var(--sand)}
@@ -455,6 +458,7 @@ tr.me td{color:var(--sand);font-weight:600}
   </div>
   <div id="ggLvl" hidden></div>
   <div id="dmgRep" hidden></div>
+  <div id="radio" aria-live="polite"></div>
   <div id="feed"></div>
   <div id="dmg"></div>
   <div id="dirs"></div>
@@ -581,7 +585,7 @@ tr.me td{color:var(--sand);font-weight:600}
 <section id="promoPanel" class="overlay dim" hidden>
   <div class="card">
     <div><div class="eyebrow">Promokod</div><h2>Kodni kiriting</h2></div>
-    <div class="code-row"><input id="pmIn" type="text" placeholder="Masalan: VIP" autocomplete="off" spellcheck="false" aria-label="Promokod"><button id="pmBtn" class="primary" type="button">FAOLLASHTIRISH</button></div>
+    <div class="code-row"><input id="pmIn" type="text" placeholder="Promokod" autocomplete="off" spellcheck="false" aria-label="Promokod"><button id="pmBtn" class="primary" type="button">FAOLLASHTIRISH</button></div>
     <p class="note" id="pmMsg" role="status"></p>
     <button id="pmClose" class="ghost" type="button">Yopish</button>
   </div>

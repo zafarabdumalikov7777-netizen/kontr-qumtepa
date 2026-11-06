@@ -50,6 +50,11 @@ const WEAPONS = {
   ak47:   { id: 'ak47', name: 'AK-47', slot: 1, dmg: 36, rate: 0.1, mag: 30, res: 90, reload: 2.5, spread: 0.006, moveInacc: 0.09, recoil: 0.022, auto: true, armorPen: 0.77, speed: 0.92, price: 2700, snd: 'ak', kill: 300, model: 'ak', stat: 'Boshga bitta o‘q yetadi' },
   m4a1:   { id: 'm4a1', name: 'M4A1-S', slot: 1, dmg: 33, rate: 0.09, mag: 25, res: 75, reload: 3.1, spread: 0.005, moveInacc: 0.08, recoil: 0.018, auto: true, armorPen: 0.7, speed: 0.94, price: 2900, snd: 'm4', kill: 300, model: 'm4', stat: 'Aniq, tepkisi kam' },
   awp:    { id: 'awp', name: 'AWP', slot: 1, dmg: 115, rate: 1.45, mag: 5, res: 30, reload: 3.6, spread: 0.0008, unscoped: 0.09, moveInacc: 0.25, recoil: 0.09, armorPen: 0.97, speed: 0.84, price: 4750, snd: 'awp', kill: 100, model: 'awp', scope: true, stat: 'Snayper, tanaga ham bir o‘q' },
+  galil:  { id: 'galil', name: 'Galil AR', slot: 1, dmg: 30, rate: 0.09, mag: 35, res: 90, reload: 3, spread: 0.007, moveInacc: 0.1, auto: true, armorPen: 0.77, speed: 0.93, price: 1800, snd: 'galil', kill: 300, model: 'galil', team: 'T', stat: 'Arzon avtomat, 35 o‘q' },
+  famas:  { id: 'famas', name: 'FAMAS', slot: 1, dmg: 30, rate: 0.09, mag: 25, res: 90, reload: 3.3, spread: 0.007, moveInacc: 0.1, auto: true, armorPen: 0.7, speed: 0.93, price: 2050, snd: 'famas', kill: 300, model: 'famas', team: 'KT', stat: 'Arzon avtomat, aniq' },
+  ssg08:  { id: 'ssg08', name: 'SSG 08', slot: 1, dmg: 88, rate: 1.25, mag: 10, res: 90, reload: 3.7, spread: 0.001, unscoped: 0.05, moveInacc: 0.1, armorPen: 0.85, speed: 0.98, price: 1700, snd: 'scout', kill: 300, model: 'scout', scope: true, stat: 'Yengil snayper, boshga bir o‘q' },
+  p90:    { id: 'p90', name: 'P90', slot: 1, dmg: 26, rate: 0.07, mag: 50, res: 100, reload: 3.3, spread: 0.013, moveInacc: 0.03, auto: true, armorPen: 0.69, speed: 0.98, price: 2350, snd: 'smg', kill: 300, model: 'p90', stat: '50 o‘q, juda tez otadi' },
+  nova:   { id: 'nova', name: 'Nova', slot: 1, dmg: 26, rate: 0.88, mag: 8, res: 32, reload: 3.6, spread: 0.01, moveInacc: 0.03, armorPen: 0.5, speed: 0.95, price: 1050, snd: 'nova', kill: 900, model: 'nova', pellets: 9, cone: 0.06, falloff: 0.035, stat: 'Drobovik: yaqindan bir o‘q' },
   he:     { id: 'he', name: 'HE granata', slot: 4, dmg: 98, armorPen: 0.57, price: 300, model: 'he', kill: 300, stat: '9 m radiusda portlaydi' },
   smoke:  { id: 'smoke', name: 'Tutun granata', slot: 4, price: 300, model: 'smoke', stat: '18 soniya ko‘rinishni to‘sadi' },
   flash:  { id: 'flash', name: 'Flesh granata', slot: 4, price: 200, model: 'flash', stat: 'Qaragan odamni ko‘r qiladi' },
@@ -64,7 +69,11 @@ const SHOT = {
   smg:    { f: 1500, d: 0.08, th: 120, tv: 0.3 },
   ak:     { f: 2300, d: 0.2, th: 100, tv: 0.9 },
   m4:     { f: 1600, d: 0.12, th: 110, tv: 0.5 },
-  awp:    { f: 1500, d: 0.6, th: 70, tv: 1.2 }
+  awp:    { f: 1500, d: 0.6, th: 70, tv: 1.2 },
+  galil:  { f: 2100, d: 0.17, th: 105, tv: 0.8 },
+  famas:  { f: 2000, d: 0.14, th: 110, tv: 0.7 },
+  scout:  { f: 1900, d: 0.4, th: 85, tv: 1 },
+  nova:   { f: 1300, d: 0.3, th: 70, tv: 1.1 }
 };
 
 // ---------- Map state (filled by setGrid from a MAPS entry) ----------

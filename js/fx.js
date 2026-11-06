@@ -235,7 +235,7 @@ function clearFx() {
 // ---------- First-person viewmodel ----------
 // [x, y, z, yaw] of the grip in front of the camera
 const VM_POS = { rifle: [0.15, -0.155, -0.47, 0], pistol: [0.135, -0.125, -0.42, 0.02], knife: [0.14, -0.13, -0.36, 0.22], he: [0.13, -0.11, -0.34, 0] };
-const VM_KIND = { ak: 'rifle', m4: 'rifle', awp: 'rifle', smg: 'rifle', pistol: 'pistol', usp: 'pistol', deagle: 'pistol', knife: 'knife', karambit: 'knife', butterfly: 'knife', bayonet: 'knife', bowie: 'knife', chust: 'knife', he: 'he', smoke: 'he', flash: 'he', molotov: 'he', c4: 'he' };
+const VM_KIND = { ak: 'rifle', m4: 'rifle', awp: 'rifle', smg: 'rifle', pistol: 'pistol', usp: 'pistol', deagle: 'pistol', galil: 'rifle', famas: 'rifle', scout: 'rifle', p90: 'rifle', nova: 'rifle', stiletto: 'knife', talon: 'knife', knife: 'knife', karambit: 'knife', butterfly: 'knife', bayonet: 'knife', bowie: 'knife', chust: 'knife', he: 'he', smoke: 'he', flash: 'he', molotov: 'he', c4: 'he' };
 const flashMat = new THREE.SpriteMaterial({ map: texFlash, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true });
 const vmFlash = new THREE.Sprite(flashMat); vmFlash.scale.set(0.22, 0.22, 0.22); vmFlash.visible = false;
 const vm = {

@@ -60,6 +60,50 @@ const SKIN_ROWS = {
     ['knife_qirov', 'knife', 'Pichoq | Qirov', 'gold', 'marble', ['#e6f7ff', '#5fa8d3', '#ffffff'], 0.8, 0.15],
     ['knife_muz', 'knife', 'Pichoq | Muz', 'gold', 'fade', ['#bfefff', '#3fa9f5', '#ffffff'], 1, 0.12],
     ['knife_qorboron', 'knife', 'Pichoq | Qor bo‘roni', 'gold', 'camo', ['#f4f8fb', '#9fb3c8', '#5f7a96', '#dfe8f0'], 0.4, 0.4]
+  ],
+  olov: [
+    ['galil_olov', 'galil', 'Alanga', 'blue', 'flames', ['#1a0f0a', '#ff6a1a', '#ffd23a']],
+    ['nova_komir', 'nova', 'Ko‘mir', 'blue', 'carbon', ['#1b1c1e', '#3a3c40']],
+    ['p90_lava', 'p90', 'Lava', 'blue', 'flames', ['#2a0d08', '#ff3b1a', '#ffb02a']],
+    ['glock_chogh', 'glock', 'Cho‘g‘', 'blue', 'waves', ['#2a0f0a', '#c8401e', '#ff9a3a']],
+    ['ssg_karbon', 'ssg08', 'Karbon', 'purple', 'carbon', ['#101214', '#2c3036']],
+    ['famas_olov', 'famas', 'Olov to‘lqini', 'purple', 'waves', ['#1a0806', '#ff4a12', '#ffd27a']],
+    ['deagle_alanga', 'deagle', 'Alanga', 'purple', 'flames', ['#1a0a06', '#ff4a12', '#ffe08a'], 0.5, 0.3],
+    ['m4_qizil', 'm4a1', 'Qizil karbon', 'pink', 'carbon', ['#141414', '#8a1a1a']],
+    ['ak_vulqon', 'ak47', 'Vulqon', 'pink', 'flames', ['#120806', '#ff2a00', '#ffcc33'], 0.4, 0.3],
+    ['awp_ajdaho', 'awp', 'Olovli ajdaho', 'red', 'flames', ['#0b0b0d', '#ff3300', '#ffdd55'], 0.4, 0.25],
+    ['knife_alanga', 'knife', 'Pichoq | Alanga', 'gold', 'flames', ['#1a0a06', '#ff4a12', '#ffe08a'], 0.8, 0.2],
+    ['knife_komir', 'knife', 'Pichoq | Ko‘mir', 'gold', 'carbon', ['#0e0f11', '#2f3338'], 0.6, 0.3]
+  ],
+  kosmos: [
+    ['usp_galaktika', 'usp', 'Galaktika', 'blue', 'galaxy', ['#07061a', '#5a2bd8', '#ff4fd8']],
+    ['glock_yulduz', 'glock', 'Yulduzli tun', 'blue', 'galaxy', ['#050818', '#2b6bd8', '#9fe8ff']],
+    ['p90_orbita', 'p90', 'Orbita', 'blue', 'circuit', ['#0b1020', '#38e1ff', '#ffffff']],
+    ['nova_meteor', 'nova', 'Meteor', 'blue', 'galaxy', ['#0a0a12', '#8a8a9a', '#ffb02a']],
+    ['galil_neon', 'galil', 'Neon to‘lqin', 'purple', 'waves', ['#0a0820', '#ff4fd8', '#38e1ff']],
+    ['famas_sxema', 'famas', 'Sxema', 'purple', 'circuit', ['#0b1a12', '#3ad17a', '#d6ffe6']],
+    ['mp5_kometa', 'mp5', 'Kometa', 'purple', 'galaxy', ['#05030f', '#38a8ff', '#ffffff']],
+    ['ssg_oy', 'ssg08', 'Oy nuri', 'pink', 'galaxy', ['#03040e', '#3b4fd8', '#e8f0ff'], 0.4, 0.25],
+    ['m4_tumanlik', 'm4a1', 'Tumanlik', 'pink', 'galaxy', ['#0a0418', '#d83bb0', '#3bd8d0'], 0.3, 0.3],
+    ['awp_kosmos', 'awp', 'Kosmonavt', 'pink', 'galaxy', ['#020309', '#6a3bff', '#ffffff'], 0.4, 0.25],
+    ['ak_kiber', 'ak47', 'Kiber', 'red', 'circuit', ['#06080e', '#ff2a6a', '#38e1ff'], 0.3, 0.3],
+    ['knife_galaktika', 'knife', 'Pichoq | Galaktika', 'gold', 'galaxy', ['#05031a', '#7a2bff', '#ff6af0'], 1, 0.12],
+    ['knife_kiber', 'knife', 'Pichoq | Kiber', 'gold', 'circuit', ['#05070c', '#38e1ff', '#ff2a6a'], 0.8, 0.2]
+  ],
+  yovvoyi: [
+    ['nova_qoplon', 'nova', 'Qoplon', 'blue', 'leopard', ['#d8b46a', '#3a2510', '#8a5a20']],
+    ['mp5_ilon', 'mp5', 'Ilon terisi', 'blue', 'hex', ['#3a4a1a', '#8aa040', '#1a200a']],
+    ['p90_zebra', 'p90', 'Zebra', 'blue', 'stripes', ['#f0ece0', '#151515', '#151515']],
+    ['glock_jirafa', 'glock', 'Jirafa', 'blue', 'leopard', ['#e8c88a', '#7a4a1a', '#c8964a']],
+    ['galil_yolbars', 'galil', 'Oq yo‘lbars', 'purple', 'tiger', ['#f0f0f0', '#1a1a1a']],
+    ['usp_qoplon', 'usp', 'Qor qoploni', 'purple', 'leopard', ['#e8ecef', '#2a2e33', '#7a828a']],
+    ['ssg_burgut', 'ssg08', 'Burgut', 'purple', 'waves', ['#6b4a2a', '#d8c8a8', '#2a1a0a']],
+    ['famas_jungli', 'famas', 'Jungli', 'pink', 'camo', ['#2a4a1a', '#5a8a2a', '#1a2a0a', '#8ab04a']],
+    ['deagle_kobra', 'deagle', 'Kobra', 'pink', 'hex', ['#0e1a0e', '#3ad17a', '#05080a'], 0.5, 0.3],
+    ['m4_ayiq', 'm4a1', 'Qo‘ng‘ir ayiq', 'pink', 'leopard', ['#6b4a2a', '#2a1a0a', '#a8784a']],
+    ['ak_qoplon', 'ak47', 'Oltin qoplon', 'red', 'leopard', ['#e2b04a', '#2a1a08', '#8a5a12'], 0.6, 0.3],
+    ['knife_qoplon', 'knife', 'Pichoq | Qoplon', 'gold', 'leopard', ['#e2b04a', '#2a1a08', '#8a5a12'], 0.7, 0.25],
+    ['knife_burgut', 'knife', 'Pichoq | Burgut', 'gold', 'waves', ['#d8c8a8', '#6b4a2a', '#2a1a0a'], 0.6, 0.3]
   ]
 };
 // Agents: whole outfits. top/pants are a colour or a pattern {p, c}
@@ -83,7 +127,10 @@ const CASES = [
   { id: 'registon', name: 'Registon keysi', price: 300, color: '#2f8f9d', items: [] },
   { id: 'ipak', name: 'Ipak yo‘li keysi', price: 350, color: '#b03a6a', items: [] },
   { id: 'qish', name: 'Qish keysi', price: 250, color: '#8fb4d8', items: [] },
-  { id: 'agent', name: 'Agentlar keysi', price: 400, color: '#56663f', items: [] }
+  { id: 'agent', name: 'Agentlar keysi', price: 400, color: '#56663f', items: [] },
+  { id: 'olov', name: 'Olov keysi', price: 300, color: '#d2482a', items: [] },
+  { id: 'kosmos', name: 'Kosmos keysi', price: 350, color: '#4a3aa8', items: [] },
+  { id: 'yovvoyi', name: 'Yovvoyi tabiat keysi', price: 300, color: '#a8782a', items: [] }
 ];
 for (const [caseId, rows] of Object.entries(SKIN_ROWS)) for (const [id, weapon, name, rarity, pat, c, metal, rough] of rows) {
   SKINS[id] = { id, kind: 'skin', weapon, name, rarity, pat: { p: pat, c }, metal: metal ?? 0.25, rough: rough ?? 0.5, caseId };
@@ -91,9 +138,10 @@ for (const [caseId, rows] of Object.entries(SKIN_ROWS)) for (const [id, weapon, 
 }
 for (const [id, team, name, rarity, look] of AGENT_ROWS) { AGENTS[id] = { id, kind: 'agent', team, name, rarity, look }; CASES[4].items.push(id); }
 // every gold skin is its own kind of knife
-const KNIVES = { knife: 'Pichoq', karambit: 'Karambit', butterfly: 'Kapalak pichoq', bayonet: 'Nayza pichoq', bowie: 'Bowie pichog‘i', chust: 'Chust pichog‘i' };
+const KNIVES = { knife: 'Pichoq', karambit: 'Karambit', butterfly: 'Babochka', stiletto: 'Stilet', talon: 'Kogot', bayonet: 'Nayza pichoq', bowie: 'Bowie pichog‘i', chust: 'Chust pichog‘i' };
 const KNIFE_OF = { knife_quyosh: 'karambit', knife_yolbars: 'bayonet', knife_sahro: 'bowie', knife_koshin: 'chust', knife_lazurit: 'butterfly', knife_samarqand: 'bayonet',
-  knife_atlas: 'chust', knife_oltin: 'bowie', knife_suzani: 'karambit', knife_qirov: 'butterfly', knife_muz: 'karambit', knife_qorboron: 'bowie' };
+  knife_atlas: 'chust', knife_oltin: 'bowie', knife_suzani: 'karambit', knife_qirov: 'butterfly', knife_muz: 'karambit', knife_qorboron: 'bowie',
+  knife_alanga: 'stiletto', knife_komir: 'talon', knife_galaktika: 'butterfly', knife_kiber: 'stiletto', knife_qoplon: 'talon', knife_burgut: 'karambit' };
 for (const [id, k] of Object.entries(KNIFE_OF)) SKINS[id].knife = k;
 const skinModel = (model, skinId) => (skinId && SKINS[skinId] && SKINS[skinId].knife) || model;
 const weaponName = d => d.knife ? KNIVES[d.knife] : WEAPONS[d.weapon].name;
@@ -111,6 +159,32 @@ function patternTex(pat) {
     g.fillStyle = c0; g.fillRect(0, 0, s, s);
     const blob = (x, y, r, col) => { g.fillStyle = col; g.beginPath(); for (let k = 0; k < 5; k++) { const a = rnd() * 6.3, rr = r * (0.5 + rnd() * 0.6); g.moveTo(x + Math.cos(a) * rr + rr, y + Math.sin(a) * rr); g.arc(x + Math.cos(a) * rr, y + Math.sin(a) * rr, rr, 0, 7); } g.fill(); };
     switch (pat.p) {
+      case 'carbon': { const n = 16; for (let y = 0; y < s; y += n) for (let x = 0; x < s; x += n) { const k = ((x + y) / n) % 2, gr = g.createLinearGradient(x, y, x + n, y + n); gr.addColorStop(0, k ? c1 : c0); gr.addColorStop(1, k ? c0 : c1); g.fillStyle = gr; g.fillRect(x, y, n, n); } break; }
+      case 'flames': for (let i = 0; i < 22; i++) {
+        const x = rnd() * s, w = 18 + rnd() * 36, h = 70 + rnd() * 150, gr = g.createLinearGradient(0, s, 0, s - h);
+        gr.addColorStop(0, c1); gr.addColorStop(0.55, c2); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr;
+        g.beginPath(); g.moveTo(x - w, s); g.quadraticCurveTo(x - w * 0.3, s - h * 0.6, x + (rnd() - 0.5) * 20, s - h); g.quadraticCurveTo(x + w * 0.4, s - h * 0.5, x + w, s); g.fill();
+      } break;
+      case 'galaxy': {
+        for (let i = 0; i < 10; i++) { const x = rnd() * s, y = rnd() * s, r = 40 + rnd() * 90, gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, i % 2 ? c1 : c2); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.globalAlpha = 0.45; g.fillStyle = gr; g.fillRect(0, 0, s, s); }
+        g.globalAlpha = 1; for (let i = 0; i < 160; i++) { g.fillStyle = `rgba(255,255,255,${0.4 + rnd() * 0.6})`; const r = rnd() < 0.9 ? 0.8 : 1.8; g.beginPath(); g.arc(rnd() * s, rnd() * s, r, 0, 7); g.fill(); }
+        break;
+      }
+      case 'leopard': for (let i = 0; i < 38; i++) {
+        const x = rnd() * s, y = rnd() * s, r = 7 + rnd() * 9;
+        g.fillStyle = c2; g.beginPath(); g.ellipse(x, y, r, r * 0.8, rnd() * 3, 0, 7); g.fill();
+        g.strokeStyle = c1; g.lineWidth = 3 + rnd() * 2; g.beginPath(); g.ellipse(x, y, r + 2, r * 0.8 + 2, rnd() * 3, rnd(), 4 + rnd() * 2); g.stroke();
+      } break;
+      case 'circuit': {
+        g.strokeStyle = c1; g.lineWidth = 2; g.lineCap = 'square';
+        for (let i = 0; i < 40; i++) { let x = Math.round(rnd() * 16) * 16, y = Math.round(rnd() * 16) * 16; g.beginPath(); g.moveTo(x, y); for (let k = 0; k < 4; k++) { if (rnd() < 0.5) x += (rnd() < 0.5 ? -1 : 1) * 32; else y += (rnd() < 0.5 ? -1 : 1) * 32; g.lineTo(x, y); } g.stroke(); g.fillStyle = c2; g.fillRect(x - 3, y - 3, 6, 6); }
+        break;
+      }
+      case 'waves': for (let y = -20, k = 0; y < s + 20; y += 18, k++) {
+        g.fillStyle = k % 2 ? c1 : c2; g.beginPath(); g.moveTo(0, y);
+        for (let x = 0; x <= s; x += 8) g.lineTo(x, y + Math.sin(x / s * Math.PI * 4 + k) * 7);
+        g.lineTo(s, y + 9); for (let x = s; x >= 0; x -= 8) g.lineTo(x, y + 9 + Math.sin(x / s * Math.PI * 4 + k) * 7); g.fill();
+      } break;
       case 'camo': for (let i = 0; i < 46; i++) blob(rnd() * s, rnd() * s, 10 + rnd() * 22, [c1, c2, c3][i % 3]); break;
       case 'digital': for (let y = 0; y < s; y += 8) for (let x = 0; x < s; x += 8) { const v = Math.sin(x * 0.05 + rnd() * 0.8) + Math.cos(y * 0.06 + rnd() * 0.8); g.fillStyle = v > 0.9 ? c1 : v > 0 ? c2 : v > -0.9 ? c0 : c3; g.fillRect(x, y, 8, 8); } break;
       case 'stripes': g.save(); g.translate(s / 2, s / 2); g.rotate(-0.6); for (let x = -s; x < s; x += 42) { g.fillStyle = c1; g.fillRect(x, -s, 14, s * 2); g.fillStyle = c2; g.fillRect(x + 20, -s, 4, s * 2); } g.restore(); break;

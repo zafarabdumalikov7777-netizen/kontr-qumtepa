@@ -79,7 +79,8 @@ const ShopUI = (() => {
     }
     Snd.init();
     const win = opt.win || rollCase(c), WIN_AT = 48, prize = addItem(win); // saved now, so a reload mid-spin loses nothing
-    const strip = Array.from({ length: 56 }, (_, i) => i === WIN_AT ? win : rollCase(c));
+    const filler = () => { let id; do id = rollCase(c); while (itemDef(id).rarity === 'gold'); return id; };
+    const strip = Array.from({ length: 56 }, (_, i) => i === WIN_AT ? win : filler());
     const track = document.getElementById('rollTrack'), wrap = track.parentElement, res = document.getElementById('rollResult');
     document.getElementById('rollCase').textContent = c.name;
     track.innerHTML = strip.map(id => itemCard(id, { hideGold: true, cls: 'rc' })).join('');
@@ -89,7 +90,7 @@ const ShopUI = (() => {
     // measure the real card layout (zoom, fonts and CSS can change the width)
     const cards = track.children, el = cards[WIN_AT], x0 = cards[0].offsetLeft, pitch = cards[1].offsetLeft - x0;
     const half = wrap.clientWidth / 2;
-    const target = el.offsetLeft + el.offsetWidth / 2 - half + rand(-0.38, 0.38) * el.offsetWidth;
+    const target = el.offsetLeft + el.offsetWidth / 2 - half + rand(-0.28, 0.28) * el.offsetWidth;
     const token = ++rollToken, t0 = performance.now();
     let last = -1, done = false;
     const place = x => { track.style.transform = `translateX(${-x}px)`; };
@@ -159,7 +160,8 @@ const ShopUI = (() => {
   const salePrice = id => Math.round(priceFor(id) * 0.75 / 10) * 10; // today's offers are 25% off
   // the whole catalog, searchable and filterable by weapon, look (pattern) and rarity
   const PAT_NAME = { camo: 'Kamuflyaj', digital: 'Raqamli', stripes: 'Chiziqli', fade: 'Fade', tiger: 'Yo‘lbars', neon: 'Neon', tiles: 'Koshin',
-    hex: 'Olti burchak', marble: 'Marmar', ikat: 'Atlas', suzani: 'Suzani', gold: 'Oltin' };
+    hex: 'Olti burchak', marble: 'Marmar', ikat: 'Atlas', suzani: 'Suzani', gold: 'Oltin',
+    carbon: 'Karbon', flames: 'Olov', galaxy: 'Galaktika', leopard: 'Qoplon', circuit: 'Sxema', waves: 'To‘lqin' };
   const mk = { q: '', w: 'all', look: 'all', rar: 'all', sort: 'rar' };
   const norm = s => String(s).toLowerCase().replace(/[‘’ʻʼ`']/g, "'");
   const itemPat = d => d.kind === 'skin' ? d.pat.p : d.look.top && d.look.top.p;

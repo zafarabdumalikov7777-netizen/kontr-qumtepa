@@ -14,7 +14,8 @@ function dmLoadout(a) {
     a.nades = { he: 1, flash: 1, smoke: 0, molotov: 0 }; syncNadeSlot();
   } else {
     const r = Math.random();
-    a.primary = wstate(r < 0.12 ? WEAPONS.awp : r < 0.25 ? WEAPONS.mp5 : dmRifle(a.team));
+    a.primary = wstate(r < 0.1 ? WEAPONS.awp : r < 0.18 ? WEAPONS.ssg08 : r < 0.3 ? pick([WEAPONS.mp5, WEAPONS.p90, WEAPONS.nova]) : r < 0.45 ? (a.team === 'T' ? WEAPONS.galil : WEAPONS.famas) : dmRifle(a.team));
+    giveBotNade(a, 0.3);
     a.pistol = wstate(Math.random() < 0.3 ? WEAPONS.deagle : pistolFor(a.team));
   }
 }
@@ -104,7 +105,7 @@ function dmKill(v, att) {
   if (game.mode === 'gg') ggKill(v, att);
 }
 // ---------- Gun Game: every 2 kills the next weapon; a kill with the knife wins ----------
-const GG_LADDER = ['glock', 'usp', 'deagle', 'mp5', 'm4a1', 'ak47', 'awp', 'knife'], GG_NEED = 2;
+const GG_LADDER = ['glock', 'deagle', 'nova', 'p90', 'galil', 'famas', 'ak47', 'ssg08', 'awp', 'knife'], GG_NEED = 2;
 const ggDef = a => WEAPONS[GG_LADDER[Math.min(a.gg || 0, GG_LADDER.length - 1)]];
 const ggSlot = def => def.slot === 1 ? 1 : def.slot === 2 ? 2 : 3;
 function ggLoadout(a) {
