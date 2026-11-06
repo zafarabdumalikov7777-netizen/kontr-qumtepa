@@ -10,7 +10,7 @@ const TOUCH_BTNS = [
   { id: 'scope', label: 'OPTIKA', x: 0.95, y: 0.36, s: 54, kind: 'tap', act: () => secondaryAction(), when: () => curDef().scope || curDef().melee },
   { id: 'swap', label: 'QUROL', x: 0.87, y: 0.25, s: 54, kind: 'tap', act: () => cycleWeapon(1) },
   { id: 'nade', label: 'GRANATA', x: 0.65, y: 0.62, s: 50, kind: 'tap', act: () => { if (player.slot === 4) cycleNade(); else switchTo(4); }, when: () => !!player.inv[4] },
-  { id: 'use', label: 'OLISH', x: 0.57, y: 0.42, s: 58, kind: 'use', when: () => !!pickTarget || (bomb.state === 'planted' && player.team === 'KT') },
+  { id: 'use', label: 'OLISH', x: 0.57, y: 0.42, s: 58, kind: 'use', when: () => !!pickTarget || (bomb.state === 'planted' && player.team === 'KT') || canTakeOver() },
   { id: 'drop', label: 'TASHLA', x: 0.86, y: 0.09, s: 46, kind: 'tap', act: () => { if (player.slot === 5) dropBomb(player); else dropCurrent(); }, when: () => [1, 2, 5].includes(player.slot) },
   { id: 'buy', label: '$', x: 0.22, y: 0.12, s: 50, kind: 'tap', act: () => { if (input.buyOpen) closeBuy(false); else openBuy(); }, when: () => canBuy() || input.buyOpen },
   { id: 'score', label: 'HISOB', x: 0.77, y: 0.09, s: 46, kind: 'score' },

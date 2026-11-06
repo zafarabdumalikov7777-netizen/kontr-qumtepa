@@ -8,7 +8,7 @@ const els = {};
  'hpV', 'hpBox', 'arV', 'wName', 'magV', 'resV', 'slots', 'menu', 'pause', 'buy', 'buyGrid', 'buyMoney', 'buyTime', 'board', 'boardCard', 'over', 'touch'].forEach(id => els[id] = document.getElementById(id));
 const input = { keys: {}, mouseDown: false, locked: false, fallback: false, touchMode: false, buyOpen: false, boardOpen: false };
 const touch = { mx: 0, my: 0, fire: false, jump: false, crouch: false, use: false, auto: false };
-let spectating = null, playerBody = null, bodyPh = 0;
+let spectating = null, playerBody = null, bodyPh = 0, touchSpecFire = false;
 
 function setupTeams(team) {
   for (const b of bots) disposeSoldier(b.model);
@@ -33,7 +33,9 @@ function resetLoadout(a) {
 }
 function spawnAll(first) {
   const sp = { KT: shuffle(cellsOf('S')), T: shuffle(cellsOf('T')) }, idx = { KT: 0, T: 0 };
+  player.tookOver = false;
   for (const a of agents) {
+    a.controlled = false;
     if (first || !a.alive) resetLoadout(a);
     a.alive = true; a.hp = 100; a.spotUntil = 0; a.respawnT = 0; a.protectUntil = 0; a.blindUntil = 0; a.roundKills = 0;
     const c = sp[a.team][idx[a.team]++ % sp[a.team].length];
@@ -232,6 +234,32 @@ function playerDied(att, def) {
   player.scope = 0; if (playerBody) playerBody.fall = 0;
   showCenter('Siz halok bo‘ldingiz', att && att !== player ? `${att.name} · ${def.name}` : def.name, 'te', 2.5);
 }
+// Spectating after death: left / right click (or the fire button) steps through living teammates
+function cycleSpectate(dir) {
+  const p = player; if (p.alive) return;
+  const list = agents.filter(a => a.alive && a.team === p.team && !a.isPlayer); if (!list.length) return;
+  p.deathT = Math.max(p.deathT, 2.5); // skip the rest of the death camera
+  const i = list.indexOf(spectating);
+  setSpectate(list[((i < 0 ? 0 : i + dir) + list.length) % list.length]);
+}
+// CS2-style: while watching a living teammate bot in a competitive round, E or X takes it over until the round ends
+const canTakeOver = () => !player.alive && game.mode === 'comp' && (game.state === 'live' || game.state === 'freeze') && !!spectating && spectating.alive && !player.tookOver;
+function takeOverBot() {
+  if (!canTakeOver()) return;
+  const b = spectating, p = player;
+  setSpectate(null);
+  Object.assign(p, { alive: true, hp: b.hp, armor: b.armor, helmet: b.helmet, kit: b.kit, yaw: b.yaw + Math.PI, pitch: 0, crouch: 0, reloadT: 0, switchT: 0.3, shots: 0, shotsF: 0,
+    punchP: 0, punchY: 0, vpP: 0, vpY: 0, cool: 0, deathT: 0, scope: 0, scopeResume: 0, rescopeT: 0, autoReload: false, tookOver: true });
+  p.pos.set(b.pos.x, 0, b.pos.z); p.vel.set(0, 0, 0);
+  p.inv = { 1: b.primary, 2: b.pistol || wstate(pistolFor(p.team)), 3: { def: WEAPONS.knife }, 4: null, 5: null };
+  p.nades = { he: 0, flash: 0, smoke: 0 }; syncNadeSlot();
+  b.alive = false; b.controlled = true; b.primary = null; b.model.group.visible = false; b.model.marker.visible = false;
+  if (bomb.carrier === b) giveBomb(p);
+  p.slot = p.inv[1] ? 1 : 2; p.prevSlot = 3; vm.set(p.inv[p.slot].def, p.team);
+  if (playerBody) { setGhost(playerBody, true); playerBody.fall = 1; playerBody.group.rotation.x = 0; }
+  showCenter(`${b.name} — endi siz boshqarasiz`, 'Raund oxirigacha shu bot bilan o‘ynaysiz', '', 2); Snd.draw();
+  updatePips();
+}
 function setSpectate(b) {
   if (spectating) spectating.model.group.visible = true;
   spectating = b;
@@ -374,7 +402,7 @@ function updateHUD(dt) {
   const kmh = Math.round(Math.hypot(p.vel.x, p.vel.z) * 3.6);
   els.speedo.hidden = !settings.speedo || !p.alive;
   if (settings.speedo) { setT('spdV', String(kmh)); els.speedo.classList.toggle('fast', kmh > 24); }
-  const specTxt = !p.alive && spectating ? `${spectating.name} · ${spectating.hp} HP` : '';
+  const specTxt = !p.alive && spectating ? `${spectating.name} · ${spectating.hp} HP<small class="spec-keys">${canTakeOver() ? (input.touchMode ? 'OLISH — botni boshqarish · OTISH — keyingi' : '<b>E</b> — botni boshqarish · ') : ''}${input.touchMode ? '' : 'Sichqoncha chap/o‘ng — boshqa bot'}</small>` : '';
   if (cache.spec !== specTxt) { cache.spec = specTxt; els.spec.innerHTML = specTxt ? `<small>KUZATILMOQDA</small>${specTxt}` : ''; }
   els.spec.hidden = !specTxt;
   if (input.buyOpen) { setT('buyMoney', String(p.money)); setT('buyTime', canBuy() ? `Xarid uchun ${Math.ceil(buyLeft)} s qoldi` : 'Xarid vaqti tugadi'); }
@@ -536,9 +564,42 @@ function tryFullscreen() {
 }
 // Gun Game and Modli jang have maps of their own; the other modes share the regular ones
 const mapPool = mode => MAPS.filter(m => (m.pool || '') === (mode === 'gg' || mode === 'mod' ? mode : ''));
+// Card art: the map from above in its own colours, walls raised as blocks, over its sky
+const mapArtCache = {};
+function mapArt(def) {
+  if (mapArtCache[def.id]) return mapArtCache[def.id];
+  const w = def.w || 30, h = def.h || 30, gr = Array.from({ length: h }, () => Array(w).fill('#'));
+  def.build((x0, y0, x1, y1, ch = '.') => { for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) gr[y][x] = ch; }, (x, y, ch) => { gr[y][x] = ch; });
+  const T = def.theme, c = document.createElement('canvas'); c.width = 400; c.height = 250;
+  const g = c.getContext('2d'), hex = n => '#' + new THREE.Color(n).getHexString();
+  const sky = g.createLinearGradient(0, 0, 0, c.height); sky.addColorStop(0, hex(T.sky[0])); sky.addColorStop(0.55, hex(T.sky[1])); sky.addColorStop(1, hex(T.sky[2]));
+  g.fillStyle = sky; g.fillRect(0, 0, c.width, c.height);
+  const cs = 7, lift = 5, ox = (c.width - w * cs) / 2, oy = 24;
+  g.fillStyle = 'rgba(0,0,0,0.35)'; g.fillRect(ox + 6, oy + 8, w * cs, h * cs);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const ch = gr[y][x], px = ox + x * cs, py = oy + y * cs;
+    if (ch === '#') continue;
+    g.fillStyle = T.floor.base; g.fillRect(px, py, cs, cs);
+    if (ch === 'A' || ch === 'B') { g.fillStyle = 'rgba(230,70,50,0.38)'; g.fillRect(px, py, cs, cs); }
+    if (ch === 'S') { g.fillStyle = 'rgba(70,130,230,0.45)'; g.fillRect(px, py, cs, cs); }
+    if (ch === 'T') { g.fillStyle = 'rgba(230,150,40,0.45)'; g.fillRect(px, py, cs, cs); }
+    if (ch === 'c' || ch === 'C') { g.fillStyle = ch === 'C' ? '#5b3c22' : '#8a5a32'; g.fillRect(px + 1, py + 1 - (ch === 'C' ? 2 : 0), cs - 2, cs - 2); }
+  }
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    if (gr[y][x] !== '#') continue;
+    const near = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => gr[y + dy] && gr[y + dy][x + dx] && gr[y + dy][x + dx] !== '#');
+    if (!near) continue; // only the walls that face the map, so the outline reads
+    const px = ox + x * cs, py = oy + y * cs;
+    g.fillStyle = shade(T.wall.base, 0.62); g.fillRect(px, py - lift + cs, cs, lift);
+    g.fillStyle = shade(T.wall.base, 1.05); g.fillRect(px, py - lift, cs, cs);
+  }
+  g.font = '700 22px "Chakra Petch", sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  for (const [k, [lx, ly]] of Object.entries(def.letters || {})) { g.fillStyle = 'rgba(0,0,0,0.5)'; g.fillText(k, ox + (lx + 0.5) * cs + 1, oy + (ly + 0.5) * cs + 1); g.fillStyle = '#fff2e0'; g.fillText(k, ox + (lx + 0.5) * cs, oy + (ly + 0.5) * cs); }
+  return (mapArtCache[def.id] = c.toDataURL('image/jpeg', 0.85));
+}
 function renderMaps() {
   const pool = mapPool(settings.mode);
-  document.getElementById('maps').innerHTML = pool.map(m => `<button class="map" data-map="${m.id}" type="button"><b>${m.name}</b><small>${m.blurb}</small></button>`).join('');
+  document.getElementById('maps').innerHTML = pool.map(m => `<button class="map" data-map="${m.id}" type="button"><span class="map-art" style="background-image:url(${mapArt(m)})"></span><b>${m.name}</b><small>${m.blurb}</small></button>`).join('');
   if (!pool.includes(MAP)) selectMap(pool[0].id);
   document.querySelectorAll('.map').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.map === MAP.id)));
 }
@@ -661,6 +722,7 @@ addEventListener('keydown', e => {
   if (e.ctrlKey) e.preventDefault(); // Ctrl is crouch: block Ctrl+S, Ctrl+D and other browser shortcuts the page may stop
   if (e.code === 'Space') e.preventDefault();
   input.keys[e.code] = true;
+  if (!player.alive) { if (e.code === 'KeyE' || e.code === 'KeyX') takeOverBot(); return; }
   if (input.buyOpen) {
     const it = BUY.find(b => b.k === e.key); if (it) { buy(it.id); return; }
     if (e.code === 'KeyB' || e.code === 'Escape') closeBuy(true);
@@ -692,6 +754,7 @@ cvs.addEventListener('mousedown', e => {
   if (!playing() || input.touchMode) return;
   Snd.init();
   if (!input.locked && !input.fallback) { lockPointer(); return; }
+  if (!player.alive) { if (e.button === 0 || e.button === 2) cycleSpectate(e.button === 2 ? -1 : 1); return; }
   if (e.button === 0) input.mouseDown = true;
   if (e.button === 2) secondaryAction();
 });
@@ -727,6 +790,10 @@ addEventListener('resize', () => {
 function update(dt) {
   game.time += dt;
   updateRound(dt);
+  if (!player.alive && input.touchMode) { // touch: OLISH takes the bot over, OTISH steps to the next one
+    if (touch.use) takeOverBot();
+    if (touch.fire && !touchSpecFire) cycleSpectate(1); touchSpecFire = touch.fire;
+  }
   updatePlayer(dt);
   // Without a mouse lock the cursor stops at the screen edge: keep turning while it rests there
   if (input.fallback && !input.touchMode && !input.buyOpen && input.mouseX != null && player.alive) {

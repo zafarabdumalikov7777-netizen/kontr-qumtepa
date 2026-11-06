@@ -54,6 +54,8 @@ Bosh menyuda ismingiz, rankingiz (Bronza → Kumush → Oltin → Platina → Ol
 | 4 | Granatalar (qayta bosing — keyingisi) |
 | 5 | C4 bomba — nuqtada sichqonchani bosib turing |
 | E | Qurol olish; bosib turish — bombani zararsizlantirish |
+| E yoki X (o‘lgandan keyin) | Kuzatilayotgan sherik botni boshqarish (raundda bir marta) |
+| Sichqoncha chap/o‘ng (o‘lgandan keyin) | Boshqa botni kuzatish |
 | G / F | Qurolni tashlash / ko‘zdan kechirish |
 | V | Kamera: 1-shaxs / 3-shaxs (orqadan ko‘rinish) |
 | B | Xarid menyusi |

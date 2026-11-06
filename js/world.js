@@ -54,6 +54,7 @@ function buildWorld() {
   const [wTex, wTs, wBump] = wallTex(T.wall.style, T.wall.base);
   const matWall = std({ map: wTex, bumpMap: wTex, bumpScale: wBump, vertexColors: true });
   const matCap = std({ color: lin(T.cap), roughness: 0.8 });
+  const matPlinth = std({ map: wTex, color: lin(0x8a8378), roughness: 0.95 }); // darker stone footing along every wall
   const cellH = G.map(r => r.map(() => 0));
   const used = G.map(r => r.map(() => false));
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
@@ -67,6 +68,7 @@ function buildWorld() {
     const geo = boxGeo(ww, hgt, dd, wTs, 4); aoColors(geo, hgt);
     add(new THREE.Mesh(geo, matWall), { hit: true }).position.set(x0 + ww / 2, hgt / 2, z0 + dd / 2);
     add(new THREE.Mesh(new THREE.BoxGeometry(ww + 0.24, 0.28, dd + 0.24), matCap), { hit: true }).position.set(x0 + ww / 2, hgt + 0.14, z0 + dd / 2);
+    add(new THREE.Mesh(new THREE.BoxGeometry(ww + 0.1, 0.42, dd + 0.1), matPlinth), { cast: false }).position.set(x0 + ww / 2, 0.21, z0 + dd / 2);
     boxes.push({ x0, x1: x0 + ww, z0, z1: z0 + dd, y0: 0, y1: hgt + 0.3 });
   }
 
@@ -95,12 +97,47 @@ function buildWorld() {
   });
 
   buildDecor(T, cellH);
+  buildProps(T, cellH, matWall);
   buildRoofs(T);
   buildSky(T);
   buildLandmarks(T);
   if (T.snow) buildSnow();
 }
 
+// Arches across narrow alleys, drain pipes and AC units on the walls — visual only, all out of the way
+function buildProps(T, cellH, matWall) {
+  const metal = std({ color: lin(0x6f7377), roughness: 0.45, metalness: 0.7 }), acMat = std({ color: lin(0xd9d6cf), roughness: 0.6 }), grille = std({ color: lin(0x2a2c2e), roughness: 0.5, metalness: 0.5 });
+  const wall = (x, z) => x < 0 || z < 0 || x >= W || z >= H || G[z][x] === '#';
+  for (let z = 1; z < H - 1; z++) for (let x = 1; x < W - 1; x++) {
+    if (wall(x, z)) continue;
+    // an alley one cell wide: span it with a stone arch beam above head height
+    const ew = wall(x - 1, z) && wall(x + 1, z), ns = wall(x, z - 1) && wall(x, z + 1);
+    if ((ew || ns) && rnd() < 0.16) {
+      const hgt = Math.min(ew ? cellH[z][x - 1] : cellH[z - 1][x], ew ? cellH[z][x + 1] : cellH[z + 1][x]);
+      if (hgt > 4.6) {
+        const y = Math.min(hgt - 0.6, 4.4), b = add(new THREE.Mesh(new THREE.BoxGeometry(ew ? CELL + 0.5 : 0.7, 0.55, ew ? 0.7 : CELL + 0.5), matWall), { hit: false });
+        b.position.set(cxw(x), y, czw(z));
+      }
+    }
+  }
+  const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  for (let z = 0; z < H; z++) for (let x = 0; x < W; x++) {
+    if (G[z][x] !== '#' || cellH[z][x] < 4.5) continue;
+    for (const [dx, dz] of dirs) {
+      const nx = x + dx, nz = z + dz;
+      if (wall(nx, nz)) continue;
+      const r = rnd(), lat = rand(-1.2, 1.2), rotY = Math.atan2(dx, dz);
+      const fx = cxw(x) + dx * (CELL / 2 + 0.09) + dz * lat, fz = czw(z) + dz * (CELL / 2 + 0.09) + dx * lat;
+      if (r < 0.05) { // drain pipe running down the wall
+        const h = cellH[z][x];
+        const p = add(new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, h - 0.2, 8), metal), { receive: false }); p.position.set(fx, (h - 0.2) / 2, fz);
+      } else if (r < 0.09 && T.wall.style !== 'majolica') { // air conditioner above head height
+        const u = add(new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.6, 0.38), acMat)); u.position.set(fx + dx * 0.12, 3.3, fz + dz * 0.12); u.rotation.y = rotY;
+        const gr = add(new THREE.Mesh(new THREE.CircleGeometry(0.22, 16), grille), { cast: false }); gr.position.set(fx + dx * 0.32, 3.3, fz + dz * 0.32); gr.rotation.y = rotY;
+      }
+    }
+  }
+}
 // Windows, doors, awnings, lamps, barrels and overhead cables
 function buildDecor(T, cellH) {
   const winMat = std({ map: windowTex(T.windows, T.shutter), roughness: 0.6, emissive: T.windows === 'glass-warm' ? lin(0x5a3510) : 0x000000, emissiveMap: T.windows === 'glass-warm' ? windowTex(T.windows) : null });

@@ -68,7 +68,8 @@ const SHOT = {
 };
 
 // ---------- Map state (filled by setGrid from a MAPS entry) ----------
-const CELL = 3.5, CRATE_S = CELL * 0.82, CRATE_H = 1.05;
+let CELL = 4.4; // set per map in setGrid: regular maps 4.4 m, Gun Game / Modli arenas 3.5 m
+const CRATE_S = 2.87, CRATE_H = 1.05;
 let MAP = null, W = 30, H = 30, G = [], OX = 0, OZ = 0;
 let SPAWN_C = { KT: { x: 0, z: 0 }, T: { x: 0, z: 0 } }, SITES = { A: [], B: [] };
 const cxw = c => OX + (c + 0.5) * CELL, czw = c => OZ + (c + 0.5) * CELL;
@@ -77,7 +78,7 @@ const walkable = (cx, cz) => cx >= 0 && cz >= 0 && cx < W && cz < H && '#cC'.ind
 const cellsOf = ch => { const out = []; for (let z = 0; z < H; z++) for (let x = 0; x < W; x++) if (G[z][x] === ch) out.push({ x, z }); return out; };
 const centerOf = ch => { const c = cellsOf(ch); return { x: c.reduce((s, q) => s + cxw(q.x), 0) / c.length, z: c.reduce((s, q) => s + czw(q.z), 0) / c.length }; };
 function setGrid(def) {
-  MAP = def; W = def.w || 30; H = def.h || 30;
+  MAP = def; W = def.w || 30; H = def.h || 30; CELL = def.cell || (def.pool ? 3.5 : 4.4);
   G = Array.from({ length: H }, () => Array(W).fill('#'));
   const carve = (x0, y0, x1, y1, ch = '.') => { for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) G[y][x] = ch; };
   const put = (x, y, ch) => { G[y][x] = ch; };
