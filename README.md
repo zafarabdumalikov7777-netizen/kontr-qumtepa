@@ -79,3 +79,7 @@ Telefonni gorizontal holatga burang. Chap tomonda joystik, ekranning bo‘sh joy
 **Tugmalarni o‘zingizga moslash:** Pauza (II) yoki Sozlamalar → «Tugmalarni joylashtirish». Tugmani bosib, kerakli joyga suring; pastdagi panelda hajmini o‘zgartiring yoki yashiring. Shu yerda tugmalar ko‘rinishi (shaffofligi), ekran sezgirligi, qotgan/suzuvchi joystik va avto-otish bor. «SAQLASH» — joylashuv telefoningizda saqlanadi.
 
 Texnologiya: [three.js](https://threejs.org) r128, sof JavaScript — yig‘ish (build) kerak emas.
+
+## Ilova (Android / Play Market)
+
+Sayt PWA sifatida o‘rnatiladi: `manifest.webmanifest`, `icons/`, `sw.js` (internet bo‘lmasa keshdan ochiladi). Maxfiylik siyosati: https://zafarabdumalikov7777-netizen.github.io/kontr-qumtepa/privacy.html

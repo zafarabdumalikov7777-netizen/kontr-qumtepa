@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="description" content="Brauzerda ishlaydigan 3D taktik shooter: 4 xarita, 5x5 botlar, raundlar, iqtisod, bunnyhop va spray naqshlari.">
 <title>Kontr Qumtepa</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0c0f12">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
@@ -757,5 +763,6 @@ tr.me td{color:var(--sand);font-weight:600}
 <script src="js/rank.js"></script>
 <script src="js/touch.js"></script>
 <script src="js/game.js"></script>
+<script>if ('serviceWorker' in navigator && location.protocol === 'https:') addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));</script>
 </body>
 </html>
