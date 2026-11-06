@@ -215,6 +215,22 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--sand);outline-o
 .ins-bot{align-items:center}
 .ins-bot span{color:var(--muted);font-size:13px;text-shadow:0 1px 4px #000}
 .show-btns{display:flex;gap:10px}
+.net-box{border:1px solid rgba(227,197,142,.35);background:rgba(227,197,142,.06);padding:12px}
+.net-row{display:flex;gap:6px;flex-wrap:wrap}
+.net-row[hidden]{display:none}
+.net-row .primary{padding:10px 14px;font-size:14px}
+.net-row .ghost{padding:10px 14px}
+.net-row input{flex:1 1 90px;min-width:0;background:rgba(0,0,0,.35);border:1px solid var(--line);color:var(--text);padding:10px 12px;font:inherit;font-family:var(--f-display);font-size:16px;letter-spacing:.2em;text-transform:uppercase}
+.net-info{display:flex;flex-direction:column;gap:8px}
+.net-info[hidden]{display:none}
+.net-code{display:flex;align-items:center;gap:10px;font-family:var(--f-display);font-size:16px}
+.net-code b{font-size:26px;letter-spacing:.2em;color:var(--sand)}
+.net-code .ghost{padding:6px 10px;font-size:12px}
+.net-list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:4px}
+.net-list li{background:rgba(255,255,255,.04);padding:6px 10px;display:flex;gap:8px;align-items:center}
+.net-list small{color:var(--muted)}
+.net-info .ghost{align-self:flex-start;padding:8px 14px}
+#netMsg:empty{display:none}
 .reward{margin:0;padding:10px 12px;border:1px solid rgba(147,232,111,.4);background:rgba(147,232,111,.08);font-size:14px}
 .reward b{color:var(--money)}
 #xhair{position:absolute;left:50%;top:50%;width:160px;height:160px;margin:-80px 0 0 -80px;text-shadow:none}
@@ -544,6 +560,11 @@ tr.me td{color:var(--sand);font-weight:600}
     <button id="pfBoard" class="ghost" type="button">REYTING JADVALI</button>
   </div>
   <aside class="setup" id="playPanel">
+    <div class="field net-box"><span class="label">Onlayn · do‘stlar bilan</span>
+      <div class="net-row" id="netRow"><button id="netHostBtn" class="primary" type="button">XONA OCHISH</button><input id="netCode" type="text" placeholder="Xona kodi" autocomplete="off" spellcheck="false" maxlength="5" aria-label="Xona kodi"><button id="netJoinBtn" class="ghost" type="button">Qo‘shilish</button></div>
+      <div id="netInfo" class="net-info" hidden></div>
+      <small class="note" id="netMsg" role="status"></small>
+    </div>
     <div class="field"><span class="label">Xarita</span>
       <div class="maps" id="maps"></div>
     </div>
@@ -761,6 +782,7 @@ tr.me td{color:var(--sand);font-weight:600}
 <script src="js/extras.js"></script>
 <script src="js/mods.js"></script>
 <script src="js/rank.js"></script>
+<script src="js/net.js"></script>
 <script src="js/touch.js"></script>
 <script src="js/game.js"></script>
 <script>if ('serviceWorker' in navigator && location.protocol === 'https:') addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));</script>

@@ -93,6 +93,7 @@ function shootRay(origin, dir, shooter, def, range) {
 function applyDamage(v, att, dmg, part, def, from) {
   if (!v.alive || game.state === 'freeze') return;
   if (att && att !== v && att.team === v.team) return; // do‘stona otish o‘chirilgan
+  if (netClient()) { netClientDamage(v, att, dmg, part, def); return; } // online guest: the host decides
   if (v.protectUntil && game.time < v.protectUntil) return; // respawn protection (deathmatch)
   let d = dmg * (part === 'head' ? 4 : part === 'legs' ? 0.75 : 1);
   if (v.armor > 0 && (part === 'body' || (part === 'head' && v.helmet))) {
@@ -103,6 +104,7 @@ function applyDamage(v, att, dmg, part, def, from) {
   if (att && att !== v) att.dmg = (att.dmg || 0) + Math.min(d, v.hp);
   if (att && att !== v && (att.isPlayer || v.isPlayer)) logDamage(att, v, Math.min(d, v.hp));
   v.hp -= d;
+  if (v.remote && netHost()) netHurt(v, att, d, from);
   if (att && att.isPlayer && att !== v) { hitMarker(part === 'head'); Snd.hit(part === 'head'); }
   if (v.isPlayer) playerHurt(att, d, from);
   else botHurt(v, att);
@@ -110,6 +112,7 @@ function applyDamage(v, att, dmg, part, def, from) {
 }
 function kill(v, att, def, hs) {
   v.alive = false; v.deaths++;
+  if (netHost()) netKill(v, att, def, hs);
   if (att && att !== v) {
     att.kills++; if (hs) att.hs = (att.hs || 0) + 1;
     if (!att.isPlayer) { att.roundKills = (att.roundKills || 0) + 1; if (Math.random() < 0.5) radio(att, pick(['Bittasini oldim!', 'Urdim!', 'Biri ketdi!'])); } // the player's count is kept by the streak banner
@@ -267,7 +270,7 @@ function tryFire() {
   const res = shootRay(eye, dir, p, def);
   const from = tp && playerBody && playerBody.muzzle ? playerBody.muzzle.getWorldPosition(new V3())
     : p.scope ? camera.localToWorld(new V3(0, -0.3, -0.5)) : camera.localToWorld(new V3(0.15, -0.13, -0.7));
-  tracer(from, res.point);
+  tracer(from, res.point); netShot(player, from, res.point, def);
   for (let k = 1; k < (def.pellets || 1); k++) { const r2 = shootRay(eye, coneDir(dir, def.cone), p, def); if (k % 3 === 0) tracer(from, r2.point); } // shotgun pellets
   vm.fire(rc); muzzleLight.position.copy(from); muzzleLight.intensity = 3.2;
   if (!def.melee && !tp) ejectShell(def.slot === 2);
@@ -408,7 +411,7 @@ function botFire(b) {
     const dx = _o.x + ab.x * k - e.x, dy = _o.y + ab.y * k - e.y, dz = _o.z + ab.z * k - e.z;
     if (k > 0.05 && k < 0.99 && dx * dx + dy * dy + dz * dz < 2.2) Snd.whiz(spatial(res.point).pan);
   }
-  b.model.muzzle.getWorldPosition(_m); tracer(_m, res.point);
+  b.model.muzzle.getWorldPosition(_m); tracer(_m, res.point); netShot(b, _m, res.point, def);
   b.model.flash.visible = true; b.model.flashT = 0.05; b.model.flash.material.rotation = Math.random() * 6;
   const s = spatial(_o); Snd.shot(def.snd, s.vol, s.pan);
   b.lastShot = game.time;
@@ -422,6 +425,7 @@ function updateBot(b, dt) {
     if (m.fall < 1) { m.fall = Math.min(1, m.fall + dt * 2.6); const k = m.fall * m.fall; m.group.rotation.x = -k * Math.PI / 2; m.group.position.y = 0.12 * k; }
     return;
   }
+  if (b.remote || b.puppet) { netPuppet(b, dt); return; } // online: a real player moves this one
   b.moveSpeed = 0;
   if (game.state === 'live' || game.state === 'end') {
     const st = botWeapon(b);
@@ -502,7 +506,7 @@ function updateBot(b, dt) {
 }
 function separateBots() {
   for (let i = 0; i < bots.length; i++) {
-    const a = bots[i]; if (!a.alive) continue;
+    const a = bots[i]; if (!a.alive || a.remote || a.puppet) continue;
     for (let j = 0; j < agents.length; j++) {
       const b = agents[j]; if (b === a || !b.alive) continue;
       const dx = a.pos.x - b.pos.x, dz = a.pos.z - b.pos.z, d = Math.hypot(dx, dz);

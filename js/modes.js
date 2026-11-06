@@ -48,6 +48,7 @@ function dmRespawn(a) {
     if (playerBody) { setGhost(playerBody, true); playerBody.fall = 1; playerBody.group.rotation.x = 0; }
     setSpectate(null); resetDmgReport();
   } else resetBotModel(a);
+  if (a.remote && netHost()) netSpawn(a);
   updatePips();
 }
 // ---------- Practice range: face a wall ~11 m away and hang a white target board on it ----------

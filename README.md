@@ -80,6 +80,10 @@ Telefonni gorizontal holatga burang. Chap tomonda joystik, ekranning bo‘sh joy
 
 Texnologiya: [three.js](https://threejs.org) r128, sof JavaScript — yig‘ish (build) kerak emas.
 
+## Onlayn (do‘stlar bilan)
+
+O‘YNASH panelining tepasida **XONA OCHISH**: 5 harfli kod chiqadi (masalan `QX7K2`). Do‘stlaringiz kodni yozib **Qo‘shilish**ni bosadi, xona egasi O‘YNASH ni bosganda hamma birga onlayn Deathmatch o‘ynaydi (10 kishigacha, jamoalar avtomatik teng bo‘linadi, bo‘sh joylarni botlar to‘ldiradi). Server kerak emas: o‘yinchilar WebRTC (PeerJS) orqali to‘g‘ridan-to‘g‘ri ulanadi, o‘yinni xona egasining qurilmasi boshqaradi. Havola orqali ham kirsa bo‘ladi: `.../kontr-qumtepa/?xona=QX7K2`.
+
 ## Ilova (Android / Play Market)
 
 Sayt PWA sifatida o‘rnatiladi: `manifest.webmanifest`, `icons/`, `sw.js` (internet bo‘lmasa keshdan ochiladi). Maxfiylik siyosati: https://zafarabdumalikov7777-netizen.github.io/kontr-qumtepa/privacy.html

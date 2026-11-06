@@ -20,6 +20,7 @@ function setupTeams(team) {
   const practice = settings.mode === 'practice'; // practice range: no bots at all
   NAMES[team].slice(0, practice ? 0 : settings.allies).forEach(n => bots.push(makeBot(n, team, id++)));
   NAMES[enemy].slice(0, practice ? 0 : settings.enemies).forEach(n => bots.push(makeBot(n, enemy, id++)));
+  if (NET.role && NET.started) bots = netTeams(bots, id);
   agents = [player, ...bots];
   const roles = ['A', 'B', 'mid']; let r = 0;
   bots.forEach(b => { if (b.team === 'KT') b.role = roles[r++ % roles.length]; });
@@ -68,6 +69,7 @@ function newMatch() {
   player.dmPrimary = null; player.dmPistol = null;
   els.feed.innerHTML = '';
   startRound(true);
+  if (netHost()) netSendStart();
 }
 function startRound(first) {
   game.round++; game.state = 'freeze'; game.timer = first ? 6 : 5; game.tSite = Math.random() < 0.5 ? 'A' : 'B';
@@ -123,6 +125,7 @@ function checkRoundEnd() {
   else if (!t && bomb.state !== 'planted') endRound('KT', 'elim'); // a planted bomb must still be defused
 }
 function updateRound(dt) {
+  if (netClient()) return; // online guest: the host runs the clock and the respawns
   if (game.mode === 'practice') return; // no clock, no rounds
   game.timer -= dt;
   if (game.state === 'freeze' && game.timer <= 0) { game.state = 'live'; game.timer = isDM() ? MODE_TIME[game.mode] : ROUND_TIME; showCenter('Oldinga!', '', '', 1); }
@@ -772,6 +775,7 @@ function selectMap(id) {
   buildShowcase();
 }
 function toMenu() {
+  if (netOn()) netLeave();
   game.state = 'menu'; game.paused = false; els.pause.hidden = true; els.over.hidden = true; closeBuy(false); Snd.ambient(0);
   document.body.classList.remove('playing'); TouchUI.reset();
   els.hud.hidden = true; els.touch.hidden = true; els.menu.hidden = false; setSpectate(null);
@@ -779,6 +783,7 @@ function toMenu() {
   buildShowcase();
 }
 function showMatchEnd() {
+  netMatchEnd();
   game.state = 'over';
   const dm = isDM(), gg = game.mode === 'gg';
   // Gun Game: the knife kill ends it; if the clock runs out the furthest up the ladder wins
@@ -805,6 +810,7 @@ function showMatchEnd() {
   els.over.hidden = false; if (document.pointerLockElement) document.exitPointerLock();
 }
 function startGame(e) {
+  if (NET.role === 'host' && !NET.started) netHostPrepare();
   Snd.init(); clearShowcase();
   document.getElementById('showPop').hidden = true; document.getElementById('pfCard').hidden = true;
   input.touchMode = (e && e.pointerType === 'touch') || matchMedia('(pointer: coarse)').matches;
@@ -956,6 +962,7 @@ addEventListener('resize', () => {
 // ---------- Main loop ----------
 function update(dt) {
   game.time += dt;
+  netTick(dt);
   updateRound(dt);
   if (!player.alive && input.touchMode) { // touch: OLISH takes the bot over, OTISH steps to the next one
     if (touch.use) takeOverBot();
@@ -988,13 +995,13 @@ function update(dt) {
 let last = performance.now();
 function frame(now) {
   requestAnimationFrame(frame);
-  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  const dt = Math.min(0.05, (now - last) / 1000); last = now; NET.lastFrame = performance.now();
   fpsMeter.tick(dt);
   if (Inspect.on) { Inspect.frame(dt); return; }
   if (game.state === 'menu') {
     if (!show.model) buildShowcase();
     animateShowcase(dt);
-  } else if (!game.paused && game.state !== 'over') update(dt);
+  } else if ((!game.paused || netOn()) && game.state !== 'over') update(dt); // online the match never stops for one player's pause
   updateWeather(dt);
   if (skyMesh) skyMesh.position.copy(camera.position);
   renderer.clear(); renderer.render(scene, camera);
