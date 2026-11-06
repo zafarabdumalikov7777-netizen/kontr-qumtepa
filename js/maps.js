@@ -100,5 +100,82 @@ const MAPS = [
       cap: 0xf2f6f9, crate: 'wood', crateSnow: true, ground: 0xe9eff4, far: 0x6f5a4c, landmark: 'pines',
       windows: 'glass-warm', awnings: null, cables: true, barrels: 0x7a2e24, snow: true, stepF: 380, wind: 0.22
     }
+  },
+  {
+    id: 'registon', code: 'de_registon', name: 'Registon', blurb: 'Uch madrasa maydoni · koshinli devorlar, quyosh botishi',
+    build(carve, put) {
+      carve(11, 1, 18, 3); carve(11, 25, 18, 28);                       // KT va T spawn
+      carve(1, 3, 8, 9); carve(21, 3, 28, 9);                           // A va B
+      carve(5, 1, 10, 3); carve(19, 1, 24, 3);                          // KT → saytlar
+      carve(9, 11, 20, 18);                                              // Registon maydoni
+      put(12, 13, '#'); put(17, 13, '#'); put(12, 16, '#'); put(17, 16, '#'); // maydondagi ustunlar
+      carve(14, 4, 15, 10); carve(14, 19, 15, 24);                      // o‘rta yo‘l
+      carve(4, 10, 8, 12); carve(21, 10, 25, 12);                       // maydon → saytlar
+      carve(1, 10, 3, 26); carve(4, 24, 10, 26);                        // uzun A
+      carve(26, 10, 28, 26); carve(19, 24, 25, 26);                     // uzun B
+      carve(4, 16, 8, 17); carve(21, 15, 25, 16);                       // yon eshiklar
+      carve(2, 4, 7, 8, 'A'); carve(22, 4, 27, 8, 'B'); carve(12, 1, 17, 2, 'S'); carve(12, 26, 17, 27, 'T');
+      [[3,5,'C'],[6,7,'c'],[5,4,'c'],[24,5,'C'],[22,7,'c'],[26,4,'c'],[10,12,'c'],[19,17,'C'],[14,15,'c'],
+       [2,20,'c'],[27,14,'c'],[7,25,'C'],[22,25,'c'],[13,22,'c'],[15,7,'c']].forEach(([x, y, c]) => put(x, y, c));
+    },
+    letters: { A: [4.5, 5.5], B: [24.5, 5.5] },
+    via: { A: [[2, 18], [6, 11]], B: [[27, 18], [23, 11]] }, mid: [[14, 8], [15, 6]],
+    theme: {
+      sky: [0x34508f, 0xf0b27a, 0xe59a58], cloud: 0.35, fog: [0xe6b48a, 55, 250], exposure: 1.05,
+      sunDir: [-0.7, 0.36, 0.42], sunCol: 0xffc68a, sunI: 2.4, hemi: [0xffd8b0, 0x6f5236, 0.75],
+      floor: { style: 'slabs', base: '#c8b089' }, wall: { style: 'majolica', base: '#c9a77a' }, wallH: [6.4, 9.4],
+      cap: 0x2f8f9d, crate: 'wood', ground: 0xb89a70, far: 0xc9a77a, landmark: 'dome',
+      windows: 'shutter', shutter: '#2f6f8f', awnings: [0x2f6f8f, 0xc7922f, 0x8f2d2d], cables: false, barrels: 0x6b4a2b, stepF: 600, wind: 0.1
+    }
+  },
+  {
+    id: 'voha', code: 'de_voha', name: 'Voha', blurb: 'Cho‘ldagi voha · palmalar, oq uylar, uch yo‘lak',
+    build(carve, put) {
+      carve(1, 11, 4, 18); carve(25, 11, 28, 18);                       // KT va T spawn
+      carve(10, 1, 19, 7); carve(10, 22, 19, 28);                       // A va B
+      carve(9, 11, 20, 18); carve(13, 13, 16, 16, '#');                 // markaziy hovli, o‘rtada uy
+      carve(2, 4, 4, 10); carve(5, 4, 9, 5);                            // KT → A
+      carve(2, 19, 4, 25); carve(5, 24, 9, 25);                         // KT → B
+      carve(5, 14, 8, 15); carve(21, 14, 24, 15);                       // spawnlar → hovli
+      carve(25, 4, 27, 10); carve(20, 4, 24, 5);                        // T → A
+      carve(25, 19, 27, 25); carve(20, 24, 24, 25);                     // T → B
+      carve(14, 8, 15, 10); carve(14, 19, 15, 21);                      // hovli → saytlar
+      carve(11, 2, 18, 6, 'A'); carve(11, 23, 18, 27, 'B'); carve(1, 12, 3, 17, 'S'); carve(26, 12, 28, 17, 'T');
+      [[12,3,'C'],[16,5,'c'],[17,2,'c'],[12,25,'c'],[16,24,'C'],[13,27,'c'],[10,12,'c'],[19,17,'c'],[10,17,'C'],
+       [18,12,'C'],[3,7,'c'],[26,8,'c'],[3,22,'c'],[26,21,'C'],[7,4,'c'],[22,25,'c']].forEach(([x, y, c]) => put(x, y, c));
+    },
+    letters: { A: [14.5, 4], B: [14.5, 25] },
+    via: { A: [[26, 7], [22, 5]], B: [[26, 22], [22, 24]] }, mid: [[11, 12], [11, 17], [8, 15]],
+    theme: {
+      sky: [0x3c86d6, 0xd9ecf5, 0xf0e2c0], cloud: 0.2, fog: [0xe5dcc4, 70, 300], exposure: 1.0,
+      sunDir: [0.3, 0.85, -0.35], sunCol: 0xfff4de, sunI: 2.8, hemi: [0xe2efff, 0x9c8a5c, 0.8],
+      floor: { style: 'slabs', base: '#d8c294' }, wall: { style: 'stucco', base: '#ece4d4' }, wallH: [4.8, 7],
+      cap: 0x8a6a46, crate: 'wood', ground: 0xd6bd88, far: 0xc9b88f, landmark: 'palms',
+      windows: 'shutter', shutter: '#3b7a8f', awnings: [0x2f8f6f, 0xd8a73a, 0xb3412e], cables: false, barrels: 0x3e6b45, stepF: 520, wind: 0.14
+    }
+  },
+  {
+    id: 'tungi', code: 'de_tungi_bozor', name: 'Tungi bozor', blurb: 'Kechasi · chiroqlar, rastalar va tor yo‘laklar',
+    build(carve, put) {
+      carve(1, 1, 6, 5); carve(23, 24, 28, 28);                         // KT va T spawn
+      carve(20, 1, 28, 8); carve(1, 21, 9, 28);                         // A va B
+      carve(9, 9, 20, 20); carve(14, 14, 15, 15, '#');                  // bozor zali
+      carve(7, 2, 19, 3); carve(2, 6, 3, 20);                           // KT → A, KT → B
+      carve(10, 24, 22, 25); carve(26, 9, 27, 23);                      // T → B, T → A
+      carve(14, 4, 15, 8); carve(14, 21, 15, 23);                       // zalga eshiklar
+      carve(4, 14, 8, 15); carve(21, 14, 25, 15);
+      carve(21, 2, 27, 7, 'A'); carve(2, 22, 8, 27, 'B'); carve(2, 2, 5, 4, 'S'); carve(24, 25, 27, 27, 'T');
+      [[11,11,'C'],[18,11,'c'],[11,18,'c'],[18,18,'C'],[12,14,'c'],[17,15,'c'],[23,3,'C'],[25,6,'c'],[27,2,'c'],
+       [4,23,'C'],[6,26,'c'],[8,22,'c'],[12,2,'c'],[2,12,'c'],[17,25,'c'],[27,17,'c']].forEach(([x, y, c]) => put(x, y, c));
+    },
+    letters: { A: [24, 4.5], B: [5, 24.5] },
+    via: { A: [[26, 16], [15, 6]], B: [[16, 24], [6, 14]] }, mid: [[12, 12], [17, 12], [14, 10]],
+    theme: {
+      sky: [0x0a1030, 0x2a3566, 0x4a3a50], cloud: 0.3, fog: [0x1f2740, 40, 190], exposure: 1.5,
+      sunDir: [-0.35, 0.7, 0.5], sunCol: 0xa8bcff, sunI: 1.0, hemi: [0x7080c0, 0x9a6232, 1.2],
+      floor: { style: 'cobble', base: '#8a8276' }, wall: { style: 'stucco', base: '#cdb08c' }, wallH: [5.2, 7.8],
+      cap: 0x5a3f2a, crate: 'wood', ground: 0x3a362f, far: 0x1d2030, landmark: 'dome',
+      windows: 'glass-warm', awnings: [0xb3412e, 0x2f6f8f, 0xd8a73a, 0x6a3a8f], cables: true, lamps: 'many', barrels: 0x6b4a2b, stepF: 900, wind: 0.06
+    }
   }
 ];

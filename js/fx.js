@@ -235,7 +235,7 @@ function clearFx() {
 // ---------- First-person viewmodel ----------
 // [x, y, z, yaw] of the grip in front of the camera
 const VM_POS = { rifle: [0.15, -0.155, -0.47, 0], pistol: [0.135, -0.125, -0.42, 0.02], knife: [0.14, -0.13, -0.36, 0.22], he: [0.13, -0.11, -0.34, 0] };
-const VM_KIND = { ak: 'rifle', m4: 'rifle', awp: 'rifle', smg: 'rifle', pistol: 'pistol', usp: 'pistol', deagle: 'pistol', knife: 'knife', he: 'he', smoke: 'he', flash: 'he', c4: 'he' };
+const VM_KIND = { ak: 'rifle', m4: 'rifle', awp: 'rifle', smg: 'rifle', pistol: 'pistol', usp: 'pistol', deagle: 'pistol', knife: 'knife', karambit: 'knife', butterfly: 'knife', bayonet: 'knife', bowie: 'knife', chust: 'knife', he: 'he', smoke: 'he', flash: 'he', c4: 'he' };
 const flashMat = new THREE.SpriteMaterial({ map: texFlash, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true });
 const vmFlash = new THREE.Sprite(flashMat); vmFlash.scale.set(0.22, 0.22, 0.22); vmFlash.visible = false;
 const vm = {
@@ -244,8 +244,9 @@ const vm = {
     const skin = equippedSkin(def.id), agent = equippedAgent(team);
     const key = def.model + '_' + team + '_' + (skin || '') + '_' + (agent ? agent.id : '');
     if (this.cur) this.root.remove(this.cur);
-    let m = this.cache[key]; if (!m) { m = buildGun(def.model, team, skin, agent); this.cache[key] = m; }
-    this.cur = m; this.root.add(m); m.userData.muzzle.add(vmFlash); this.kind = VM_KIND[def.model] || 'rifle';
+    const model = skinModel(def.model, skin);
+    let m = this.cache[key]; if (!m) { m = buildGun(model, team, skin, agent); this.cache[key] = m; }
+    this.cur = m; this.root.add(m); m.userData.muzzle.add(vmFlash); this.kind = VM_KIND[model] || 'rifle';
   },
   // the weapon is kicked back like a stiff spring and returns without bouncing
   fire(power = 1) { this.kv += 30 * power; this.kickY = (Math.random() - 0.5) * 0.025 * power; vmFlash.visible = this.kind !== 'knife' && this.kind !== 'he'; vmFlash.material.rotation = Math.random() * 6; this.flashT = 0.045; }

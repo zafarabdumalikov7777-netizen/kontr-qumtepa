@@ -126,7 +126,7 @@ function buildDecor(T, cellH) {
         const a = add(new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.04, 1.0), pick(awnMats)), { receive: false });
         a.position.set(fx + dx * 0.5, top + 0.2, fz + dz * 0.5); a.rotation.y = rotY; a.rotateX(0.32);
       }
-      if (T.lamps && rnd() < 0.07) { const l = add(new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.12, 0.3), lampMat), { receive: false }); l.position.set(fx + dx * 0.15, 4.2, fz + dz * 0.15); l.rotation.y = rotY; }
+      if (T.lamps && rnd() < (T.lamps === 'many' ? 0.22 : 0.07)) { const l = add(new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.12, 0.3), lampMat), { receive: false }); l.position.set(fx + dx * 0.15, 4.2, fz + dz * 0.15); l.rotation.y = rotY; }
       // barrels against the wall, on the floor cell next to it
       const fc = G[nz][nx];
       if (T.barrels && rnd() < 0.05 && '.AB'.includes(fc)) {
@@ -229,6 +229,19 @@ function buildLandmarks(T) {
     ring(40, 70, 120, (x, z, a) => { if (Math.sin(a) < -0.3) return; const n = 1 + (rnd() * 3 | 0); for (let k = 0; k < n; k++) put(new THREE.BoxGeometry(6, 2.6, 2.5), pick(cols), x, 1.3 + k * 2.6, z, a); });
     const sea = new THREE.Mesh(new THREE.PlaneGeometry(1400, 500), std({ color: lin(0x3d5566), roughness: 0.25, metalness: 0.4 }));
     sea.rotation.x = -Math.PI / 2; sea.position.set(0, -0.01, -390); worldGroup.add(sea);
+  } else if (T.landmark === 'palms') {
+    const trunk = std({ color: lin(0x7a5a3a), roughness: 0.95 }), leaf = std({ color: lin(0x3f7a32), roughness: 0.8, side: THREE.DoubleSide });
+    ring(80, 58, 150, (x, z) => {
+      const h = 7 + rnd() * 6, lean = rand(-0.18, 0.18);
+      const t = put(new THREE.CylinderGeometry(0.28, 0.45, h, 7), trunk, x, h / 2, z); t.rotation.z = lean;
+      const tx = x - Math.sin(lean) * h / 2, ty = h / 2 + Math.cos(lean) * h / 2;
+      for (let k = 0; k < 7; k++) {
+        const f = put(new THREE.PlaneGeometry(0.9, 4.2), leaf, tx, ty, z, k / 7 * Math.PI * 2);
+        f.rotateX(-1.05); f.translateY(1.9);
+      }
+    });
+    const dune = std({ color: lin(0xd2b27a), roughness: 1 });
+    ring(16, 260, 360, (x, z) => { const h = 18 + rnd() * 26; put(new THREE.SphereGeometry(60 + rnd() * 40, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), dune, x, 0, z).scale.y = h / 80; });
   } else if (T.landmark === 'pines') {
     const trunk = std({ color: lin(0x4a3424) }), green = std({ color: lin(0x2c4a35), roughness: 0.95 }), snowy = std({ color: lin(0xe8eef3), roughness: 0.8 });
     ring(110, 62, 160, (x, z) => {

@@ -63,7 +63,7 @@ function makeSoldier(team, variant, ghost) {
   if (o.pack) mesh(SGEO.pack, M(team === 'T' ? 0x4a3f2c : 0x2a3340), upper, 0, 1.33, -0.22);
   mesh(SGEO.neck, M(skin, 0.6), upper, 0, 1.6, 0);
   const headMat = o.head === 'balaclava' ? M(0x1f1d1b) : M(skin, 0.6);
-  mesh(SGEO.head, headMat, upper, 0, 1.72, 0.01, 'head');
+  const headMesh = mesh(SGEO.head, headMat, upper, 0, 1.72, 0.01, 'head');
   if (o.head === 'balaclava') mesh(SGEO.eyes, M(skin, 0.6), upper, 0, 1.74, 0.11);
   if (o.head === 'helmet') { mesh(SGEO.helmet, M(o.helmetCol || 0x2e3a2c, 0.7), upper, 0, 1.75, 0); mesh(SGEO.goggles, M(0x101214, 0.3, 0.4), upper, 0, 1.76, 0.115); }
   if (o.head === 'beanie') mesh(SGEO.beanie, M(o.headCol || 0x2a2622), upper, 0, 1.75, 0);
@@ -77,6 +77,7 @@ function makeSoldier(team, variant, ghost) {
     const f = mesh(SGEO.barrel, M(0x30343a, 0.5, 0.4), upper, 0, 1.63, 0.15); f.scale.set(2.6, 0.25, 2.6); f.rotation.x = Math.PI / 2;
     mesh(SGEO.beanie, M(o.headCol || 0x1b1d20), upper, 0, 1.74, -0.01).scale.set(1.05, 0.9, 1.05);
   }
+  if (o.morph) dressMorph(o.morph, { mesh, M, mats, upper, head: headMesh });
   // arms holding the rifle
   const top = M(o.top), gl = M(glove, 0.7);
   const shR = [0.21, 1.5, -0.01], elR = [0.25, 1.27, 0.15], haR = [0.08, 1.33, 0.33];

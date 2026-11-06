@@ -22,7 +22,7 @@ function caseIcon(c) {
 const goldCard = '<div class="gold-star">★</div>';
 function itemCard(id, opts = {}) {
   const d = itemDef(id), r = RARITY[d.rarity], hide = opts.hideGold && d.rarity === 'gold';
-  const top = d.kind === 'agent' ? d.name : WEAPONS[d.weapon].name, sub = d.kind === 'agent' ? (d.team === 'KT' ? 'KT agenti' : 'T agenti') : d.name.replace(/^Pichoq \| /, '');
+  const top = d.kind === 'agent' ? d.name : weaponName(d), sub = d.kind === 'agent' ? (d.team === 'KT' ? 'KT agenti' : 'T agenti') : d.name.replace(/^Pichoq \| /, '');
   return `<div class="icard ${opts.cls || ''}" style="--rc:${r.color}" ${opts.attr || ''}>` +
     (hide ? goldCard + '<span class="iname">★ Nodir pichoq</span><span class="isub">Juda kam uchraydi</span>' :
       `<img src="${itemIcon(id)}" alt=""><span class="iname">${top}</span><span class="isub">${sub}</span>`) + (opts.extra || '') + '</div>';
@@ -64,8 +64,12 @@ const ShopUI = (() => {
     document.getElementById('caseBack').onclick = () => render();
   }
   // ---- roulette ----
-  const ROLL_MS = 6400;
-  let rollToken = 0;
+  // "Tez ochish" spins in 1.5 s instead of 6.4 s; "O‘tkazib yuborish" lands at once
+  const rollFast = document.getElementById('rollFast'), rollSkip = document.getElementById('rollSkip'), rollCtl = rollSkip.parentElement;
+  rollFast.checked = store.get('kq_rollfast', false) === true;
+  rollFast.onchange = () => store.set('kq_rollfast', rollFast.checked);
+  let rollToken = 0, skipRoll = null;
+  rollSkip.onclick = () => skipRoll && skipRoll();
   // a promo code's free case (optionally with a fixed prize)
   function bonusCase(r) { openCase(CASES.find(c => c.id === r.caseId), { free: true, win: r.win }); }
   function openCase(c, opt = {}) {
@@ -79,7 +83,8 @@ const ShopUI = (() => {
     const track = document.getElementById('rollTrack'), wrap = track.parentElement, res = document.getElementById('rollResult');
     document.getElementById('rollCase').textContent = c.name;
     track.innerHTML = strip.map(id => itemCard(id, { hideGold: true, cls: 'rc' })).join('');
-    res.hidden = true; roll.hidden = false;
+    res.hidden = true; roll.hidden = false; rollCtl.hidden = false;
+    const ROLL_MS = rollFast.checked ? 1500 : 6400;
     track.style.transition = 'none'; track.style.transform = 'translateX(0px)';
     // measure the real card layout (zoom, fonts and CSS can change the width)
     const cards = track.children, el = cards[WIN_AT], x0 = cards[0].offsetLeft, pitch = cards[1].offsetLeft - x0;
@@ -90,8 +95,9 @@ const ShopUI = (() => {
     const place = x => { track.style.transform = `translateX(${-x}px)`; };
     const finish = () => {
       if (done || token !== rollToken) return;
-      done = true; place(target); reveal(c, prize);
+      done = true; skipRoll = null; rollCtl.hidden = true; place(target); reveal(c, prize);
     };
+    skipRoll = finish;
     const tick = now => {
       if (done || token !== rollToken) return;
       const t = Math.min(1, (now - t0) / ROLL_MS), x = target * (1 - Math.pow(1 - t, 4.2));
@@ -134,7 +140,7 @@ const ShopUI = (() => {
     const it = itemByUid(uid), d = itemDef(it.id), r = RARITY[d.rarity], on = INV.equip[equipSlot(d)] === uid;
     body.innerHTML = `<div class="won" style="--rc:${r.color}"><img src="${itemIcon(it.id)}" alt=""><div>
       <div class="eyebrow" style="color:${r.color}">${r.name}${d.kind === 'skin' ? ' · ' + wearName(it.f) + ' · ' + it.f.toFixed(3) : ''}</div>
-      <h3>${itemTitle(d)}</h3><p>${d.kind === 'agent' ? `Jihozlansa, ${d.team} jamoasida o‘ynaganingizda shu kiyimda bo‘lasiz (qo‘llaringiz va soyangiz).` : `Jihozlansa, ${WEAPONS[d.weapon].name} shu skin bilan ko‘rinadi.`}</p>
+      <h3>${itemTitle(d)}</h3><p>${d.kind === 'agent' ? `Jihozlansa, ${d.team} jamoasida o‘ynaganingizda shu kiyimda bo‘lasiz (qo‘llaringiz va soyangiz).` : `Jihozlansa, ${d.knife ? 'pichog‘ingiz ' + KNIVES[d.knife] + 'ga aylanadi' : WEAPONS[d.weapon].name + ' shu skin bilan ko‘rinadi'}.`}</p>
       <div class="row"><button class="primary" id="dEquip" type="button">${on ? 'YECHISH' : 'JIHOZLASH'}</button><button class="ghost" id="dSell" type="button">Sotish · $${itemValue(it)}</button><button class="ghost" id="dBack" type="button">Orqaga</button></div></div></div>`;
     document.getElementById('dEquip').onclick = () => { toggleEquip(uid); renderInv(); };
     document.getElementById('dSell').onclick = () => { sellItem(uid); renderInv(); money(); };
@@ -159,7 +165,7 @@ const ShopUI = (() => {
   const itemPat = d => d.kind === 'skin' ? d.pat.p : d.look.top && d.look.top.p;
   const searchText = id => {
     const d = itemDef(id), c = CASES.find(c => c.items.includes(id));
-    return norm([itemTitle(d), d.kind === 'agent' ? 'agent ' + d.team : WEAPONS[d.weapon].name, PAT_NAME[itemPat(d)] || '', RARITY[d.rarity].name, c ? c.name : ''].join(' '));
+    return norm([itemTitle(d), d.kind === 'agent' ? 'agent ' + d.team : weaponName(d) + ' ' + WEAPONS[d.weapon].name, PAT_NAME[itemPat(d)] || '', RARITY[d.rarity].name, c ? c.name : ''].join(' '));
   };
   function marketList() {
     const q = norm(mk.q).trim().split(/\s+/).filter(Boolean);

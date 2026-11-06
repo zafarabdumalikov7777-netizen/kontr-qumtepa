@@ -41,7 +41,8 @@ function makeBot(name, team, id) {
   };
   // bots wear a random agent most of the time, so a team never looks like clones
   const looks = Object.values(AGENTS).filter(a => a.team === team);
-  b.model = makeSoldier(team, Math.random() < 0.65 ? pick(looks) : id);
+  b.model = makeSoldier(team, morphVariant() || (Math.random() < 0.65 ? pick(looks) : id));
+  if (MODS.big) bigHead(b.model);
   b.model.hit.forEach(m => { m.userData.agent = b; });
   b.hitMeshes = b.model.hit;
   return b;

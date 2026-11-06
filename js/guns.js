@@ -44,7 +44,9 @@ const GMAT_DEF = {
   flashcan: { color: 0x8c9196, metalness: 0.75, roughness: 0.3 },
   clay: { color: 0xb6a479, metalness: 0, roughness: 0.85 },
   tape: { color: 0x26292c, metalness: 0, roughness: 0.6 },
-  lcd: { color: 0x2f5f2a, metalness: 0.2, roughness: 0.2 }
+  lcd: { color: 0x2f5f2a, metalness: 0.2, roughness: 0.2 },
+  brass: { color: 0xb58a3a, metalness: 1, roughness: 0.3 },
+  horn: { color: 0xe6d8bb, metalness: 0, roughness: 0.4 }
 };
 const GMAT = {};
 const gmat = n => GMAT[n] || (GMAT[n] = new THREE.MeshStandardMaterial(Object.assign({}, GMAT_DEF[n], { color: lin(GMAT_DEF[n].color), envMap: gunEnv, envMapIntensity: 0.9 })));
@@ -183,6 +185,55 @@ const GUNS = {
     slab(g, pl, [[-0.12, 0.008], [-0.006, 0.008], [-0.006, -0.026], ['q', -0.03, -0.033, -0.045, -0.024], ['q', -0.06, -0.035, -0.076, -0.026], ['q', -0.1, -0.034, -0.12, -0.022]], 0.024);
     lathe(g, st, [[0, -0.135], [0.012, -0.132], [0.013, -0.12], [0, -0.118]], -0.007);
     return { mz: 0.238, knife: true };
+  },
+  // claw-shaped blade with a finger ring
+  karambit(g) {
+    const bl = gmat('blade'), pl = gmat('poly'), st = gmat('steel');
+    slab(g, bl, [[0, 0.012], ['q', 0.085, 0.04, 0.14, -0.035], ['q', 0.09, 0.004, 0.012, -0.012], [0, -0.012]], 0.005);
+    slab(g, st, [[-0.008, 0.016], [0.006, 0.016], [0.006, -0.018], [-0.008, -0.018]], 0.022);
+    slab(g, pl, [[-0.09, 0.012], [-0.008, 0.014], [-0.008, -0.016], ['q', -0.04, -0.03, -0.075, -0.018], ['q', -0.092, -0.01, -0.09, 0.012]], 0.022);
+    ring(g, st, 0.019, 0.005, -0.108, 0);
+    return { mz: 0.14, knife: true };
+  },
+  // balisong: thin blade between two slotted handles
+  butterfly(g) {
+    const bl = gmat('blade'), pl = gmat('poly'), st = gmat('steel');
+    slab(g, bl, [[0, 0.006], [0.16, 0.006], ['q', 0.19, 0.006, 0.205, 0], ['q', 0.17, -0.02, 0.13, -0.02], [0, -0.02]], 0.004);
+    for (const s of [-0.0055, 0.0055]) slab(g, pl, [[-0.13, 0.01], [0.004, 0.01], [0.004, -0.022], [-0.13, -0.022]], 0.005, s, [[[-0.115, 0.002], [-0.02, 0.002], [-0.02, -0.014], [-0.115, -0.014]]]);
+    tiny(g, st, 0.017, 0.007, 0.007, -0.004, -0.006); tiny(g, st, 0.017, 0.007, 0.007, -0.122, -0.006);
+    slab(g, st, [[-0.15, 0.004], [-0.13, 0.004], [-0.13, -0.016], [-0.15, -0.016]], 0.004, 0.0055);
+    return { mz: 0.205, knife: true };
+  },
+  // M9-style bayonet: serrated spine, guard, ribbed grip
+  bayonet(g) {
+    const bl = gmat('blade'), pl = gmat('poly'), st = gmat('steel');
+    slab(g, bl, [[0, 0.008], [0.19, 0.008], ['q', 0.235, 0.006, 0.26, -0.004], ['q', 0.22, -0.026, 0.17, -0.03], [0, -0.03]], 0.0055);
+    for (let x = 0.05; x < 0.13; x += 0.012) slab(g, bl, [[x, 0.007], [x + 0.006, 0.015], [x + 0.012, 0.007]], 0.004);
+    slab(g, st, [[0.02, -0.006], [0.15, -0.006], [0.15, -0.012], [0.02, -0.012]], 0.0062);
+    slab(g, st, [[-0.008, 0.026], [0.006, 0.026], [0.006, -0.05], ['q', 0, -0.06, -0.008, -0.05]], 0.03);
+    slab(g, pl, [[-0.125, 0.012], [-0.008, 0.012], [-0.008, -0.03], [-0.125, -0.026]], 0.026);
+    for (let x = -0.11; x < -0.02; x += 0.016) slab(g, pl, [[x, 0.014], [x + 0.008, 0.014], [x + 0.008, -0.031], [x, -0.03]], 0.029);
+    lathe(g, st, [[0, -0.145], [0.016, -0.14], [0.017, -0.128], [0, -0.124]], -0.008);
+    return { mz: 0.26, knife: true };
+  },
+  // big clip-point blade, brass guard, wooden handle
+  bowie(g) {
+    const bl = gmat('blade'), wd = gmat('wood'), br = gmat('brass');
+    slab(g, bl, [[0, 0.012], [0.17, 0.013], ['q', 0.23, 0.012, 0.27, -0.002], ['q', 0.24, -0.042, 0.17, -0.045], [0, -0.04]], 0.006);
+    slab(g, br, [[-0.01, 0.024], [0.004, 0.024], [0.004, -0.062], [-0.01, -0.062]], 0.03);
+    slab(g, wd, [[-0.13, 0.012], [-0.01, 0.014], [-0.01, -0.036], ['q', -0.07, -0.046, -0.13, -0.03]], 0.028);
+    slab(g, br, [[-0.146, 0.016], [-0.128, 0.016], [-0.128, -0.034], [-0.146, -0.028]], 0.03);
+    return { mz: 0.27, knife: true };
+  },
+  // Chust pichog‘i: wide Uzbek blade, brass bolster, horn handle bent down like a bird's head
+  chust(g) {
+    const bl = gmat('blade'), br = gmat('brass'), hn = gmat('horn'), bk = gmat('bakelite');
+    slab(g, bl, [[0, 0.008], [0.14, 0.01], ['q', 0.2, 0.012, 0.24, 0.022], ['q', 0.21, -0.03, 0.12, -0.036], [0, -0.03]], 0.005);
+    slab(g, br, [[-0.022, 0.014], [0.004, 0.012], [0.004, -0.034], [-0.022, -0.03]], 0.024);
+    slab(g, hn, [[-0.12, 0.012], [-0.022, 0.012], [-0.022, -0.028], [-0.1, -0.026], ['q', -0.13, -0.03, -0.142, -0.012], ['q', -0.14, 0.012, -0.12, 0.012]], 0.024);
+    for (const x of [-0.04, -0.07, -0.1]) slab(g, bk, [[x, 0.0125], [x + 0.006, 0.0125], [x + 0.006, -0.0275], [x, -0.027]], 0.0256);
+    for (const x of [-0.055, -0.085]) tiny(g, br, 0.0262, 0.006, 0.006, x, -0.008);
+    return { mz: 0.24, knife: true };
   },
   he(g) {
     const od = gmat('olivedrab'), st = gmat('steel');

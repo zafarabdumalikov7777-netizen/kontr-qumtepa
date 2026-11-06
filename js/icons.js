@@ -56,7 +56,7 @@ function renderAgentIcon(agentId) {
 // Picture for an inventory item: a skinned gun or an agent
 function itemIcon(id) {
   const key = 'item|' + id;
-  if (!iconCache[key]) iconCache[key] = SKINS[id] ? renderGunIcon(WEAPONS[SKINS[id].weapon].model, id) : renderAgentIcon(id);
+  if (!iconCache[key]) iconCache[key] = SKINS[id] ? renderGunIcon(skinModel(WEAPONS[SKINS[id].weapon].model, id), id) : renderAgentIcon(id);
   return iconCache[key];
 }
 

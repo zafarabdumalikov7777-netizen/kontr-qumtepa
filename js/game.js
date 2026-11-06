@@ -13,7 +13,8 @@ let spectating = null, playerBody = null, bodyPh = 0;
 function setupTeams(team) {
   for (const b of bots) disposeSoldier(b.model);
   if (playerBody) disposeSoldier(playerBody);
-  playerBody = makeSoldier(team, equippedAgent(team) || 0, true);
+  playerBody = makeSoldier(team, morphVariant() || equippedAgent(team) || 0, true);
+  if (MODS.big) bigHead(playerBody);
   player.team = team; bots = []; let id = 1;
   const enemy = team === 'KT' ? 'T' : 'KT';
   const practice = settings.mode === 'practice'; // practice range: no bots at all
@@ -153,7 +154,7 @@ function updatePlayer(dt) {
   moveXZ(p.pos, p.vel.x * dt, p.vel.z * dt, 0.34, h);
   if (Math.abs(p.pos.x - ox - p.vel.x * dt) > 1e-4) p.vel.x = 0; // hit a wall: lose that component
   if (Math.abs(p.pos.z - oz - p.vel.z * dt) > 1e-4) p.vel.z = 0;
-  p.vel.y -= 17 * dt; p.pos.y += p.vel.y * dt;
+  p.vel.y -= (MODS.grav ? 5 : 17) * dt; p.pos.y += p.vel.y * dt;
   const wasAir = !p.onGround; p.onGround = false;
   if (p.pos.y <= 0) { p.pos.y = 0; p.vel.y = 0; p.onGround = true; }
   else { const b = hitBox(p.pos.x, p.pos.y, p.pos.z, 0.34, h); if (b) { if (p.vel.y <= 0) { p.pos.y = b.y1; p.onGround = true; } else p.pos.y = b.y0 - h; p.vel.y = 0; } }
@@ -216,7 +217,7 @@ function updatePlayerBody(dt) {
   }
   const gh = !thirdPerson(); if (m.ghost !== gh) setGhost(m, gh);
   m.group.position.copy(p.pos); m.group.rotation.y = p.yaw + Math.PI;
-  setSoldierGun(m, curDef().model);
+  setSoldierGun(m, skinModel(curDef().model, equippedSkin(curDef().id)));
   const hs = Math.hypot(p.vel.x, p.vel.z); if (hs > 0.5) bodyPh += dt * hs * 1.9;
   poseSoldier(m, bodyPh, Math.min(1, hs / 5), p.crouch, !p.onGround);
 }
@@ -334,7 +335,8 @@ function updateHUD(dt) {
   if (game.mode === 'dm' && !p.alive && p.respawnT > 0) showCenter('Qayta tug‘ilish', `${Math.ceil(p.respawnT)} soniyadan keyin`, '', 0.2);
   const st = curState() || p.inv[3], def = st.def;
   setT('wName', def.name);
-  if (cache.wIcon !== def.model) { cache.wIcon = def.model; const ic = iconCache[def.model]; const im = document.getElementById('wIcon'); im.hidden = !ic; if (ic) im.src = ic; }
+  const wsk = equippedSkin(def.id), wkey = def.model + (wsk || '');
+  if (cache.wIcon !== wkey) { cache.wIcon = wkey; const ic = wsk ? itemIcon(wsk) : iconCache[def.model]; const im = document.getElementById('wIcon'); im.hidden = !ic; if (ic) im.src = ic; }
   if (def.mag) { setT('magV', String(st.mag)); setT('resV', String(st.res)); }
   else if (def.slot === 4) { setT('magV', String(st.count)); setT('resV', String(NADE_MAX[def.id])); }
   else { setT('magV', '—'); setT('resV', '—'); }
@@ -736,6 +738,7 @@ function frame(now) {
   updateWeather(dt);
   if (skyMesh) skyMesh.position.copy(camera.position);
   renderer.clear(); renderer.render(scene, camera);
+  wallhackPass();
   if (game.state !== 'menu' && vm.root.visible) { renderer.clearDepth(); renderer.render(vScene, vCam); }
 }
 

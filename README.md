@@ -14,7 +14,7 @@ Mahalliy ishga tushirish: `index.html` faylini Chrome yoki Edge’da oching (int
 
 ## Imkoniyatlar
 
-- 4 xarita: Qumtepa, Eskishahar, Ombor, Qorliq
+- 7 xarita: Qumtepa, Eskishahar, Ombor, Qorliq, Registon, Voha, Tungi bozor
 - Ittifoqchi va raqib botlar soni (har jamoada 10 tagacha), 3 xil qiyinlik; botlar bomba qo‘yadi va zararsizlantiradi
 - Granatalar: HE, flesh (ko‘r qiladi), tutun (ko‘rinishni to‘sadi); defuse kit
 - Qurol olish/almashtirish (E), tashlash (G), qurolni ko‘zdan kechirish (F)
@@ -29,9 +29,14 @@ Mahalliy ishga tushirish: `index.html` faylini Chrome yoki Edge’da oching (int
 Bosh menyuda **KEYSLAR VA INVENTAR**. Har bir o‘yin oxirida hisobingizga pul tushadi (g‘alaba, qotillik, yutilgan raundlar uchun), boshlanishiga $1000 sovg‘a.
 
 - **5 ta keys:** Qumtepa, Registon, Ipak yo‘li, Qish va Agentlar keysi. CS’dagidek ruletka va noyoblik darajalari: Harbiy, Cheklangan, Maxfiy, Yashirin, ★ Nodir pichoq.
-- **36 ta qurol skini** (atlas, suzani, koshin naqshlari ham bor) va **12 ta agent** (personaj kiyimi).
+- **6 xil pichoq** (Karambit, Kapalak, Nayza, Bowie, Chust pichog‘i va oddiy pichoq), keys ochishda **Tez ochish** va **O‘tkazib yuborish**.
+- **40 ta qurol skini** (atlas, suzani, koshin naqshlari ham bor) va **12 ta agent** (personaj kiyimi).
 - **Inventar:** skinni jihozlash, sotish; **Do‘kon:** har kuni yangilanadigan takliflar.
 - Jihozlangan skin qo‘lingizdagi qurolda, agent esa qo‘l/yeng va soyangizda ko‘rinadi. Botlar ham har xil agent kiyimida.
+
+## Modlar
+
+Bosh menyuda **MODLAR** (yoki pauzada): **Wallhack** (devor orqasidagi odamlar ko‘rinadi), **Katta kallalar**, **Oy gravitatsiyasi** va odamlarni **personajlarga aylantirish** — Robot, O‘zga sayyoralik, Skelet, Zombi, Supergeroy, Multfilm qahramoni, Qovoq bosh, Kosmonavt yoki **Aralash**.
 
 ## Boshqaruv
 

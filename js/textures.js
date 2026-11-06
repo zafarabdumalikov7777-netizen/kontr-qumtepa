@@ -87,6 +87,20 @@ function wallTex(style, base) {
     for (let y = 64; y < s; y += 128) for (let x = 64; x < s; x += 128) { g.beginPath(); g.arc(x, y, 4, 0, 7); g.fill(); }
     speckle(g, s, 9000, 0.1, '40,40,40', '230,230,230');
   }), 4, 0.03];
+  if (style === 'majolica') return [canvasTex(512, (g, s) => {
+    g.fillStyle = '#b9a58a'; g.fillRect(0, 0, s, s);
+    for (let row = 0; row < 24; row++) {
+      const y = row * 21.33, off = (row % 2) * 32;
+      for (let x = -64 + off; x < s; x += 64) { g.fillStyle = shade(base, 0.82 + rnd() * 0.3); g.fillRect(x + 2, y + 2, 60, 17); }
+    }
+    const by = 300, bh = 128;
+    g.fillStyle = '#123a6b'; g.fillRect(0, by, s, bh);
+    const star = (cx, cy, r, col) => { g.fillStyle = col; for (const a of [0, Math.PI / 4]) { g.save(); g.translate(cx, cy); g.rotate(a); g.fillRect(-r, -r, r * 2, r * 2); g.restore(); } };
+    for (let x = 0; x < s; x += 64) { star(x + 32, by + 64, 24, '#3fb6c8'); star(x + 32, by + 64, 13, '#f4e7c2'); star(x, by + 64, 7, '#c8a24a'); }
+    g.fillStyle = '#f4e7c2'; g.fillRect(0, by, s, 6); g.fillRect(0, by + bh - 6, s, 6);
+    blotches(g, s, 40, 'rgba(90,60,35,0.14)', 'rgba(255,240,215,0.12)', 20, 100);
+    speckle(g, s, 6000, 0.08);
+  }), 4, 0.03];
   if (style === 'brick') return [canvasTex(512, (g, s) => {
     g.fillStyle = '#b7aea2'; g.fillRect(0, 0, s, s);
     for (let row = 0; row < 24; row++) {
