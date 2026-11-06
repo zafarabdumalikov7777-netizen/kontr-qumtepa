@@ -41,11 +41,10 @@ const ShopUI = (() => {
       <p class="shop-note" id="promoMsg" role="status"></p>`;
     if (tab === 'cases') {
       const inp = document.getElementById('promoIn'), msg = document.getElementById('promoMsg');
-      const go = () => {
-        const r = redeemPromo(inp.value);
-        if (r === 'bad') msg.textContent = 'Bunday promo kod yo‘q.';
-        else if (r === 'used') msg.textContent = 'Bu kod allaqachon ishlatilgan.';
-        else { msg.textContent = '+' + usd(r) + ' hisobingizga qo‘shildi!'; inp.value = ''; money(); if (Snd.ctx) Snd.chime(true); }
+      const go = async () => {
+        const r = await redeemPromo(inp.value);
+        msg.textContent = promoText(r);
+        if (r === 'vip') { inp.value = ''; money(); if (Snd.ctx) Snd.chime(true); }
       };
       document.getElementById('promoBtn').onclick = go;
       inp.onkeydown = e => { e.stopPropagation(); if (e.key === 'Enter') go(); };
@@ -163,10 +162,10 @@ const ShopUI = (() => {
   };
 })();
 // a link ending in ?kod=XXXX redeems that promo code and opens the shop
-addEventListener('load', () => {
+addEventListener('load', async () => {
   const k = new URLSearchParams(location.search).get('kod'); if (!k) return;
   history.replaceState(null, '', location.pathname);
-  const r = redeemPromo(k);
+  const r = await redeemPromo(k);
   ShopUI.open();
-  document.getElementById('promoMsg').textContent = r === 'bad' ? 'Bunday promo kod yo‘q.' : r === 'used' ? 'Bu kod allaqachon ishlatilgan.' : '+' + usd(r) + ' hisobingizga qo‘shildi!';
+  document.getElementById('promoMsg').textContent = promoText(r);
 });

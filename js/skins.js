@@ -135,25 +135,31 @@ function clothMaterial(spec, rough = 0.9) {
 
 // ---------- inventory (kept in this browser) ----------
 const INV = (() => {
-  const s = store.get('kq_inv', null), o = { wallet: 1000, items: [], equip: {}, next: 1, earned: 0, promo: [] };
+  const s = store.get('kq_inv', null), o = { wallet: 1000, items: [], equip: {}, next: 1, earned: 0, promo: [], vip: false };
   if (s && typeof s === 'object') {
     o.wallet = Math.max(0, +s.wallet || 0); o.next = Math.max(1, +s.next || 1); o.earned = +s.earned || 0;
     o.promo = Array.isArray(s.promo) ? s.promo.filter(k => typeof k === 'string') : [];
+    o.vip = s.vip === true; if (o.vip) o.wallet = Infinity; // VIP: endless money (saved as null, restored here)
     o.items = Array.isArray(s.items) ? s.items.filter(it => it && itemDef(it.id)).map(it => ({ uid: +it.uid, id: it.id, f: clamp(+it.f || 0, 0, 1) })) : [];
     if (s.equip && typeof s.equip === 'object') for (const [k, v] of Object.entries(s.equip)) if (o.items.some(it => it.uid === v)) o.equip[k] = v;
   }
   return o;
 })();
 const saveInv = () => store.set('kq_inv', INV);
-const usd = n => '$' + Math.floor(n).toLocaleString('en-US');
-// one-time codes typed into the shop
-const PROMO = { MILLIARDER: 99999999999999 };
-function redeemPromo(code) {
-  const k = String(code || '').trim().toUpperCase(), amt = PROMO[k];
-  if (!amt) return 'bad';
-  if (INV.promo.includes(k)) return 'used';
-  INV.promo.push(k); INV.wallet += amt; saveInv(); return amt;
+const usd = n => n === Infinity ? '∞ VIP' : '$' + Math.floor(n).toLocaleString('en-US');
+// The VIP code itself is not in the source, only its SHA-256, so only whoever was given it can turn VIP on.
+const VIP_HASH = '2c54ffd8488e335f4ae6b8494ad926a675efa1a942e2f0f93ecd9c19a666856a';
+async function sha256(t) {
+  const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t));
+  return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
 }
+async function redeemPromo(code) {
+  const k = String(code || '').trim().toUpperCase();
+  if (!k || !(window.crypto && crypto.subtle) || await sha256(k) !== VIP_HASH) return 'bad';
+  if (INV.vip) return 'used';
+  INV.vip = true; INV.wallet = Infinity; saveInv(); return 'vip';
+}
+const promoText = r => r === 'bad' ? 'Bunday promo kod yo‘q.' : r === 'used' ? 'VIP allaqachon yoqilgan.' : 'VIP yoqildi: pulingiz endi cheksiz!';
 const itemByUid = uid => INV.items.find(it => it.uid === uid);
 function equippedSkin(weaponId) { const it = itemByUid(INV.equip[weaponId]); return it ? it.id : null; }
 function equippedAgent(team) { const it = itemByUid(INV.equip['agent_' + team]); return it ? AGENTS[it.id] : null; }
