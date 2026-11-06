@@ -28,12 +28,13 @@ function resetLoadout(a) {
   a.armor = 0; a.helmet = false; a.kit = false;
   if (a.isPlayer) {
     a.inv = { 1: null, 2: wstate(pistolFor(a.team)), 3: { def: WEAPONS.knife }, 4: null, 5: null };
-    a.nades = { he: 0, flash: 0, smoke: 0 };
+    a.nades = { he: 0, flash: 0, smoke: 0, molotov: 0 };
   } else { a.primary = null; a.pistol = wstate(pistolFor(a.team)); }
 }
 function spawnAll(first) {
   const sp = { KT: shuffle(cellsOf('S')), T: shuffle(cellsOf('T')) }, idx = { KT: 0, T: 0 };
-  player.tookOver = false;
+  player.tookOver = false; resetDmgReport();
+  for (const b of bots) b.boostT = 0;
   for (const a of agents) {
     a.controlled = false;
     if (first || !a.alive) resetLoadout(a);
@@ -107,7 +108,10 @@ function endRound(winner, reason) {
   for (const a of agents) a.money = Math.min(16000, a.money + (a.team === winner ? winCash : bonus + (a.team === 'T' && bomb.wasPlanted ? 800 : 0)));
   if (game.score[winner] >= game.winTo) game.over = true;
   const why = { time: 'Vaqt tugadi — nuqtalar himoya qilindi', elim: 'Raqib jamoa butunlay yo‘q qilindi', bomb: 'Bomba portladi', defuse: 'Bomba zararsizlantirildi' }[reason];
-  showCenter(`${TEAM_NAME[winner]} g‘alaba qozondi`, why, winner === 'KT' ? 'kt' : 'te', 4.5);
+  // round MVP: the winner with the most kills this round (damage breaks a tie)
+  const mvp = agents.filter(a => a.team === winner).sort((a, b) => (b.roundKills || 0) - (a.roundKills || 0) || (b.dmg || 0) - (a.dmg || 0))[0];
+  const mvpTxt = mvp && mvp.roundKills ? ` · ★ MVP: ${mvp.isPlayer ? 'Siz' : mvp.name} (${mvp.roundKills} qotillik)` : '';
+  showCenter(`${TEAM_NAME[winner]} g‘alaba qozondi`, why + mvpTxt, winner === 'KT' ? 'kt' : 'te', 4.5);
   Snd.chime(winner === player.team);
   closeBuy(false);
 }
@@ -167,6 +171,16 @@ function updatePlayer(dt) {
   const wasAir = !p.onGround; p.onGround = false;
   if (p.pos.y <= 0) { p.pos.y = 0; p.vel.y = 0; p.onGround = true; }
   else { const b = hitBox(p.pos.x, p.pos.y, p.pos.z, 0.34, h); if (b) { if (p.vel.y <= 0) { p.pos.y = b.y1; p.onGround = true; } else p.pos.y = b.y0 - h; p.vel.y = 0; } }
+  // boost: you can stand on a teammate's head; a boosting bot stands up once you are on top
+  if (!p.onGround && p.vel.y <= 0) for (const b of bots) {
+    if (!b.alive || b.team !== p.team) continue;
+    const top = 1.85 - 0.42 * b.crouch;
+    if (Math.hypot(p.pos.x - b.pos.x, p.pos.z - b.pos.z) < 0.42 && p.pos.y <= top + 0.02 && p.pos.y > top - 0.45) {
+      p.pos.y = top; p.vel.y = 0; p.onGround = true;
+      if (b.boostT > 0) { b.boostOnT = (b.boostOnT || 0) + dt; b.boostT = Math.max(b.boostT, 3); if (b.boostOnT > 0.8) b.boostUp = true; }
+      break;
+    }
+  }
   if (wasAir && p.onGround) { Snd.step(0.35, 0); p.groundT = 0; }
   const hs = Math.hypot(p.vel.x, p.vel.z);
   if (p.onGround && hs > 4.2) { p.stepDist += hs * dt; if (p.stepDist > 2.3) { p.stepDist = 0; Snd.step(0.22, 0); } }
@@ -232,6 +246,7 @@ function updatePlayerBody(dt) {
 }
 function playerDied(att, def) {
   player.scope = 0; if (playerBody) playerBody.fall = 0;
+  showDmgReport();
   showCenter('Siz halok bo‘ldingiz', att && att !== player ? `${att.name} · ${def.name}` : def.name, 'te', 2.5);
 }
 // Spectating after death: left / right click (or the fire button) steps through living teammates
@@ -247,12 +262,12 @@ const canTakeOver = () => !player.alive && game.mode === 'comp' && (game.state =
 function takeOverBot() {
   if (!canTakeOver()) return;
   const b = spectating, p = player;
-  setSpectate(null);
+  setSpectate(null); document.getElementById('dmgRep').hidden = true;
   Object.assign(p, { alive: true, hp: b.hp, armor: b.armor, helmet: b.helmet, kit: b.kit, yaw: b.yaw + Math.PI, pitch: 0, crouch: 0, reloadT: 0, switchT: 0.3, shots: 0, shotsF: 0,
     punchP: 0, punchY: 0, vpP: 0, vpY: 0, cool: 0, deathT: 0, scope: 0, scopeResume: 0, rescopeT: 0, autoReload: false, tookOver: true });
   p.pos.set(b.pos.x, 0, b.pos.z); p.vel.set(0, 0, 0);
   p.inv = { 1: b.primary, 2: b.pistol || wstate(pistolFor(p.team)), 3: { def: WEAPONS.knife }, 4: null, 5: null };
-  p.nades = { he: 0, flash: 0, smoke: 0 }; syncNadeSlot();
+  p.nades = { he: 0, flash: 0, smoke: 0, molotov: 0 }; syncNadeSlot();
   b.alive = false; b.controlled = true; b.primary = null; b.model.group.visible = false; b.model.marker.visible = false;
   if (bomb.carrier === b) giveBomb(p);
   p.slot = p.inv[1] ? 1 : 2; p.prevSlot = 3; vm.set(p.inv[p.slot].def, p.team);
@@ -260,6 +275,33 @@ function takeOverBot() {
   showCenter(`${b.name} — endi siz boshqarasiz`, 'Raund oxirigacha shu bot bilan o‘ynaysiz', '', 2); Snd.draw();
   updatePips();
 }
+// Boost: Z calls the nearest teammate bot; it crouches in front of you, you jump on it, then it stands up to lift you
+const BOOST_TIME = 15;
+function callBoost() {
+  const p = player; if (!p.alive || game.mode === 'practice') return;
+  const busy = bots.find(b => b.boostT > 0);
+  if (busy) { busy.boostT = 0; showCenter(busy.name, 'Boost bekor qilindi', '', 1); return; }
+  let best = null, bd = 14;
+  for (const b of bots) { if (!b.alive || b.team !== p.team) continue; const d = b.pos.distanceTo(p.pos); if (d < bd) { bd = d; best = b; } }
+  if (!best) { showCenter('Yaqinda sherik yo‘q', 'Boost uchun sherik bot 14 metr ichida bo‘lishi kerak', '', 1.4); return; }
+  let tx = p.pos.x - Math.sin(p.yaw) * 1.1, tz = p.pos.z - Math.cos(p.yaw) * 1.1;
+  if (hitBox(tx, 0, tz, 0.34, 1.8)) { tx = p.pos.x; tz = p.pos.z; }
+  Object.assign(best, { boostT: BOOST_TIME, boostX: tx, boostZ: tz, boostUp: false, boostOnT: 0, path: null });
+  showCenter(best.name, 'Boost beraman! Ustimga sakrang (Space)', '', 1.6);
+}
+// Damage report, shown after you die: what you dealt to and took from each enemy this round
+function logDamage(att, v, d) {
+  const other = att.isPlayer ? v : att, r = player.dmgRep || (player.dmgRep = {});
+  const e = r[other.name] || (r[other.name] = { g: 0, gn: 0, t: 0, tn: 0, team: other.team });
+  if (att.isPlayer) { e.g += d; e.gn++; } else { e.t += d; e.tn++; }
+}
+function showDmgReport() {
+  const el = document.getElementById('dmgRep'), rows = Object.entries(player.dmgRep || {});
+  el.hidden = !rows.length; if (!rows.length) return;
+  el.innerHTML = '<h5>Zarar hisoboti</h5>' + rows.map(([n, e]) => `<div><span class="${e.team === 'KT' ? 'c-kt' : 'c-te'}">${n}</span><b>${e.g} <small>(${e.gn})</small></b><i>${e.t} <small>(${e.tn})</small></i></div>`).join('') +
+    '<p><b>berdingiz</b> · <i>oldingiz</i> · (zarbalar)</p>';
+}
+function resetDmgReport() { player.dmgRep = {}; document.getElementById('dmgRep').hidden = true; }
 function setSpectate(b) {
   if (spectating) spectating.model.group.visible = true;
   spectating = b;
@@ -453,7 +495,7 @@ const BUY = [
   { k: '1', id: 'deagle' }, { k: '2', id: 'mp5' }, { k: '3', id: 'rifle' }, { k: '4', id: 'awp' },
   { k: '5', id: 'kevlar', name: 'Kevlar zirh', price: 650, stat: '100 zirh, tanani himoya qiladi' },
   { k: '6', id: 'kevlarh', name: 'Zirh + dubulg‘a', price: 1000, stat: 'Boshga tekkan o‘qni ham yumshatadi' },
-  { k: '7', id: 'he' }, { k: '8', id: 'flash' }, { k: '9', id: 'smoke' },
+  { k: '7', id: 'he' }, { k: '8', id: 'flash' }, { k: '9', id: 'smoke' }, { k: '-', id: 'molotov' },
   { k: '0', id: 'kit', name: 'Defuse kit', price: 400, stat: 'Bombani 5 soniyada zararsizlantiradi', team: 'KT' }
 ];
 const buyDef = it => it.id === 'rifle' ? (player.team === 'T' ? WEAPONS.ak47 : WEAPONS.m4a1) : WEAPONS[it.id];
@@ -471,7 +513,7 @@ function owned(it) {
 }
 const BUY_CATS = [
   ['To‘pponchalar', ['deagle']], ['Avtomatlar', ['mp5', 'rifle', 'awp']],
-  ['Jihozlar', ['kevlar', 'kevlarh', 'kit']], ['Granatalar', ['he', 'flash', 'smoke']]
+  ['Jihozlar', ['kevlar', 'kevlarh', 'kit']], ['Granatalar', ['he', 'flash', 'smoke', 'molotov']]
 ];
 function renderBuy() {
   const shown = it => (!it.team || it.team === player.team) && !(game.mode !== 'comp' && it.id === 'kit');
@@ -494,7 +536,7 @@ function buy(id) {
   if (id === 'kevlar') p.armor = 100;
   else if (id === 'kevlarh') { p.armor = 100; p.helmet = true; }
   else if (id === 'kit') p.kit = true;
-  else if (NADE_MAX[id]) { p.nades[id]++; syncNadeSlot(p.slot === 4 ? id : undefined); }
+  else if (NADE_MAX[id]) { p.nades[id] = (p.nades[id] || 0) + 1; syncNadeSlot(p.slot === 4 ? id : undefined); }
   else {
     const d = buyDef(it), prev = p.slot; p.inv[d.slot] = wstate(d); p.slot = 0; switchTo(d.slot); p.prevSlot = prev === d.slot ? 3 : prev;
     if (d.slot === 1) p.dmPrimary = d; else p.dmPistol = d; // deathmatch remembers the choice for respawns
@@ -583,6 +625,7 @@ function mapArt(def) {
     if (ch === 'A' || ch === 'B') { g.fillStyle = 'rgba(230,70,50,0.38)'; g.fillRect(px, py, cs, cs); }
     if (ch === 'S') { g.fillStyle = 'rgba(70,130,230,0.45)'; g.fillRect(px, py, cs, cs); }
     if (ch === 'T') { g.fillStyle = 'rgba(230,150,40,0.45)'; g.fillRect(px, py, cs, cs); }
+    if (ch === 'h') { g.fillStyle = shade(T.wall.base, 0.8); g.fillRect(px, py - 2, cs, cs); }
     if (ch === 'c' || ch === 'C') { g.fillStyle = ch === 'C' ? '#5b3c22' : '#8a5a32'; g.fillRect(px + 1, py + 1 - (ch === 'C' ? 2 : 0), cs - 2, cs - 2); }
   }
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
@@ -733,6 +776,7 @@ addEventListener('keydown', e => {
     case 'Digit1': switchTo(1); break; case 'Digit2': switchTo(2); break; case 'Digit3': switchTo(3); break; case 'Digit4': if (player.slot === 4) cycleNade(); else switchTo(4); break;
     case 'Digit5': switchTo(5); break;
     case 'KeyV': toggleView(); break;
+    case 'KeyZ': callBoost(); break;
     case 'KeyF': if (player.alive && player.cool <= 0 && player.reloadT <= 0) vm.inspect = 2.4; break;
     case 'KeyQ': switchTo(player.prevSlot); break;
     case 'KeyR': startReload(); break;
@@ -807,6 +851,7 @@ function update(dt) {
   updateDrops(dt);
   updateBomb(dt);
   updateSmokes(dt);
+  updateFires(dt);
   updateFlash(dt);
   updateStreak(dt);
   TouchUI.update(dt);

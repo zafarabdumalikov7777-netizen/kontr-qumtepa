@@ -16,7 +16,9 @@ Mahalliy ishga tushirish: `index.html` faylini Chrome yoki Edge’da oching (int
 
 ## Imkoniyatlar
 
-- 7 xarita: Qumtepa, Eskishahar, Ombor, Qorliq, Registon, Voha, Tungi bozor
+- 8 xarita: Qumtepa, Eskishahar, Ombor, Qorliq, Registon, Voha, Tungi bozor, **Mahalla** (uylar ichidan qisqa yo‘l, ko‘chalardan uzun yo‘l, B uy ichida)
+- **Boost:** Z — sherik bot oldingizga kelib cho‘kadi, ustiga sakraysiz, u turib sizni ko‘taradi; har xaritada yolg‘iz chiqib bo‘lmaydigan baland boost joylari bor
+- **Molotov** (7 soniya yonadi, tutun o‘chiradi), **yashik orqali otish** (wallbang), o‘lgandan keyin **zarar hisoboti**, har raundda **MVP**
 - Ittifoqchi va raqib botlar soni (har jamoada 10 tagacha), 3 xil qiyinlik; botlar bomba qo‘yadi va zararsizlantiradi
 - Granatalar: HE, flesh (ko‘r qiladi), tutun (ko‘rinishni to‘sadi); defuse kit
 - Qurol olish/almashtirish (E), tashlash (G), qurolni ko‘zdan kechirish (F)
@@ -57,6 +59,7 @@ Bosh menyuda ismingiz, rankingiz (Bronza → Kumush → Oltin → Platina → Ol
 | E yoki X (o‘lgandan keyin) | Kuzatilayotgan sherik botni boshqarish (raundda bir marta) |
 | Sichqoncha chap/o‘ng (o‘lgandan keyin) | Boshqa botni kuzatish |
 | G / F | Qurolni tashlash / ko‘zdan kechirish |
+| Z | Sherik botdan boost so‘rash |
 | V | Kamera: 1-shaxs / 3-shaxs (orqadan ko‘rinish) |
 | B | Xarid menyusi |
 | Tab | Hisob jadvali |

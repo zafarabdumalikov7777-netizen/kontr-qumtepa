@@ -54,5 +54,36 @@ function updateFlash(dt) {
 }
 function clearUtility() {
   while (smokes.length) { const s = smokes.pop(); scene.remove(s.g); s.mat.dispose(); }
+  while (fires.length) { const f = fires.pop(); scene.remove(f.g); f.mat.dispose(); }
   flashAmt = flashHold = 0;
+}
+
+// ---------- Molotov: a pool of fire that burns for 7 s and hurts anyone standing in it; smoke puts it out ----------
+const FIRE_R = 2.6, FIRE_LIFE = 7, fires = [];
+const fireGroundMat = new THREE.MeshBasicMaterial({ color: 0xff7a22, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false });
+function startFire(pos, owner) {
+  const g = new THREE.Group(), mat = new THREE.SpriteMaterial({ map: texFire, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+  const flames = [];
+  for (let i = 0; i < 28; i++) {
+    const s = new THREE.Sprite(mat), a = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * FIRE_R;
+    s.position.set(Math.cos(a) * r, 0.35, Math.sin(a) * r); s.userData = { ph: Math.random() * 6, sc: 0.7 + Math.random() * 0.9 }; g.add(s); flames.push(s);
+  }
+  const ground = new THREE.Mesh(new THREE.CircleGeometry(FIRE_R, 24), fireGroundMat); ground.rotation.x = -Math.PI / 2; ground.position.y = 0.03; g.add(ground);
+  g.position.set(pos.x, 0, pos.z); scene.add(g);
+  fires.push({ x: pos.x, z: pos.z, t: 0, life: FIRE_LIFE, g, mat, flames, tick: 0, owner });
+  const s = spatial(pos);
+  if (Snd.ctx) { const o = Snd.bus(Math.min(1, s.vol * 1.3), s.pan), t = Snd.ctx.currentTime; Snd.noiseHit(o, t, 0.25, 2600, 'highpass', 0.7, 0.9); Snd.noiseHit(o, t + 0.05, 2.6, 500, 'lowpass', 0.6, 0.6); }
+}
+function updateFires(dt) {
+  for (let i = fires.length - 1; i >= 0; i--) {
+    const f = fires[i]; f.t += dt; f.tick -= dt;
+    if (smokes.some(s => s.r > 1 && Math.hypot(s.x - f.x, s.z - f.z) < s.r + FIRE_R * 0.4)) f.life = Math.min(f.life, f.t + 0.3);
+    const k = clamp(Math.min(f.t / 0.3, (f.life - f.t) / 1), 0, 1);
+    for (const s of f.flames) { const u = s.userData, h = (1 + Math.sin(f.t * 9 + u.ph) * 0.25) * u.sc * k; s.scale.set(h * 1.1, h * 1.7, 1); s.position.y = 0.2 + h * 0.6; }
+    if (f.tick <= 0 && k > 0.3) {
+      f.tick = 0.25;
+      for (const a of agents) if (a.alive && a.pos.y < 0.8 && Math.hypot(a.pos.x - f.x, a.pos.z - f.z) < FIRE_R) applyDamage(a, f.owner, 10, 'fire', WEAPONS.molotov, a.pos);
+    }
+    if (f.t >= f.life) { scene.remove(f.g); f.mat.dispose(); f.g.children.forEach(c => c.geometry && c.geometry.dispose()); fires.splice(i, 1); }
+  }
 }

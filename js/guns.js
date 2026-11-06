@@ -46,6 +46,8 @@ const GMAT_DEF = {
   tape: { color: 0x26292c, metalness: 0, roughness: 0.6 },
   lcd: { color: 0x2f5f2a, metalness: 0.2, roughness: 0.2 },
   brass: { color: 0xb58a3a, metalness: 1, roughness: 0.3 },
+  glass: { color: 0x6b4a1e, metalness: 0.1, roughness: 0.08, transparent: true, opacity: 0.78 },
+  rag: { color: 0xb8a98a, metalness: 0, roughness: 0.95 },
   horn: { color: 0xe6d8bb, metalness: 0, roughness: 0.4 }
 };
 const GMAT = {};
@@ -248,6 +250,13 @@ const GUNS = {
     return { mz: 0.05, he: true };
   },
   smoke(g) { return canister(g, 'smokecan', 0.034, 0.12); },
+  // a glass bottle with a rag stuffed in the neck
+  molotov(g) {
+    const body = new THREE.Mesh(new THREE.LatheGeometry([[0, -0.07], [0.034, -0.068], [0.036, 0.02], [0.03, 0.04], [0.012, 0.06], [0.011, 0.095], [0, 0.095]].map(([r, y]) => new THREE.Vector2(r, y)), 20), gmat('glass'));
+    body.position.set(0, -0.03, -0.04); g.add(body);
+    const rag = new THREE.Mesh(new THREE.CylinderGeometry(0.013, 0.016, 0.06, 8), gmat('rag')); rag.position.set(0.004, 0.09, -0.04); rag.rotation.z = 0.25; g.add(rag);
+    return { mz: 0.05, he: true };
+  },
   flash(g) { return canister(g, 'flashcan', 0.026, 0.11); },
   c4(g) {
     const clay = gmat('clay'), tape = gmat('tape'), st = gmat('steel');

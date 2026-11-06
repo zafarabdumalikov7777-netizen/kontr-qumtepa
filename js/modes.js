@@ -11,7 +11,7 @@ function dmLoadout(a) {
   a.armor = 100; a.helmet = true;
   if (a.isPlayer) {
     a.inv = { 1: wstate(player.dmPrimary || dmRifle(a.team)), 2: wstate(player.dmPistol || pistolFor(a.team)), 3: { def: WEAPONS.knife }, 4: null, 5: null };
-    a.nades = { he: 1, flash: 1, smoke: 0 }; syncNadeSlot();
+    a.nades = { he: 1, flash: 1, smoke: 0, molotov: 0 }; syncNadeSlot();
   } else {
     const r = Math.random();
     a.primary = wstate(r < 0.12 ? WEAPONS.awp : r < 0.25 ? WEAPONS.mp5 : dmRifle(a.team));
@@ -45,7 +45,7 @@ function dmRespawn(a) {
     Object.assign(a, { pitch: 0, crouch: 0, reloadT: 0, switchT: 0, shots: 0, shotsF: 0, punchP: 0, punchY: 0, vpP: 0, vpY: 0, hops: 0, groundT: 0, scope: 0, scopeResume: 0, rescopeT: 0, cool: 0, deathT: 0, autoReload: false });
     a.vel.set(0, 0, 0); a.slot = a.inv[1] ? 1 : a.inv[2] ? 2 : 3; a.prevSlot = 3; vm.set(a.inv[a.slot].def, a.team);
     if (playerBody) { setGhost(playerBody, true); playerBody.fall = 1; playerBody.group.rotation.x = 0; }
-    setSpectate(null);
+    setSpectate(null); resetDmgReport();
   } else resetBotModel(a);
   updatePips();
 }
@@ -112,7 +112,7 @@ function ggLoadout(a) {
   a.armor = 100; a.helmet = true;
   if (a.isPlayer) {
     a.inv = { 1: def.slot === 1 ? wstate(def) : null, 2: def.slot === 2 ? wstate(def) : null, 3: { def: WEAPONS.knife }, 4: null, 5: null };
-    a.nades = { he: 0, flash: 0, smoke: 0 }; syncNadeSlot();
+    a.nades = { he: 0, flash: 0, smoke: 0, molotov: 0 }; syncNadeSlot();
   } else {
     a.primary = def.slot === 1 ? wstate(def) : null;
     a.pistol = def.slot === 1 ? null : wstate(def);

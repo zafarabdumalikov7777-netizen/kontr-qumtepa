@@ -15,6 +15,7 @@ const TOUCH_BTNS = [
   { id: 'buy', label: '$', x: 0.22, y: 0.12, s: 50, kind: 'tap', act: () => { if (input.buyOpen) closeBuy(false); else openBuy(); }, when: () => canBuy() || input.buyOpen },
   { id: 'score', label: 'HISOB', x: 0.77, y: 0.09, s: 46, kind: 'score' },
   { id: 'pause', label: 'II', x: 0.68, y: 0.09, s: 46, kind: 'tap', act: () => pauseGame() },
+  { id: 'boost', label: 'BOOST', x: 0.5, y: 0.09, s: 46, kind: 'tap', act: () => callBoost(), when: () => player.alive && game.mode !== 'practice' && bots.some(b => b.alive && b.team === player.team) },
   { id: 'view', label: '3L', x: 0.59, y: 0.09, s: 46, kind: 'tap', act: () => toggleView() }
 ];
 const TOUCH_DEFAULT = { stick: { x: 0.14, y: 0.7, s: 1 }, stickMode: 'fixed', opacity: 0.75, lookSens: 1, autoFire: false, gyro: 'always', gyroSens: 1, btn: {} };

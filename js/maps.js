@@ -1,6 +1,7 @@
 'use strict';
 // Each map: a 30×30 cell grid carved out of solid wall ('#').
 // '.' floor · 'A'/'B' bomb sites · 'S' KT spawn · 'T' T spawn · 'c' crate · 'C' stacked crate / container
+// 'h' boost spot: a block too tall to jump onto alone — a teammate has to boost you · houses: rooms with a roof
 // letters: where the site letter is painted · via: route cells T bots may take · mid: cells KT bots hold
 const MAPS = [
   {
@@ -14,6 +15,7 @@ const MAPS = [
       [[3,3,'c'],[4,3,'C'],[6,5,'c'],[2,6,'c'],[7,2,'c'],[24,3,'c'],[25,3,'C'],[25,4,'c'],[27,6,'c'],[22,5,'c'],
        [15,9,'c'],[14,17,'c'],[27,15,'c'],[25,19,'C'],[12,24,'c'],[17,25,'c'],[18,25,'C'],[4,11,'c'],[6,22,'c'],[7,22,'C'],
        [18,9,'c'],[23,23,'C']].forEach(([x, y, c]) => put(x, y, c));
+      put(27, 3, 'h'); put(4, 6, 'h'); // boost joylari
     },
     letters: { A: [24.5, 4], B: [4.5, 4] },
     via: { A: [[26, 15], [18, 8]], B: [[3, 14], [8, 15]] }, mid: [[14, 7], [15, 6]],
@@ -42,6 +44,7 @@ const MAPS = [
       carve(6, 22, 12, 27, 'A'); carve(6, 2, 12, 7, 'B'); carve(2, 12, 4, 16, 'S'); carve(25, 13, 27, 17, 'T');
       [[8,23,'C'],[9,23,'c'],[11,26,'c'],[6,27,'c'],[8,4,'c'],[10,5,'C'],[12,3,'c'],[17,14,'C'],[12,13,'c'],
        [26,23,'c'],[20,5,'c'],[22,13,'c'],[3,21,'c'],[21,22,'c'],[2,9,'c']].forEach(([x, y, c]) => put(x, y, c));
+      put(10, 3, 'h'); put(14, 14, 'h'); // boost joylari
     },
     letters: { A: [8.5, 24.5], B: [8.5, 4] },
     via: { A: [[21, 21], [26, 24]], B: [[24, 7], [16, 10]] }, mid: [[11, 14], [7, 16], [11, 18]],
@@ -64,6 +67,7 @@ const MAPS = [
       [[4,10,'C'],[5,10,'C'],[3,14,'c'],[6,17,'C'],[2,19,'c'],[12,3,'C'],[13,3,'C'],[17,4,'c'],[24,11,'C'],[25,11,'C'],
        [23,15,'c'],[26,19,'C'],[27,19,'C'],[24,24,'c'],[12,25,'C'],[16,26,'c'],[18,24,'C'],[4,4,'C'],[5,5,'c'],
        [14,12,'C'],[16,13,'c'],[12,18,'c'],[17,17,'C'],[7,23,'c'],[22,6,'c']].forEach(([x, y, c]) => put(x, y, c));
+      put(6, 3, 'h'); put(16, 2, 'h'); // boost joylari
     },
     letters: { A: [4.5, 4.5], B: [14.5, 12] },
     roofs: [[11, 9, 18, 20]],
@@ -90,6 +94,7 @@ const MAPS = [
       carve(2, 20, 8, 26, 'A'); carve(21, 20, 27, 26, 'B'); carve(11, 1, 18, 2, 'T'); carve(12, 27, 17, 28, 'S');
       [[3,21,'C'],[5,23,'c'],[7,25,'c'],[8,20,'c'],[22,21,'c'],[24,22,'C'],[26,25,'c'],[21,24,'c'],[10,15,'c'],[19,14,'C'],
        [3,9,'c'],[26,13,'c'],[14,3,'C'],[15,8,'c'],[14,21,'c']].forEach(([x, y, c]) => put(x, y, c));
+      put(6, 21, 'h'); put(26, 21, 'h'); // boost joylari
     },
     letters: { A: [5, 23], B: [24, 23] },
     via: { A: [[3, 12], [8, 16]], B: [[26, 12], [21, 16]] }, mid: [[14, 19], [15, 22], [10, 14]],
@@ -117,6 +122,7 @@ const MAPS = [
       carve(2, 4, 7, 8, 'A'); carve(22, 4, 27, 8, 'B'); carve(12, 1, 17, 2, 'S'); carve(12, 26, 17, 27, 'T');
       [[3,5,'C'],[6,7,'c'],[5,4,'c'],[24,5,'C'],[22,7,'c'],[26,4,'c'],[10,12,'c'],[19,17,'C'],[14,15,'c'],
        [2,20,'c'],[27,14,'c'],[7,25,'C'],[22,25,'c'],[13,22,'c'],[15,7,'c']].forEach(([x, y, c]) => put(x, y, c));
+      put(3, 7, 'h'); put(26, 7, 'h'); // boost joylari
     },
     letters: { A: [4.5, 5.5], B: [24.5, 5.5] },
     via: { A: [[2, 18], [6, 11]], B: [[27, 18], [23, 11]] }, mid: [[14, 8], [15, 6]],
@@ -143,6 +149,7 @@ const MAPS = [
       carve(11, 2, 18, 6, 'A'); carve(11, 23, 18, 27, 'B'); carve(1, 12, 3, 17, 'S'); carve(26, 12, 28, 17, 'T');
       [[12,3,'C'],[16,5,'c'],[17,2,'c'],[12,25,'c'],[16,24,'C'],[13,27,'c'],[10,12,'c'],[19,17,'c'],[10,17,'C'],
        [18,12,'C'],[3,7,'c'],[26,8,'c'],[3,22,'c'],[26,21,'C'],[7,4,'c'],[22,25,'c']].forEach(([x, y, c]) => put(x, y, c));
+      put(18, 5, 'h'); put(11, 15, 'h'); // boost joylari
     },
     letters: { A: [14.5, 4], B: [14.5, 25] },
     via: { A: [[26, 7], [22, 5]], B: [[26, 22], [22, 24]] }, mid: [[11, 12], [11, 17], [8, 15]],
@@ -167,6 +174,7 @@ const MAPS = [
       carve(21, 2, 27, 7, 'A'); carve(2, 22, 8, 27, 'B'); carve(2, 2, 5, 4, 'S'); carve(24, 25, 27, 27, 'T');
       [[11,11,'C'],[18,11,'c'],[11,18,'c'],[18,18,'C'],[12,14,'c'],[17,15,'c'],[23,3,'C'],[25,6,'c'],[27,2,'c'],
        [4,23,'C'],[6,26,'c'],[8,22,'c'],[12,2,'c'],[2,12,'c'],[17,25,'c'],[27,17,'c']].forEach(([x, y, c]) => put(x, y, c));
+      put(25, 3, 'h'); put(16, 11, 'h'); // boost joylari
     },
     letters: { A: [24, 4.5], B: [5, 24.5] },
     via: { A: [[26, 16], [15, 6]], B: [[16, 24], [6, 14]] }, mid: [[12, 12], [17, 12], [14, 10]],
@@ -176,6 +184,33 @@ const MAPS = [
       floor: { style: 'cobble', base: '#8a8276' }, wall: { style: 'stucco', base: '#cdb08c' }, wallH: [5.2, 7.8],
       cap: 0x5a3f2a, crate: 'wood', ground: 0x3a362f, far: 0x1d2030, landmark: 'dome',
       windows: 'glass-warm', awnings: [0xb3412e, 0x2f6f8f, 0xd8a73a, 0x6a3a8f], cables: true, lamps: 'many', barrels: 0x6b4a2b, stepF: 900, wind: 0.06
+    }
+  },
+  {
+    id: 'mahalla', code: 'de_mahalla', name: 'Mahalla', cell: 3.6, blurb: 'Uylar ichidan qisqa yo‘l, ko‘chalardan uzun yo‘l · B uy ichida · boost joylari',
+    build(carve, put) {
+      carve(11, 1, 18, 3); carve(11, 25, 18, 28);                                                  // KT va T spawn
+      carve(1, 4, 8, 11); carve(21, 4, 28, 11);                                                    // A hovli, B — katta uy ichida
+      carve(5, 1, 10, 3); carve(19, 1, 24, 3);                                                     // KT → saytlar
+      carve(14, 4, 15, 24);                                                                        // o‘rta ko‘cha
+      carve(1, 12, 2, 26); carve(3, 25, 10, 26);                                                   // uzun A ko‘chasi
+      carve(27, 12, 28, 26); carve(19, 25, 26, 26);                                                // uzun B ko‘chasi
+      carve(5, 15, 10, 20); carve(7, 21, 8, 24); carve(6, 12, 7, 14); carve(11, 17, 13, 17);      // 1-uy: qisqa A
+      carve(19, 15, 24, 20); carve(21, 21, 22, 24); carve(22, 12, 23, 14); carve(16, 17, 18, 17); // 2-uy (choyxona): qisqa B
+      carve(9, 8, 13, 9); carve(16, 8, 20, 9);                                                     // o‘rtadan saytlarga
+      carve(2, 5, 7, 10, 'A'); carve(22, 5, 27, 10, 'B'); carve(12, 1, 17, 2, 'S'); carve(12, 26, 17, 27, 'T');
+      [[3,6,'h'],[26,9,'h'],[14,13,'h'],[5,9,'C'],[6,6,'c'],[24,6,'C'],[23,9,'c'],[9,18,'c'],[20,16,'c'],[2,20,'c'],[27,21,'c'],[15,21,'c'],[12,25,'c'],[17,3,'c'],[10,15,'c'],[19,19,'C']]
+        .forEach(([x, y, c]) => put(x, y, c));
+    },
+    letters: { A: [4.5, 7.5], B: [24.5, 7.5] },
+    houses: [[5, 15, 10, 20], [19, 15, 24, 20], [21, 4, 28, 11]],
+    via: { A: [[1, 18], [7, 17]], B: [[28, 18], [21, 17]] }, mid: [[14, 10], [15, 7]],
+    theme: {
+      sky: [0x4a82c8, 0xdfe8ef, 0xe9dcc2], cloud: 0.35, fog: [0xe0d6c4, 60, 260], exposure: 1.05,
+      sunDir: [0.45, 0.75, 0.4], sunCol: 0xfff0d8, sunI: 2.5, hemi: [0xe2ecff, 0x9a8466, 0.95],
+      floor: { style: 'cobble', base: '#a49480' }, wall: { style: 'stucco', base: '#e8dcc6' }, wallH: [4.2, 5.6],
+      cap: 0x8a5a3a, crate: 'wood', ground: 0xa49480, far: 0xd8c8aa, landmark: 'tower',
+      windows: 'shutter', shutter: '#3f6b8f', awnings: [0xb3412e, 0x2f6f8f, 0xd8a73a, 0x4f7a3a], cables: true, barrels: 0x6b4a2b, stepF: 900, wind: 0.08
     }
   },
   // ---------- Gun Game arenas: small, fast, no bomb sites ----------

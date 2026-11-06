@@ -54,9 +54,10 @@ const WEAPONS = {
   he:     { id: 'he', name: 'HE granata', slot: 4, dmg: 98, armorPen: 0.57, price: 300, model: 'he', kill: 300, stat: '9 m radiusda portlaydi' },
   smoke:  { id: 'smoke', name: 'Tutun granata', slot: 4, price: 300, model: 'smoke', stat: '18 soniya ko‘rinishni to‘sadi' },
   flash:  { id: 'flash', name: 'Flesh granata', slot: 4, price: 200, model: 'flash', stat: 'Qaragan odamni ko‘r qiladi' },
+  molotov: { id: 'molotov', name: 'Molotov', slot: 4, price: 400, model: 'molotov', kill: 300, stat: '7 soniya yonadi, yo‘lni to‘sadi' },
   c4:     { id: 'c4', name: 'C4 bomba', slot: 5, model: 'c4' }
 };
-const NADE_ORDER = ['he', 'flash', 'smoke'];
+const NADE_ORDER = ['he', 'flash', 'smoke', 'molotov'];
 const SHOT = {
   pistol: { f: 3600, d: 0.12, th: 150, tv: 0.5 },
   usp:    { f: 1700, d: 0.09, th: 120, tv: 0.35 },
@@ -69,12 +70,12 @@ const SHOT = {
 
 // ---------- Map state (filled by setGrid from a MAPS entry) ----------
 let CELL = 4.4; // set per map in setGrid: regular maps 4.4 m, Gun Game / Modli arenas 3.5 m
-const CRATE_S = 2.87, CRATE_H = 1.05;
+const CRATE_S = 2.87, CRATE_H = 1.05, BOOST_H = 2.25; // a boost block is 2.25 m + 0.14 m cap
 let MAP = null, W = 30, H = 30, G = [], OX = 0, OZ = 0;
 let SPAWN_C = { KT: { x: 0, z: 0 }, T: { x: 0, z: 0 } }, SITES = { A: [], B: [] };
 const cxw = c => OX + (c + 0.5) * CELL, czw = c => OZ + (c + 0.5) * CELL;
 const wcx = x => Math.floor((x - OX) / CELL), wcz = z => Math.floor((z - OZ) / CELL);
-const walkable = (cx, cz) => cx >= 0 && cz >= 0 && cx < W && cz < H && '#cC'.indexOf(G[cz][cx]) < 0;
+const walkable = (cx, cz) => cx >= 0 && cz >= 0 && cx < W && cz < H && '#cCh'.indexOf(G[cz][cx]) < 0;
 const cellsOf = ch => { const out = []; for (let z = 0; z < H; z++) for (let x = 0; x < W; x++) if (G[z][x] === ch) out.push({ x, z }); return out; };
 const centerOf = ch => { const c = cellsOf(ch); return { x: c.reduce((s, q) => s + cxw(q.x), 0) / c.length, z: c.reduce((s, q) => s + czw(q.z), 0) / c.length }; };
 function setGrid(def) {
@@ -145,7 +146,8 @@ function losClear(ax, ay, az, bx, by, bz) {
     const cx = wcx(x), cz = wcz(z);
     if (cx < 0 || cz < 0 || cx >= W || cz >= H) return false;
     const c = G[cz][cx];
-    if (c === '#') return false;
+    if (c === '#') { if (!MAP.cellH || y < MAP.cellH[cz][cx] + 0.3) return false; continue; } // you can see over a low wall
+    if (c === 'h' && y < BOOST_H + 0.14 && Math.abs(x - cxw(cx)) < CRATE_S / 2 && Math.abs(z - czw(cz)) < CRATE_S / 2) return false;
     if ((c === 'c' || c === 'C') && y < (c === 'C' ? CRATE_H * 2 : CRATE_H) &&
         Math.abs(x - cxw(cx)) < CRATE_S / 2 && Math.abs(z - czw(cz)) < CRATE_S / 2) return false;
   }

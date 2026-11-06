@@ -64,6 +64,7 @@ function buildWorld() {
     outer: while (y + h < H) { for (let k = 0; k < w; k++) if (G[y + h][x + k] !== '#' || used[y + h][x + k]) break outer; h++; }
     const hgt = T.wallH[0] + Math.round(rnd() * 6) / 6 * (T.wallH[1] - T.wallH[0]);
     for (let yy = y; yy < y + h; yy++) for (let xx = x; xx < x + w; xx++) { used[yy][xx] = true; cellH[yy][xx] = hgt; }
+    MAP.cellH = cellH;
     const x0 = OX + x * CELL, z0 = OZ + y * CELL, ww = w * CELL, dd = h * CELL;
     const geo = boxGeo(ww, hgt, dd, wTs, 4); aoColors(geo, hgt);
     add(new THREE.Mesh(geo, matWall), { hit: true }).position.set(x0 + ww / 2, hgt / 2, z0 + dd / 2);
@@ -78,13 +79,21 @@ function buildWorld() {
     : [(() => { const t = crateTex(); return std({ map: t, bumpMap: t, bumpScale: 0.03 }); })()];
   const snowMat = std({ color: lin(0xf4f8fb), roughness: 0.7 });
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    const c = G[y][x]; if (c !== 'c' && c !== 'C') continue;
+    const c = G[y][x];
+    if (c === 'h') { // boost spot: a stone block too tall to jump onto alone
+      const geo = boxGeo(CRATE_S, BOOST_H, CRATE_S, wTs); aoColors(geo, BOOST_H);
+      add(new THREE.Mesh(geo, matWall), { hit: true }).position.set(cxw(x), BOOST_H / 2, czw(y));
+      add(new THREE.Mesh(new THREE.BoxGeometry(CRATE_S + 0.16, 0.14, CRATE_S + 0.16), matCap), { hit: true }).position.set(cxw(x), BOOST_H + 0.07, czw(y));
+      boxes.push({ x0: cxw(x) - CRATE_S / 2 - 0.08, x1: cxw(x) + CRATE_S / 2 + 0.08, z0: czw(y) - CRATE_S / 2 - 0.08, z1: czw(y) + CRATE_S / 2 + 0.08, y0: 0, y1: BOOST_H + 0.14 });
+      continue;
+    }
+    if (c !== 'c' && c !== 'C') continue;
     const px = cxw(x), pz = czw(y), mat = pick(crateMats);
-    add(new THREE.Mesh(new THREE.BoxGeometry(CRATE_S, CRATE_H, CRATE_S), mat), { hit: true }).position.set(px, CRATE_H / 2, pz);
+    const cr = add(new THREE.Mesh(new THREE.BoxGeometry(CRATE_S, CRATE_H, CRATE_S), mat), { hit: true }); cr.position.set(px, CRATE_H / 2, pz); cr.userData.pen = true; // bullets go through crates
     let top = CRATE_H;
     if (c === 'C') {
       const t = add(new THREE.Mesh(new THREE.BoxGeometry(CRATE_S * 0.86, CRATE_H, CRATE_S * 0.86), T.crate === 'container' ? pick(crateMats) : mat), { hit: true });
-      t.position.set(px, CRATE_H * 1.5, pz); t.rotation.y = rand(-0.25, 0.25); top = CRATE_H * 2;
+      t.position.set(px, CRATE_H * 1.5, pz); t.rotation.y = rand(-0.25, 0.25); t.userData.pen = true; top = CRATE_H * 2;
     }
     if (T.crateSnow) add(new THREE.Mesh(new THREE.BoxGeometry(CRATE_S * 0.84, 0.08, CRATE_S * 0.84), snowMat), { cast: false }).position.set(px, top + 0.04, pz);
     boxes.push({ x0: px - CRATE_S / 2, x1: px + CRATE_S / 2, z0: pz - CRATE_S / 2, z1: pz + CRATE_S / 2, y0: 0, y1: top });
@@ -99,6 +108,7 @@ function buildWorld() {
   buildDecor(T, cellH);
   buildProps(T, cellH, matWall);
   buildRoofs(T);
+  buildHouses(T);
   buildSky(T);
   buildLandmarks(T);
   if (T.snow) buildSnow();
@@ -208,6 +218,19 @@ function buildRoofs(T) {
   }
 }
 
+// Houses: a flat roof on the walls over each room, a ceiling and lamps inside
+function buildHouses(T) {
+  if (!MAP.houses) return;
+  const roofMat = std({ color: lin(T.cap), roughness: 0.85 }), ceil = std({ color: lin(0xd8d0c0), roughness: 0.95, side: THREE.DoubleSide });
+  const lamp = std({ color: 0x222222, emissive: lin(0xffe2b0), emissiveIntensity: 2.5 }), y = T.wallH[0] - 0.02;
+  for (const [x0, z0, x1, z1] of MAP.houses) {
+    const ax = OX + (x0 - 1) * CELL, az = OZ + (z0 - 1) * CELL, w = (x1 - x0 + 3) * CELL, d = (z1 - z0 + 3) * CELL, cx = ax + w / 2, cz = az + d / 2;
+    add(new THREE.Mesh(new THREE.BoxGeometry(w + 0.4, 0.3, d + 0.4), roofMat), { hit: true }).position.set(cx, y + 0.15, cz);
+    const c = add(new THREE.Mesh(new THREE.PlaneGeometry(w, d), ceil), { cast: false }); c.rotation.x = Math.PI / 2; c.position.set(cx, y - 0.01, cz);
+    for (const [fx, fz] of [[-0.25, -0.25], [0.25, -0.25], [-0.25, 0.25], [0.25, 0.25]])
+      add(new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.08, 0.9), lamp), { cast: false }).position.set(cx + fx * w, y - 0.06, cz + fz * d);
+  }
+}
 function buildSky(T) {
   const d = new V3(...T.sunDir).normalize();
   skyMesh = new THREE.Mesh(new THREE.SphereGeometry(600, 32, 16), new THREE.ShaderMaterial({

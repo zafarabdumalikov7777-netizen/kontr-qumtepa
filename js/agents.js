@@ -61,17 +61,26 @@ function aimPoint(origin, dir, range = 220) {
   const h = raycaster.intersectObjects(_list, false)[0];
   return h ? h.point.clone() : origin.clone().addScaledVector(dir, range);
 }
+// how much damage survives a crate
+const PEN = { ak47: 0.6, m4a1: 0.55, awp: 0.8, deagle: 0.5, mp5: 0.35, usp: 0.3, glock: 0.25 };
 function shootRay(origin, dir, shooter, def, range) {
   range = range || 220; raycaster.set(origin, dir); raycaster.far = range;
   _list.length = 0;
   for (const m of worldMeshes) _list.push(m);
   for (const a of agents) { if (a === shooter || !a.alive) continue; for (const m of a.hitMeshes) _list.push(m); }
   const hits = raycaster.intersectObjects(_list, false);
-  if (!hits.length) return { point: origin.clone().addScaledVector(dir, range), agent: null };
-  const h = hits[0], ud = h.object.userData;
+  // wallbang: rifles, pistols and the AWP punch through crates and lose part of their damage
+  let i = 0, pen = 1;
+  while (i < hits.length && hits[i].object.userData.pen && PEN[def.id] && pen > 0.3) {
+    const o = hits[i].object, n = hits[i].face ? hits[i].face.normal.clone().transformDirection(o.matrixWorld) : new V3(0, 1, 0);
+    addDecal(hits[i].point, n); emit(hits[i].point.x, hits[i].point.y, hits[i].point.z, 5, 0xb08a5a, 2, 0.3, 6, n.x, n.y, n.z);
+    pen *= PEN[def.id]; while (i < hits.length && hits[i].object === o) i++;
+  }
+  if (i >= hits.length) return { point: origin.clone().addScaledVector(dir, range), agent: null };
+  const h = hits[i], ud = h.object.userData;
   if (ud.agent) {
     const falloff = def.melee ? 1 : Math.max(0.75, 1 - h.distance / 400);
-    applyDamage(ud.agent, shooter, def.dmg * falloff, ud.part, def, origin);
+    applyDamage(ud.agent, shooter, def.dmg * falloff * pen, ud.part, def, origin);
     emit(h.point.x, h.point.y, h.point.z, 10, 0x8a1010, 2.2, 0.4, 9, dir.x, dir.y, dir.z);
     return { point: h.point, agent: ud.agent };
   }
@@ -92,6 +101,7 @@ function applyDamage(v, att, dmg, part, def, from) {
   }
   d = Math.max(1, Math.round(d));
   if (att && att !== v) att.dmg = (att.dmg || 0) + Math.min(d, v.hp);
+  if (att && att !== v && (att.isPlayer || v.isPlayer)) logDamage(att, v, Math.min(d, v.hp));
   v.hp -= d;
   if (att && att.isPlayer && att !== v) { hitMarker(part === 'head'); Snd.hit(part === 'head'); }
   if (v.isPlayer) playerHurt(att, d, from);
@@ -102,6 +112,7 @@ function kill(v, att, def, hs) {
   v.alive = false; v.deaths++;
   if (att && att !== v) {
     att.kills++; if (hs) att.hs = (att.hs || 0) + 1;
+    if (!att.isPlayer) att.roundKills = (att.roundKills || 0) + 1; // the player's count is kept by the streak banner
     const reward = def.kill || 300; att.money = Math.min(16000, att.money + reward);
     if (att.isPlayer) { if (!isDM()) moneyPop(reward); playerKillStreak(hs); }
   }
@@ -241,11 +252,11 @@ function tryFire() {
 // ---------- Grenades ----------
 const nades = [];
 const nadeGeo = new THREE.SphereGeometry(0.08, 10, 8), nadeMat = new THREE.MeshLambertMaterial({ color: 0x4c5a33 });
-const nadeMats = { he: nadeMat, flash: new THREE.MeshLambertMaterial({ color: 0x9aa0a6 }), smoke: new THREE.MeshLambertMaterial({ color: 0x5d646d }) };
-const NADE_MAX = { he: 1, flash: 2, smoke: 1 };
+const nadeMats = { he: nadeMat, flash: new THREE.MeshLambertMaterial({ color: 0x9aa0a6 }), smoke: new THREE.MeshLambertMaterial({ color: 0x5d646d }), molotov: new THREE.MeshLambertMaterial({ color: 0x6b4a1e }) };
+const NADE_MAX = { he: 1, flash: 2, smoke: 1, molotov: 1 };
 // Slot 4 shows one grenade type at a time; `prefer` selects a type, otherwise keep the current one
 function syncNadeSlot(prefer) {
-  const p = player, n = p.nades || (p.nades = { he: 0, flash: 0, smoke: 0 });
+  const p = player, n = p.nades || (p.nades = { he: 0, flash: 0, smoke: 0, molotov: 0 });
   const cur = p.inv[4] && p.inv[4].def.id;
   const t = prefer && n[prefer] > 0 ? prefer : cur && n[cur] > 0 ? cur : NADE_ORDER.find(k => n[k] > 0);
   p.inv[4] = t ? { def: WEAPONS[t], count: n[t] } : null;
@@ -254,7 +265,7 @@ function syncNadeSlot(prefer) {
 function cycleNade() {
   const p = player, n = p.nades; if (!n || !p.inv[4]) return;
   const i = NADE_ORDER.indexOf(p.inv[4].def.id);
-  for (let k = 1; k <= 3; k++) { const t = NADE_ORDER[(i + k) % 3]; if (n[t] > 0) { syncNadeSlot(t); Snd.draw(); return; } }
+  for (let k = 1; k <= NADE_ORDER.length; k++) { const t = NADE_ORDER[(i + k) % NADE_ORDER.length]; if (n[t] > 0) { syncNadeSlot(t); Snd.draw(); return; } }
 }
 function throwNade() {
   const p = player, st = p.inv[4]; if (!st || !p.nades) return;
@@ -274,16 +285,17 @@ function updateNades(dt) {
     const nx = n.pos.x + n.vel.x * dt; if (blocked(nx, n.pos.y, n.pos.z)) n.vel.x *= -0.45; else n.pos.x = nx;
     const nz = n.pos.z + n.vel.z * dt; if (blocked(n.pos.x, n.pos.y, nz)) n.vel.z *= -0.45; else n.pos.z = nz;
     const ny = n.pos.y + n.vel.y * dt;
-    if (blocked(n.pos.x, ny, n.pos.z)) { n.vel.y *= -0.35; n.vel.x *= 0.75; n.vel.z *= 0.75; if (Math.abs(n.vel.y) < 0.6) n.vel.y = 0; }
+    if (blocked(n.pos.x, ny, n.pos.z)) { if (n.vel.y < 0) n.landed = true; n.vel.y *= -0.35; n.vel.x *= 0.75; n.vel.z *= 0.75; if (Math.abs(n.vel.y) < 0.6) n.vel.y = 0; }
     else n.pos.y = ny;
     n.mesh.position.copy(n.pos); n.mesh.rotation.x += dt * 8;
-    const done = n.kind === 'smoke' ? (n.t > 1.2 && Math.hypot(n.vel.x, n.vel.z) < 1) || n.t > 3 : n.t > (n.kind === 'flash' ? 1.5 : 1.7);
+    const done = n.kind === 'molotov' ? n.landed || n.t > 2.2 : n.kind === 'smoke' ? (n.t > 1.2 && Math.hypot(n.vel.x, n.vel.z) < 1) || n.t > 3 : n.t > (n.kind === 'flash' ? 1.5 : 1.7);
     if (done) { explode(n); scene.remove(n.mesh); nades.splice(i, 1); }
   }
 }
 function explode(n) {
   if (n.kind === 'smoke') return startSmoke(n.pos);
   if (n.kind === 'flash') return flashBang(n.pos);
+  if (n.kind === 'molotov') return startFire(n.pos, n.owner);
   const s = spatial(n.pos); Snd.boom(Math.min(1, s.vol * 1.6), s.pan);
   puff(n.pos.x, n.pos.y + 0.5, n.pos.z, 3, 0.35, true);
   for (let k = 0; k < 4; k++) puff(n.pos.x + rand(-1, 1), n.pos.y + 0.6 + k * 0.3, n.pos.z + rand(-1, 1), 2.4, 1.6, false);
@@ -431,6 +443,11 @@ function updateBot(b, dt) {
         b.yaw = turnToward(b.yaw, b.watchYaw + Math.sin(game.time * 0.6 + b.id * 1.7) * 0.6, 2.5 * dt);
       } else if (!b.chasing) nextGoal(b);
     }
+    if (b.boostT > 0) { // boosting the player: walk to the spot and hold still (crouched until they are on top)
+      b.boostT -= dt;
+      const dx = b.boostX - b.pos.x, dz = b.boostZ - b.pos.z, d = Math.hypot(dx, dz);
+      if (d > 0.35) { mx = dx / d; mz = dz / d; spd = 4.2; b.yaw = turnToward(b.yaw, Math.atan2(dx, dz), 8 * dt); } else spd = 0;
+    }
     if (bombBotBusy(b, dt)) spd = 0;
     if (spd > 0) {
       const ox = b.pos.x, oz = b.pos.z;
@@ -443,7 +460,8 @@ function updateBot(b, dt) {
       }
     }
   }
-  b.crouch = clamp(b.crouch + (b.wantCrouch && b.target ? 1 : -1) * dt * 6, 0, 1);
+  const boosting = b.boostT > 0 && Math.hypot(b.boostX - b.pos.x, b.boostZ - b.pos.z) <= 0.35;
+  b.crouch = clamp(b.crouch + ((boosting ? !b.boostUp : b.wantCrouch && b.target) ? 1 : -1) * dt * (boosting ? 2.5 : 6), 0, 1);
   setSoldierGun(m, botWeapon(b).def.model);
   m.group.position.set(b.pos.x, 0, b.pos.z); m.group.rotation.y = b.yaw;
   if (b.moveSpeed > 0.5) b.walkPh += dt * b.moveSpeed * 1.9;

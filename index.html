@@ -88,6 +88,14 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--sand);outline-o
 #speedo b{font-size:28px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;min-width:2.2ch;text-align:right}
 #speedo small{font-size:11px;letter-spacing:.12em;color:var(--muted)}
 #speedo.fast b{color:var(--sand)}
+#dmgRep{position:absolute;left:16px;bottom:calc(96px + var(--ib));background:var(--panel);padding:10px 12px;min-width:230px;font-size:13px;display:flex;flex-direction:column;gap:3px}
+#dmgRep[hidden]{display:none}
+#dmgRep h5{margin:0 0 4px;font-family:var(--f-display);letter-spacing:.1em;font-size:12px;color:var(--sand)}
+#dmgRep div{display:grid;grid-template-columns:1fr 58px 58px;gap:8px;align-items:baseline}
+#dmgRep b{color:var(--money);text-align:right}
+#dmgRep i{color:var(--danger);font-style:normal;text-align:right;font-weight:700}
+#dmgRep small{color:var(--muted);font-weight:400}
+#dmgRep p{margin:4px 0 0;font-size:11px;color:var(--muted)}
 #ggLvl{position:absolute;top:calc(66px + var(--it));left:50%;transform:translateX(-50%);background:var(--panel);padding:4px 14px;font-family:var(--f-display);font-size:14px;font-weight:600;letter-spacing:.05em;white-space:nowrap;color:var(--sand)}
 .profile{margin-top:18px;border:1px solid var(--line);background:rgba(0,0,0,.28);padding:12px 14px;display:flex;flex-direction:column;gap:8px;max-width:420px}
 .pf-top{display:flex;gap:10px;align-items:center}
@@ -416,6 +424,7 @@ tr.me td{color:var(--sand);font-weight:600}
     <div class="sc te"><span id="scT">0</span><div class="pips" id="pipT"></div></div>
   </div>
   <div id="ggLvl" hidden></div>
+  <div id="dmgRep" hidden></div>
   <div id="feed"></div>
   <div id="dmg"></div>
   <div id="dirs"></div>
@@ -511,6 +520,7 @@ tr.me td{color:var(--sand);font-weight:600}
       <div><kbd>5</kbd>C4 bomba (sichqonchani bosib turing)</div>
       <div><kbd>F</kbd>Qurolni ko‘zdan kechirish</div>
       <div><kbd>V</kbd>Kamera: 1-shaxs / 3-shaxs</div>
+      <div><kbd>Z</kbd>Sherik botdan boost so‘rash (u cho‘kadi, ustiga sakraysiz)</div>
       <div><kbd>Space</kbd>Bosib turing: bunnyhop, tezlik oshadi</div>
       <div><kbd>Shift</kbd>Sekin yurish</div>
       <div><kbd>Ctrl</kbd>Cho‘kkalash (yoki <kbd>C</kbd>)</div>
