@@ -153,13 +153,34 @@ async function sha256(t) {
   const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t));
   return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
 }
+// Bonus codes: each works once per browser, unless marked repeat
+const BONUS = {
+  VIP: { money: 10000, repeat: true },
+  QUMTEPA: { money: 500 },
+  KONTR2026: { money: 1500 },
+  BEPULKEYS: { case: 'qumtepa' },
+  AGENT: { case: 'agent' },
+  PICHOQ: { knife: true }
+};
+// result: 'bad' | 'used' | 'vip' | { money } | { caseId, win? }
 async function redeemPromo(code) {
-  const k = String(code || '').trim().toUpperCase();
-  if (!k || !(window.crypto && crypto.subtle) || await sha256(k) !== VIP_HASH) return 'bad';
+  const k = String(code || '').trim().toUpperCase(); if (!k) return 'bad';
+  const b = BONUS[k];
+  if (b) {
+    if (!b.repeat) { if (INV.promo.includes(k)) return 'used'; INV.promo.push(k); }
+    if (b.money) { INV.wallet += b.money; saveInv(); return { money: b.money }; }
+    saveInv();
+    if (b.case) return { caseId: b.case };
+    // a knife: pick a case that holds one and make the roulette land on it
+    const c = pick(CASES.filter(c => c.items.some(id => itemDef(id).rarity === 'gold')));
+    return { caseId: c.id, win: pick(c.items.filter(id => itemDef(id).rarity === 'gold')) };
+  }
+  if (!(window.crypto && crypto.subtle) || await sha256(k) !== VIP_HASH) return 'bad';
   if (INV.vip) return 'used';
   INV.vip = true; INV.wallet = Infinity; saveInv(); return 'vip';
 }
-const promoText = r => r === 'bad' ? 'Bunday promo kod yo‘q.' : r === 'used' ? 'VIP allaqachon yoqilgan.' : 'VIP yoqildi: pulingiz endi cheksiz!';
+const promoText = r => r === 'bad' ? 'Bunday promo kod yo‘q.' : r === 'used' ? 'Bu kod allaqachon ishlatilgan.' : r === 'vip' ? 'VIP yoqildi: pulingiz endi cheksiz!'
+  : r.money ? '+' + usd(r.money) + ' bonus hisobingizga qo‘shildi!' : r.win ? 'Bonus: kafolatlangan ★ pichoq!' : 'Bonus: bepul keys ochilmoqda!';
 const itemByUid = uid => INV.items.find(it => it.uid === uid);
 function equippedSkin(weaponId) { const it = itemByUid(INV.equip[weaponId]); return it ? it.id : null; }
 function equippedAgent(team) { const it = itemByUid(INV.equip['agent_' + team]); return it ? AGENTS[it.id] : null; }

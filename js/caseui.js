@@ -44,7 +44,8 @@ const ShopUI = (() => {
       const go = async () => {
         const r = await redeemPromo(inp.value);
         msg.textContent = promoText(r);
-        if (r === 'vip') { inp.value = ''; money(); if (Snd.ctx) Snd.chime(true); }
+        if (typeof r === 'object' || r === 'vip') { inp.value = ''; money(); if (Snd.ctx) Snd.chime(true); }
+        if (r.caseId) bonusCase(r);
       };
       document.getElementById('promoBtn').onclick = go;
       inp.onkeydown = e => { e.stopPropagation(); if (e.key === 'Enter') go(); };
@@ -65,10 +66,15 @@ const ShopUI = (() => {
   // ---- roulette ----
   const ROLL_MS = 6400;
   let rollToken = 0;
-  function openCase(c) {
-    if (INV.wallet < c.price) return;
-    INV.wallet -= c.price; saveInv(); money(); Snd.init();
-    const win = rollCase(c), WIN_AT = 48;
+  // a promo code's free case (optionally with a fixed prize)
+  function bonusCase(r) { openCase(CASES.find(c => c.id === r.caseId), { free: true, win: r.win }); }
+  function openCase(c, opt = {}) {
+    if (!opt.free) {
+      if (INV.wallet < c.price) return;
+      INV.wallet -= c.price; saveInv(); money();
+    }
+    Snd.init();
+    const win = opt.win || rollCase(c), WIN_AT = 48;
     const strip = Array.from({ length: 56 }, (_, i) => i === WIN_AT ? win : rollCase(c));
     const track = document.getElementById('rollTrack'), wrap = track.parentElement, res = document.getElementById('rollResult');
     document.getElementById('rollCase').textContent = c.name;
@@ -158,7 +164,7 @@ const ShopUI = (() => {
   document.getElementById('shopClose').onclick = () => { el.hidden = true; vm.cache = {}; if (onClose) onClose(); };
   return {
     open(cb) { onClose = cb; el.hidden = false; Snd.init(); setTab(tab); },
-    money
+    money, bonusCase
   };
 })();
 // a link ending in ?kod=XXXX redeems that promo code and opens the shop
@@ -168,4 +174,5 @@ addEventListener('load', async () => {
   const r = await redeemPromo(k);
   ShopUI.open();
   document.getElementById('promoMsg').textContent = promoText(r);
+  if (r.caseId) ShopUI.bonusCase(r);
 });
