@@ -42,7 +42,7 @@ function dmRespawn(a) {
   a.pos.set(s.x + rand(-0.5, 0.5), 0, s.z + rand(-0.5, 0.5)); a.yaw = rand(0, Math.PI * 2);
   dmLoadout(a);
   if (a.isPlayer) {
-    Object.assign(a, { pitch: 0, crouch: 0, reloadT: 0, switchT: 0, shots: 0, shotsF: 0, punchP: 0, punchY: 0, vpP: 0, vpY: 0, hops: 0, groundT: 0, scope: 0, scopeResume: 0, rescopeT: 0, cool: 0, deathT: 0, autoReload: false });
+    Object.assign(a, { pitch: 0, crouch: 0, reloadT: 0, switchT: 0, shots: 0, shotsF: 0, punchP: 0, punchY: 0, vpP: 0, vpY: 0, kickP: 0, kickY: 0, kTP: 0, kTY: 0, hops: 0, groundT: 0, scope: 0, scopeResume: 0, rescopeT: 0, cool: 0, deathT: 0, autoReload: false });
     a.vel.set(0, 0, 0); a.slot = a.inv[1] ? 1 : a.inv[2] ? 2 : 3; a.prevSlot = 3; vm.set(a.inv[a.slot].def, a.team);
     if (playerBody) { setGhost(playerBody, true); playerBody.fall = 1; playerBody.group.rotation.x = 0; }
     setSpectate(null); resetDmgReport();

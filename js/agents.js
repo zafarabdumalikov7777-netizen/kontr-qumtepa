@@ -9,7 +9,7 @@ const player = {
   isPlayer: true, id: 0, name: 'Siz', team: 'KT', alive: true, hp: 100, armor: 0, helmet: false, money: 800, kills: 0, deaths: 0,
   pos: new V3(), vel: new V3(), yaw: 0, pitch: 0, onGround: true, crouch: 0, jumpReady: true,
   inv: { 1: null, 2: null, 3: null, 4: null }, slot: 2, prevSlot: 3,
-  cool: 0, reloadT: 0, switchT: 0, shots: 0, shotsF: 0, punchP: 0, punchY: 0, vpP: 0, vpY: 0, kickP: 0, kickY: 0, hops: 0, groundT: 0, scope: 0, scopeResume: 0, rescopeT: 0, autoReload: false,
+  cool: 0, reloadT: 0, switchT: 0, shots: 0, shotsF: 0, punchP: 0, punchY: 0, vpP: 0, vpY: 0, kickP: 0, kickY: 0, kTP: 0, kTY: 0, hops: 0, groundT: 0, scope: 0, scopeResume: 0, rescopeT: 0, autoReload: false,
   triggerReleased: true, lastShot: -99, spotUntil: 0, deathT: 0, stepDist: 0, hitMeshes: []
 };
 const eyeH = () => 1.65 - 0.45 * player.crouch;
@@ -158,19 +158,21 @@ const SPRAY = (() => {
 const SPRAY_SCALE = { ak47: 1, m4a1: 1, mp5: 1.5, deagle: 1.3, usp: 1.3, glock: 1.3 };
 // view punch (rad), its sideways spread, and how the weapon moves in the hands: kicked back, muzzle rise, roll
 const RECOIL = {
-  ak47: { kick: 0.0045, side: 0.3, back: 1, rise: 1, roll: 0.02 }, m4a1: { kick: 0.0034, side: 0.25, back: 0.85, rise: 0.8, roll: 0.015 },
-  mp5: { kick: 0.0024, side: 0.4, back: 0.6, rise: 0.6, roll: 0.02 }, awp: { kick: 0.03, side: 0.1, back: 2.2, rise: 2.4, roll: 0.02 },
-  deagle: { kick: 0.028, side: 0.15, back: 2.2, rise: 3, roll: 0.05 }, usp: { kick: 0.008, side: 0.2, back: 1.3, rise: 1.6, roll: 0.03 },
-  glock: { kick: 0.007, side: 0.25, back: 1.2, rise: 1.5, roll: 0.03 }
+  ak47: { kick: 0.0014, side: 0.3, back: 1, rise: 1, roll: 0.02 }, m4a1: { kick: 0.0011, side: 0.25, back: 0.85, rise: 0.8, roll: 0.015 },
+  mp5: { kick: 0.0008, side: 0.4, back: 0.6, rise: 0.6, roll: 0.02 }, awp: { kick: 0.02, side: 0.1, back: 2.2, rise: 2.4, roll: 0.02 },
+  deagle: { kick: 0.016, side: 0.15, back: 2.2, rise: 3, roll: 0.05 }, usp: { kick: 0.005, side: 0.2, back: 1.3, rise: 1.6, roll: 0.03 },
+  glock: { kick: 0.0045, side: 0.25, back: 1.2, rise: 1.5, roll: 0.03 }
 };
-const RECOIL_DEF = { kick: 0.004, side: 0.3, back: 0.8, rise: 0.8, roll: 0.02 };
+const RECOIL_DEF = { kick: 0.002, side: 0.3, back: 0.8, rise: 0.8, roll: 0.02 };
+// The view follows the whole spray now, so the climb is kept to about 60% of CS's (AK ≈ 6° after 30 bullets)
+const RECOIL_SCALE = 0.62;
 function sprayAt(def, i) {
   const pat = SPRAY[def.id]; if (!pat) return [0, 0];
-  const k = pat[Math.min(i, pat.length - 1)], s = (SPRAY_SCALE[def.id] || 1.4) * Math.PI / 180;
+  const k = pat[Math.min(i, pat.length - 1)], s = (SPRAY_SCALE[def.id] || 1.4) * RECOIL_SCALE * Math.PI / 180;
   return [k[0] * s, k[1] * s];
 }
 function aimDir(spread) {
-  const p = player; let yaw = p.yaw + p.punchY, pit = p.pitch + p.punchP;
+  const p = player; let yaw = p.yaw + p.vpY + p.kickY, pit = p.pitch + p.vpP + p.kickP; // exactly the crosshair
   if (spread > 0) { const r = spread * Math.sqrt(Math.random()), th = Math.random() * Math.PI * 2; yaw += Math.cos(th) * r; pit += Math.sin(th) * r; }
   const cp = Math.cos(pit);
   return new V3(-Math.sin(yaw) * cp, Math.sin(pit), -Math.cos(yaw) * cp);
@@ -224,16 +226,16 @@ function tryFire() {
   if (!def.auto && !p.triggerReleased) return;
   if (st.mag <= 0) { if (p.triggerReleased) Snd.dry(); p.triggerReleased = false; startReload(); return; }
   p.triggerReleased = false;
-  st.mag--; p.cool = def.rate; p.lastShot = game.time;
+  st.mag--; p.cool = (def.auto && p.cool > -0.05 ? p.cool : 0) + def.rate; p.lastShot = game.time;
   if (game.mode === 'practice') st.res = st.def.res; // practice: endless reserve, reloads stay real
-  // Each shot lands on the weapon's fixed spray pattern; pulling the mouse down compensates
-  const idx = Math.round(p.shotsF), sp = sprayAt(def, idx);
-  p.punchY = -sp[0]; p.punchP = sp[1];
-  // view punch: an instant snap up that eases straight back (no spring, no wobble), like CS2's view punch
-  const rc = RECOIL[def.id] || RECOIL_DEF;
-  p.kickP += rc.kick * rand(0.9, 1.1); p.kickY += rc.kick * rand(-rc.side, rc.side);
+  // the bullet leaves where the crosshair is now; then the recoil carries the view along the weapon's fixed spray
+  // pattern (pulling the mouse down compensates) and adds a small kick that rises and settles smoothly
   const tp = thirdPerson(), eye = eyePos();
   let dir = aimDir(currentSpread());
+  const idx = Math.round(p.shotsF), sp = sprayAt(def, idx + 1);
+  p.punchY = -sp[0]; p.punchP = sp[1];
+  const rc = RECOIL[def.id] || RECOIL_DEF;
+  p.kTP += rc.kick * rand(0.9, 1.1); p.kTY += rc.kick * rand(-rc.side, rc.side);
   if (tp) { const t = aimPoint(camera.position, dir); if (t.distanceTo(eye) > 0.6) dir = t.sub(eye).normalize(); }
   const res = shootRay(eye, dir, p, def);
   const from = tp && playerBody && playerBody.muzzle ? playerBody.muzzle.getWorldPosition(new V3())

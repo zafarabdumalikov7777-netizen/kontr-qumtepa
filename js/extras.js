@@ -73,8 +73,7 @@ function initSettingsUI(onClose) {
     range('setVol', 'volume', 'kq_volume', v => Math.round(v * 100) + '%', applyVolume),
     check('setFps', 'fps', 'kq_fps'),
     check('setSpeedo', 'speedo', 'kq_speedo'),
-    check('setView3', 'view3', 'kq_view3'),
-    check('setXhRec', 'xhRecoil', 'kq_xhrec')
+    check('setView3', 'view3', 'kq_view3')
   ];
   document.getElementById('setDone').addEventListener('click', () => { panel.hidden = true; onClose && onClose(); });
   return { open() { syncs.forEach(s => s()); panel.hidden = false; } };

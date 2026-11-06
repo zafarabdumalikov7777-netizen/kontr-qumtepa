@@ -22,7 +22,7 @@ Mahalliy ishga tushirish: `index.html` faylini Chrome yoki Edge’da oching (int
 - Ittifoqchi va raqib botlar soni (har jamoada 10 tagacha), 3 xil qiyinlik; botlar bomba qo‘yadi va zararsizlantiradi
 - Granatalar: HE, flesh (ko‘r qiladi), tutun (ko‘rinishni to‘sadi); defuse kit
 - Qurol olish/almashtirish (E), tashlash (G), qurolni ko‘zdan kechirish (F)
-- CS2’dagi haqiqiy tepki: AK-47 va M4 uchun CS’ning har bir o‘qdagi siljish jadvali, ko‘rinish sapchishi, qurolning prujinali tepkisi; «Pritsel tepkiga ergashsin» sozlamasi
+- Otish: o‘q aynan pritsel turgan joyga ketadi, keyin kamera qurolning spray naqshi (CS jadvali asosida) bo‘ylab silliq ko‘tariladi; har qurolning o‘z tepkisi; otish tezligi FPS’dan qat’i nazar aniq
 - CS2 uslubidagi spray naqshlari, bunnyhop va air strafe, km/soat va FPS ko‘rsatkichlari
 - Seriya bannerlari (IKKITA!, UCHTA!, ACE!), hisob jadvalida BOSH% va ADR
 - Sozlanadigan pritsel (rang, uzunlik, qalinlik, oraliq, kontur, nuqta, T-shakl, ulashish kodi)
