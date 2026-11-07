@@ -127,6 +127,11 @@ function makeSoldier(team, variant, ghost) {
     a.js.scale.setScalar(0.072); a.je.scale.setScalar(0.052); return a;
   };
   const arms = { R: arm(), L: arm() };
+  // one draw per body part instead of ~50 per soldier; on the lowest setting plain parts share one vertex-coloured material
+  if (MODS.big) bigHead({ upper });
+  const lite = settings.quality === 0, vc = lite ? new THREE.MeshLambertMaterial({ vertexColors: true }) : null; if (vc) mats.push(vc);
+  const hitSet = new Set(hit), armSet = new Set(); for (const A of Object.values(arms)) for (const o of [A.u, A.l, A.js, A.je, A.h]) armSet.add(o);
+  mergeTree(g, o => !armSet.has(o) && o !== headMesh, o => hitSet.has(o), vc);
   let flash = null, marker = null;
   if (!ghost) {
     flash = new THREE.Sprite(flashMat); flash.scale.set(0.6, 0.6, 0.6); flash.visible = false;
@@ -134,7 +139,7 @@ function makeSoldier(team, variant, ghost) {
     marker.scale.set(0.35, 0.35, 0.35); marker.position.set(0, 2.2, 0); marker.renderOrder = 10; g.add(marker);
   }
   scene.add(g);
-  const m = { group: g, upper, legs, hit, mats, muzzle: null, flash, marker, flashT: 0, fall: 1, gun: null, gunKind: '', ghostModel: !!ghost, arms };
+  const m = { group: g, upper, legs, hit, mats, muzzle: null, flash, marker, flashT: 0, fall: 1, gun: null, gunKind: '', ghostModel: !!ghost, arms, armMerge: true, armVc: vc, bigDone: !!MODS.big };
   setGhost(m, !!ghost);
   setSoldierGun(m, team === 'T' ? 'ak' : 'm4');
   return m;
@@ -197,6 +202,7 @@ function setArmPose(m, pose, info) {
   else if (P.L === 'fore' && info.fore) pt(0.004, (info.foreY || 0) - 0.045, Math.min(info.fore, 0.27), _hL);
   else _hL.set(_hR.x - 0.048, _hR.y - 0.012, _hR.z - 0.005);
   solveArm(m.arms.R, ARM_SH.R, _hR, 1); solveArm(m.arms.L, ARM_SH.L, _hL, -1);
+  mergeArms(m);
 }
 // the lobby hold for a weapon
 function menuPose(def, info) {
@@ -233,6 +239,7 @@ function poseSoldier(m, phase, run, crouch, air) {
 }
 function disposeSoldier(m) {
   scene.remove(m.group);
+  m.group.traverse(o => { if (o.userData.merged) o.geometry.dispose(); });
   m.mats.forEach(x => x.dispose());
   if (m.marker) m.marker.material.dispose();
 }

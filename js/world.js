@@ -345,6 +345,6 @@ function applyAtmosphere() {
 }
 function loadMap(id) {
   const def = MAPS.find(m => m.id === id) || MAPS[0];
-  setGrid(def); clearWorld(); buildWorld(); applyAtmosphere();
+  setGrid(def); clearWorld(); buildWorld(); applyAtmosphere(); mergeWorld();
   if (typeof Snd !== 'undefined') Snd.setRoom();
 }

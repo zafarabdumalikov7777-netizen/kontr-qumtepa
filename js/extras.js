@@ -10,8 +10,17 @@ const fpsMeter = {
     const fps = Math.round(this.frames / this.acc), ms = (1000 * this.acc / this.frames).toFixed(1);
     el.textContent = `${fps} FPS · ${ms} ms`; el.className = fps >= 55 ? 'ok' : fps >= 30 ? 'mid' : 'low';
     this.frames = 0; this.acc = 0;
+    // phones on the lowest setting: if the frame rate sags, draw fewer pixels (down to 60%), and back up when it recovers
+    if (input.touchMode && settings.quality === 0 && game.state !== 'menu' && !game.paused) {
+      const was = dynScale;
+      this.low = fps < 42 ? (this.low || 0) + 1 : 0;
+      if (this.low >= 2) { dynScale = Math.max(0.6, dynScale - 0.1); this.low = 0; }
+      else if (fps >= 58 && dynScale < 1) dynScale = Math.min(1, dynScale + 0.05);
+      if (dynScale !== was) renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1) * dynScale);
+    }
   }
 };
+let dynScale = 1;
 
 // ---------- Kill streak banners ----------
 let streakTimer = 0;
@@ -38,9 +47,10 @@ function updateStreak(dt) { if (streakTimer > 0) { streakTimer -= dt; if (streak
 function applyQuality() {
   const q = settings.quality, dpr = window.devicePixelRatio || 1;
   // phones have tiny dense screens: their "low" keeps one device pixel per CSS pixel so text stays sharp
-  renderer.setPixelRatio([input.touchMode ? Math.min(dpr, 1) : 0.75, Math.min(dpr, 1.25), Math.min(dpr, 2)][q]);
+  renderer.setPixelRatio([input.touchMode ? Math.min(dpr, 1) * dynScale : 0.75, Math.min(dpr, 1.25), Math.min(dpr, 2)][q]);
   renderer.setSize(innerWidth, innerHeight);
   const on = q > 0, size = q === 2 ? 4096 : 2048;
+  if (typeof muzzleLight !== 'undefined') muzzleLight.visible = q > 0;
   if (sun.castShadow !== on || sun.shadow.mapSize.x !== size) {
     sun.castShadow = on; sun.shadow.mapSize.set(size, size);
     if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; }

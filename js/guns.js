@@ -607,7 +607,7 @@ function gunModel(kind, skinId) {
 // First-person model (with hands)
 function buildGun(kind, team, skinId, agent) {
   const { g, info } = gunModel(kind, skinId);
-  addHands(g, team, info, agent); finishGun(g, info);
+  addHands(g, team, info, agent); mergeTree(g, undefined, undefined, null, true); finishGun(g, info);
   return g;
 }
 // Third-person model for soldiers: same gun, no hands, facing +z
@@ -615,7 +615,7 @@ const gunProtos = {};
 function worldGun(kind) {
   if (!gunProtos[kind]) {
     GUN_LITE = true;
-    const inner = new THREE.Group(), info = (GUNS[kind] || GUNS.ak)(inner); finishGun(inner, info);
+    const inner = new THREE.Group(), info = (GUNS[kind] || GUNS.ak)(inner); mergeTree(inner, undefined, undefined, null, true); finishGun(inner, info);
     GUN_LITE = false;
     inner.rotation.y = Math.PI; inner.traverse(o => { if (o.isMesh) o.castShadow = true; });
     const outer = new THREE.Group(); outer.add(inner); outer.userData.info = info; gunProtos[kind] = outer;

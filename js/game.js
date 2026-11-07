@@ -241,11 +241,13 @@ function toggleView() { settings.view3 = !settings.view3; store.set('kq_view3', 
 function updatePlayerBody(dt) {
   const m = playerBody, p = player; if (!m) return;
   if (!p.alive) {
+    m.group.visible = true;
     if (m.fall < 1) { m.fall = Math.min(1, m.fall + dt * 2.6); const k = m.fall * m.fall; m.group.rotation.x = -k * Math.PI / 2; m.group.position.y = p.pos.y + 0.12 * k; }
     if (m.ghost && p.deathT > 2.5) setGhost(m, false); // corpse becomes visible once the camera leaves it
     return;
   }
   const gh = !thirdPerson(); if (m.ghost !== gh) setGhost(m, gh);
+  m.group.visible = !gh || sun.castShadow;
   m.group.position.copy(p.pos); m.group.rotation.y = p.yaw + Math.PI;
   setSoldierGun(m, skinModel(curDef().model, equippedSkin(curDef().id)));
   const hs = Math.hypot(p.vel.x, p.vel.z); if (hs > 0.5) bodyPh += dt * hs * 1.9;
@@ -701,7 +703,7 @@ function buildShowcase() {
   camera.position.copy(cam); camera.lookAt(show.look);
   camera.fov = 50; camera.updateProjectionMatrix();
   const m = makeSoldier(settings.team, equippedAgent(settings.team) || 0, false);
-  m.marker.visible = false;
+  m.marker.visible = false; unmergeArms(m);
   m.group.position.copy(show.pos); m.group.rotation.y = Math.atan2(-best.dx, -best.dz) + 0.42; m.baseYaw = m.group.rotation.y;
   poseSoldier(m, 0, 0, 0, false);
   showcaseGun(m, showGunDef());

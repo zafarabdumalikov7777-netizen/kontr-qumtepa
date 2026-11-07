@@ -82,6 +82,7 @@ function dressMorph(id, k) {
 }
 // "Katta kallalar": everything above the shoulders grows around the neck
 function bigHead(m, k = 1.8) {
+  if (m.bigDone) return; m.bigDone = true;
   for (const c of m.upper.children) {
     if (!c.isMesh || c.position.y < 1.57) continue;
     c.position.set(c.position.x * k, 1.62 + (c.position.y - 1.62) * k, c.position.z * k); c.scale.multiplyScalar(k);
@@ -96,6 +97,7 @@ function wallhackPass() {
   if (!MODS.wall || game.state === 'menu') return;
   const auto = renderer.shadowMap.autoUpdate; renderer.shadowMap.autoUpdate = false;
   for (const m of worldMeshes) m.layers.enable(4);
+  for (const m of worldMerged) m.layers.enable(4);
   renderer.clearDepth(); camera.layers.set(4); scene.overrideMaterial = depthOnlyMat;
   renderer.render(scene, camera);
   for (const pass of [0, 1]) {
